@@ -1,39 +1,42 @@
 import * as Icons from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
-import { useProviderBookings } from '@/lib/hooks';
+import { useProviderBookings, useProfessionalWithFallback, insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Button } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
-import type { Professional } from '@/lib/types';
+import type { Booking } from '@/lib/types';
 
-// Provider app demo: load the first professional as the logged-in provider
-const useCurrentProvider = () => {
-  const [pro, setPro] = useState<Professional | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    supabase
-      .from('professionals')
-      .select('*')
-      .order('rating', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        setPro((data as Professional) || null);
-        setLoading(false);
-      });
-  }, []);
-  return { professional: pro, loading };
+const isToday = (d: string) => {
+  const date = new Date(d + 'T00:00:00');
+  const now = new Date();
+  return date.toDateString() === now.toDateString();
 };
 
 export const ProviderHomeScreen = () => {
-  const { navigate } = useApp();
-  const { professional } = useCurrentProvider();
-  const { bookings, loading } = useProviderBookings(professional?.id || null);
+  const { navigate, providerId } = useApp();
+  const { professional } = useProfessionalWithFallback(providerId);
+  const { bookings, loading, reload } = useProviderBookings(professional?.id || null);
 
   const newRequests = bookings.filter((b) => b.status === 'confirmed' || b.status === 'assigned');
   const active = bookings.filter((b) => b.status === 'on_the_way' || b.status === 'started');
+  const completed = bookings.filter((b) => b.status === 'completed');
+  const todayCompleted = completed.filter((b) => isToday(b.scheduled_date));
+  const todayEarnings = todayCompleted.reduce((s, b) => s + Number(b.total_amount), 0);
+
+  const accept = async (b: Booking) => {
+    await supabase.from('bookings').update({ status: 'assigned' }).eq('id', b.id);
+    await insertBookingNotification(b.customer_phone, 'provider', 'Provider Assigned', `${professional?.name || 'A professional'} has accepted your ${b.service_name} booking.`, b.id);
+    reload();
+    navigate({ name: 'provider-detail', bookingId: b.id });
+  };
+
+  const reject = async (b: Booking) => {
+    if (!window.confirm(`Reject the ${b.service_name} request from ${b.customer_name}?`)) return;
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', b.id);
+    await insertBookingNotification(b.customer_phone, 'alert', 'Request Declined', `Your ${b.service_name} booking could not be accepted. Please book again.`, b.id);
+    reload();
+  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -46,11 +49,11 @@ export const ProviderHomeScreen = () => {
           </div>
           <div className="flex-1">
             <p className="text-xs text-white/80">Today's Earnings</p>
-            <p className="text-xl font-bold">{inr(2148)}</p>
+            <p className="text-xl font-bold">{inr(todayEarnings)}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-white/80">Jobs</p>
-            <p className="text-xl font-bold">4</p>
+            <p className="text-xs text-white/80">Jobs Today</p>
+            <p className="text-xl font-bold">{todayCompleted.length}</p>
           </div>
         </div>
 
@@ -94,8 +97,8 @@ export const ProviderHomeScreen = () => {
                   <span className="flex items-center gap-1"><Icons.MapPin size={11} />{b.customer_address.split(',').slice(-2)[0]?.trim()}</span>
                 </div>
                 <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                  <Button variant="outline" className="flex-1 py-2 text-xs text-red-500">Reject</Button>
-                  <Button onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} className="flex-1 py-2 text-xs">
+                  <Button variant="outline" onClick={() => reject(b)} className="flex-1 py-2 text-xs text-red-500">Reject</Button>
+                  <Button onClick={() => accept(b)} className="flex-1 py-2 text-xs">
                     Accept
                   </Button>
                 </div>

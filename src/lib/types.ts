@@ -33,6 +33,61 @@ export type Professional = {
   status: 'available' | 'busy';
   bio: string;
   service_area: string;
+  phone: string | null;
+  email: string | null;
+};
+
+export type Profile = {
+  phone: string;
+  name: string;
+  email: string | null;
+  location: string | null;
+  role: string;
+  created_at: string;
+};
+
+export type Notification = {
+  id: string;
+  customer_phone: string;
+  type: string;
+  title: string;
+  message: string;
+  booking_id: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+export type Favourite = {
+  id: string;
+  customer_phone: string;
+  professional_id: string;
+  created_at: string;
+};
+
+export type Payout = {
+  id: string;
+  professional_id: string;
+  amount: number;
+  status: 'requested' | 'completed' | 'failed';
+  created_at: string;
+};
+
+export type SupportTicket = {
+  id: string;
+  customer_phone: string;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
+export type AddressRow = {
+  id: string;
+  customer_phone: string;
+  label: string;
+  full_address: string;
+  is_default: boolean;
+  created_at: string;
 };
 
 export type Review = {
@@ -68,6 +123,7 @@ export type Booking = {
   visit_fee: number;
   total_amount: number;
   payment_method: string;
+  payment_status: string;
   status: BookingStatus;
   created_at: string;
 };

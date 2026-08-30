@@ -21,6 +21,7 @@ import { ReviewScreen } from '@/screens/customer/ReviewScreen';
 import { ProfileScreen } from '@/screens/customer/ProfileScreen';
 import { HelpScreen } from '@/screens/customer/HelpScreen';
 import { AddressesScreen } from '@/screens/customer/AddressesScreen';
+import { FavouritesScreen } from '@/screens/customer/FavouritesScreen';
 
 import { ProviderHomeScreen } from '@/screens/provider/ProviderHomeScreen';
 import { ProviderAuthScreen } from '@/screens/provider/ProviderAuthScreen';
@@ -91,6 +92,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'profile': return <ProfileScreen />;
     case 'help': return <HelpScreen />;
     case 'addresses': return <AddressesScreen />;
+    case 'favourites': return <FavouritesScreen />;
     default: return <HomeScreen />;
   }
 }

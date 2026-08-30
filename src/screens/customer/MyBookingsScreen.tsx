@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useBookings, BookingFilter } from '@/lib/hooks';
+import { useBookings, BookingFilter, insertBookingNotification } from '@/lib/hooks';
+import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Badge, Button } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -17,7 +18,17 @@ const TABS: { key: BookingFilter; label: string }[] = [
 export const MyBookingsScreen = () => {
   const { navigate, customer } = useApp();
   const [tab, setTab] = useState<BookingFilter>('upcoming');
-  const { bookings, loading } = useBookings(tab, customer?.phone || '9876543210');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const { bookings, loading, reload } = useBookings(tab, customer?.phone || undefined);
+
+  const cancel = async (b: Booking) => {
+    if (!window.confirm(`Cancel your ${b.service_name} booking?`)) return;
+    setCancellingId(b.id);
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', b.id);
+    await insertBookingNotification(b.customer_phone, 'alert', 'Booking Cancelled', `Your ${b.service_name} booking has been cancelled.`, b.id);
+    setCancellingId(null);
+    reload();
+  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -48,7 +59,7 @@ export const MyBookingsScreen = () => {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} />
+              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onCancel={() => cancel(b)} cancelling={cancellingId === b.id} />
             ))}
           </div>
         )}
@@ -57,7 +68,7 @@ export const MyBookingsScreen = () => {
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview }: { booking: Booking; onTrack: () => void; onReview: () => void }) => {
+const BookingCard = ({ booking, onTrack, onReview, onCancel, cancelling }: { booking: Booking; onTrack: () => void; onReview: () => void; onCancel: () => void; cancelling: boolean }) => {
   const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info',
     assigned: 'info',
@@ -95,9 +106,19 @@ const BookingCard = ({ booking, onTrack, onReview }: { booking: Booking; onTrack
             <Icons.Star size={14} /> Rate Service
           </Button>
         ) : booking.status === 'cancelled' ? null : (
-          <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onTrack}>
-            <Icons.Navigation size={14} /> Track Booking
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 py-2 text-xs text-red-500"
+              onClick={onCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? 'Cancelling...' : <><Icons.X size={14} /> Cancel</>}
+            </Button>
+            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onTrack}>
+              <Icons.Navigation size={14} /> Track Booking
+            </Button>
+          </>
         )}
       </div>
     </Card>

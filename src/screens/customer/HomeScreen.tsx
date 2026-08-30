@@ -2,7 +2,7 @@ import { Search, MapPin, Bell, ChevronRight, Percent, Star, Calendar } from 'luc
 import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
-import { useCategories, usePopularServices } from '@/lib/hooks';
+import { useCategories, usePopularServices, useUnreadNotifications } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -18,6 +18,7 @@ export const HomeScreen = () => {
   const { navigate, customer } = useApp();
   const { categories, loading: catLoading } = useCategories();
   const { popularServices, loading: svcLoading } = usePopularServices();
+  const { unread } = useUnreadNotifications(customer?.phone || null);
   const [topPros, setTopPros] = useState<Professional[]>([]);
   const [proLoading, setProLoading] = useState(true);
   const [recent, setRecent] = useState<Booking[]>([]);
@@ -37,10 +38,11 @@ export const HomeScreen = () => {
   }, []);
 
   useEffect(() => {
+    if (!customer?.phone) return;
     supabase
       .from('bookings')
       .select('*')
-      .eq('customer_phone', customer?.phone || '9876543210')
+      .eq('customer_phone', customer.phone)
       .order('created_at', { ascending: false })
       .limit(3)
       .then(({ data }) => setRecent((data as Booking[]) || []));
@@ -54,12 +56,22 @@ export const HomeScreen = () => {
 
   const offer = OFFERS[offerIdx];
 
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      /* clipboard unavailable */
+    }
+    setSavedCoupon(code);
+    setTimeout(() => setSavedCoupon(null), 2000);
+  };
+
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
         <div className="flex items-center justify-between">
-          <button className="flex items-center gap-1.5">
+          <button onClick={() => navigate({ name: 'addresses' })} className="flex items-center gap-1.5">
             <MapPin size={16} />
             <span className="text-sm font-semibold">
               {customer?.location || 'Koramangala, Bangalore'}
@@ -68,7 +80,9 @@ export const HomeScreen = () => {
           </button>
           <button onClick={() => navigate({ name: 'notifications' })} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
             <Bell size={18} />
-            <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-gray-900">3</span>
+            {unread > 0 && (
+              <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-gray-900">{unread > 9 ? '9+' : unread}</span>
+            )}
           </button>
         </div>
         <h1 className="mt-3 text-xl font-bold">
@@ -95,10 +109,7 @@ export const HomeScreen = () => {
           <div className="flex-1">
             <p className="text-sm font-bold">{offer.title}</p>
             <button
-              onClick={() => {
-                setSavedCoupon(offer.code);
-                setTimeout(() => setSavedCoupon(null), 2000);
-              }}
+              onClick={() => copyCode(offer.code)}
               className="mt-0.5 text-xs text-white/90 underline"
             >
               {savedCoupon === offer.code ? 'Copied!' : `Use code ${offer.code}`}

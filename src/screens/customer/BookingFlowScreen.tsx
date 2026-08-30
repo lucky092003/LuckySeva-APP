@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useService, useProfessional } from '@/lib/hooks';
+import { useService, useProfessional, insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
@@ -15,6 +15,13 @@ const COUPONS: Record<string, { discount: number; label: string; desc: string }>
   SEVA50: { discount: 50, label: '₹50 OFF', desc: 'Flat ₹50 off on any service' },
   CLEAN100: { discount: 100, label: '₹100 OFF', desc: '₹100 off on cleaning services' },
 };
+
+const PAYMENT_METHODS = [
+  { key: 'cash', label: 'Pay with Cash', icon: 'Banknote', desc: 'Pay the professional after service' },
+  { key: 'upi', label: 'UPI', icon: 'Smartphone', desc: 'GPay, PhonePe, Paytm & more' },
+  { key: 'card', label: 'Credit / Debit Card', icon: 'CreditCard', desc: 'Mastercard, Visa, RuPay' },
+  { key: 'netbanking', label: 'Net Banking', icon: 'Landmark', desc: 'All major banks supported' },
+] as const;
 
 export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: string; professionalId?: string }) => {
   const { navigate, customer } = useApp();
@@ -30,12 +37,14 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string } | null>(null);
   const [couponError, setCouponError] = useState('');
+  const [method, setMethod] = useState<string>('cash');
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i);
     return d;
   });
+  const dateLabel = dates[date].toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /><Spinner className="py-20" /></div>;
   if (!service) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /></div>;
@@ -95,14 +104,27 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         base_price: base,
         visit_fee: visitFee,
         total_amount: total,
-        payment_method: 'cash',
+        payment_method: method,
+        payment_status: method === 'cash' ? 'cash' : 'pending',
         status: 'confirmed',
       })
       .select()
       .maybeSingle();
     setSubmitting(false);
     if (error || !data) return;
-    navigate({ name: 'booking-success', bookingId: (data as Booking).id });
+    const booking = data as Booking;
+    await insertBookingNotification(
+      booking.customer_phone,
+      'booking',
+      'Booking Confirmed',
+      `${booking.service_name} is confirmed for ${dateLabel}, ${booking.scheduled_time}.`,
+      booking.id
+    );
+    if (method === 'cash') {
+      navigate({ name: 'booking-success', bookingId: booking.id });
+    } else {
+      navigate({ name: 'payment', bookingId: booking.id });
+    }
   };
 
   const canNext = step === 1 ? slot !== '' : step === 2 ? address.trim().length > 5 : true;
@@ -212,13 +234,42 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         {step === 3 && (
           <div className="space-y-4">
             <div>
+              <h3 className="mb-2 text-sm font-bold text-gray-900">Choose Payment Method</h3>
+              <div className="space-y-2">
+                {PAYMENT_METHODS.map((pm) => {
+                  const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[pm.icon] || Icons.Wallet;
+                  const selected = method === pm.key;
+                  return (
+                    <button
+                      key={pm.key}
+                      onClick={() => setMethod(pm.key)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
+                    >
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${selected ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-bold ${selected ? 'text-emerald-700' : 'text-gray-900'}`}>{pm.label}</p>
+                        <p className="text-[11px] text-gray-500">{pm.desc}</p>
+                      </div>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border ${selected ? 'border-emerald-500' : 'border-gray-300'}`}>
+                        {selected && <span className="h-3 w-3 rounded-full bg-emerald-500" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Booking Summary</h3>
               <Card className="space-y-3 p-4">
                 <Row label="Service" value={service.name} />
                 <Row label="Professional" value={professional?.name || 'Auto-assigned'} />
-                <Row label="Date" value={dates[date].toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })} />
+                <Row label="Date" value={dateLabel} />
                 <Row label="Time" value={slot} />
                 <Row label="Address" value={address} />
+                <Row label="Payment" value={PAYMENT_METHODS.find((pm) => pm.key === method)?.label || method} />
                 {notes && <Row label="Notes" value={notes} />}
               </Card>
             </div>
@@ -285,7 +336,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                     <span className="text-sm font-bold text-gray-900">Total Amount</span>
                     <span className="text-lg font-bold text-emerald-600">{inr(total)}</span>
                   </div>
-                  <p className="mt-1 text-[11px] text-gray-400">Pay after service or online — your choice</p>
+                  <p className="mt-1 text-[11px] text-gray-400">{method === 'cash' ? 'Pay the professional in cash after service' : `You will be redirected to pay securely via ${method === 'upi' ? 'UPI' : method === 'card' ? 'Card' : 'Net Banking'}`}</p>
                 </div>
               </Card>
             </div>
@@ -304,7 +355,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
           </Button>
         ) : (
           <Button onClick={confirm} disabled={submitting} className="flex-1">
-            {submitting ? 'Confirming...' : `Confirm · ${inr(total)}`}
+            {submitting ? 'Confirming...' : method === 'cash' ? `Confirm · ${inr(total)}` : `Pay ${inr(total)}`}
           </Button>
         )}
       </div>

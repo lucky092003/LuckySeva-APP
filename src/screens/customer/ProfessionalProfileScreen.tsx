@@ -1,6 +1,6 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useProfessional, useReviews } from '@/lib/hooks';
+import { useProfessional, useReviews, useIsFavourite, toggleFavourite } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Stars, Badge, Button, EmptyState } from '@/components/ui';
@@ -9,10 +9,21 @@ import type { Service } from '@/lib/types';
 import { useEffect, useState } from 'react';
 
 export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
-  const { navigate } = useApp();
+  const { navigate, customer } = useApp();
   const { professional, loading } = useProfessional(id);
   const { reviews, loading: revLoading } = useReviews(id);
+  const { isFav } = useIsFavourite(customer?.phone || null, id);
+  const [fav, setFav] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
+
+  useEffect(() => {
+    setFav(isFav);
+  }, [isFav]);
+
+  const toggle = async () => {
+    const next = await toggleFavourite(customer?.phone || null, id);
+    setFav(next);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -30,7 +41,14 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar title="Professional" />
+      <TopBar
+        title="Professional"
+        right={
+          <button onClick={toggle} className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${fav ? 'bg-red-50 text-red-500' : 'text-gray-500 hover:bg-gray-100'}`}>
+            <Icons.Heart size={19} className={fav ? 'fill-red-500' : ''} />
+          </button>
+        }
+      />
       <div className="flex flex-1 flex-col overflow-y-auto pb-4">
         {/* Profile header */}
         <div className="bg-white px-5 py-5">
@@ -55,6 +73,20 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
             </div>
           </div>
           <p className="mt-4 text-sm text-gray-600">{professional.bio}</p>
+          <div className="mt-4 flex items-center gap-2">
+            {professional.phone ? (
+              <a href={`tel:${professional.phone}`} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-50 py-2.5 text-xs font-bold text-emerald-700">
+                <Icons.Phone size={14} /> Call
+              </a>
+            ) : (
+              <span className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-50 py-2.5 text-xs font-bold text-gray-400">
+                <Icons.Phone size={14} /> Call
+              </span>
+            )}
+            <button onClick={() => navigate({ name: 'help' })} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-50 py-2.5 text-xs font-bold text-sky-700">
+              <Icons.MessageCircle size={14} /> Chat
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
