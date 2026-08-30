@@ -5,12 +5,12 @@ import {
   MapPin,
   User,
   ArrowRight,
-  ShieldCheck,
   Wrench,
   Briefcase,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
+import { OtpSection } from '@/components/OtpInput';
 import { useApp } from '@/lib/app-context';
 
 const SERVICE_AREAS = [
@@ -33,7 +33,6 @@ export const ProviderAuthScreen = () => {
     experience: '',
     serviceArea: SERVICE_AREAS[0],
   });
-  const [otp, setOtp] = useState(['', '', '', '']);
 
   const canSubmit =
     form.name.trim() &&
@@ -47,13 +46,6 @@ export const ProviderAuthScreen = () => {
 
   const verifyOtp = () => {
     navigate({ name: 'provider-home' });
-  };
-
-  const setOtpDigit = (i: number, v: string) => {
-    if (v.length > 1) return;
-    const next = [...otp];
-    next[i] = v;
-    setOtp(next);
   };
 
   return (
@@ -147,33 +139,11 @@ export const ProviderAuthScreen = () => {
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex justify-center gap-3">
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                id={`p-otp-${i}`}
-                value={d}
-                onChange={(e) => {
-                  setOtpDigit(i, e.target.value.replace(/\D/g, ''));
-                  if (e.target.value && i < 3) {
-                    document.getElementById(`p-otp-${i + 1}`)?.focus();
-                  }
-                }}
-                maxLength={1}
-                inputMode="numeric"
-                className="h-14 w-12 rounded-xl border border-gray-200 text-center text-xl font-bold text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-              />
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-500">
-            Didn't receive code?{' '}
-            <button className="font-semibold text-emerald-600">Resend OTP</button>
-          </p>
-          <Button onClick={verifyOtp} className="w-full">
-            <ShieldCheck size={18} /> Verify & Continue
-          </Button>
-        </div>
+        <OtpSection
+          phone={form.phone}
+          onVerify={(code) => verifyOtp(code)}
+          onBack={() => setStep('details')}
+        />
       )}
     </div>
   );
