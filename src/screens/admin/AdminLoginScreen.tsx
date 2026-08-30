@@ -131,10 +131,6 @@ const AdminLoginForm = () => {
             <Button onClick={handleLogin} disabled={!canSubmit} className="w-full">
               <ShieldCheck size={18} /> Sign in
             </Button>
-
-            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-center text-xs text-gray-500">
-              Demo credentials — username: <b>admin</b> · password: <b>admin123</b>
-            </div>
           </div>
         </div>
       </div>
