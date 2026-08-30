@@ -2,6 +2,11 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 
 export type Role = 'customer' | 'provider' | 'admin';
 
+export const ADMIN_CREDENTIALS = {
+  username: 'admin',
+  password: 'admin123',
+};
+
 export type Screen =
   | { name: 'splash' }
   | { name: 'auth' }
@@ -21,11 +26,13 @@ export type Screen =
   | { name: 'profile' }
   | { name: 'help' }
   | { name: 'addresses' }
+  | { name: 'provider-auth' }
   | { name: 'provider-home' }
   | { name: 'provider-bookings' }
   | { name: 'provider-earnings' }
   | { name: 'provider-profile' }
   | { name: 'provider-detail'; bookingId: string }
+  | { name: 'admin-auth' }
   | { name: 'admin-dashboard' }
   | { name: 'admin-customers' }
   | { name: 'admin-providers' }
@@ -47,6 +54,8 @@ type AppState = {
   back: () => void;
   customer: Customer;
   setCustomer: (c: Customer) => void;
+  adminAuthed: boolean;
+  setAdminAuthed: (a: boolean) => void;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -55,6 +64,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRoleState] = useState<Role>('customer');
   const [stack, setStack] = useState<Screen[]>([{ name: 'splash' }]);
   const [customer, setCustomer] = useState<Customer>(null);
+  const [adminAuthed, setAdminAuthed] = useState(false);
 
   const screen = stack[stack.length - 1];
 
@@ -74,13 +84,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const setRole = useCallback((r: Role) => {
     setRoleState(r);
     if (r === 'customer') setStack([{ name: 'splash' }]);
-    else if (r === 'provider') setStack([{ name: 'provider-home' }]);
-    else setStack([{ name: 'admin-dashboard' }]);
+    else if (r === 'provider') setStack([{ name: 'provider-auth' }]);
+    else setStack([{ name: 'admin-auth' }]);
   }, []);
 
   return (
     <AppContext.Provider
-      value={{ role, setRole, screen, navigate, back, customer, setCustomer }}
+      value={{ role, setRole, screen, navigate, back, customer, setCustomer, adminAuthed, setAdminAuthed }}
     >
       {children}
     </AppContext.Provider>
