@@ -23,12 +23,14 @@ import { HelpScreen } from '@/screens/customer/HelpScreen';
 import { AddressesScreen } from '@/screens/customer/AddressesScreen';
 
 import { ProviderHomeScreen } from '@/screens/provider/ProviderHomeScreen';
+import { ProviderAuthScreen } from '@/screens/provider/ProviderAuthScreen';
 import { ProviderBookingsScreen } from '@/screens/provider/ProviderBookingsScreen';
 import { ProviderEarningsScreen } from '@/screens/provider/ProviderEarningsScreen';
 import { ProviderProfileScreen } from '@/screens/provider/ProviderProfileScreen';
 import { ProviderDetailScreen } from '@/screens/provider/ProviderDetailScreen';
 
 import { AdminDashboard } from '@/screens/admin/AdminDashboard';
+import { AdminLoginScreen } from '@/screens/admin/AdminLoginScreen';
 import {
   AdminCustomers,
   AdminProviders,
@@ -37,9 +39,19 @@ import {
 } from '@/screens/admin/AdminScreens';
 
 function Router() {
-  const { screen, role } = useApp();
+  const { screen, role, adminAuthed } = useApp();
 
   if (role === 'admin') {
+    if (!adminAuthed) {
+      return (
+        <PhoneShell>
+          <div key="admin-auth" className="flex flex-1 flex-col overflow-hidden screen-enter">
+            <AdminLoginScreen />
+          </div>
+        </PhoneShell>
+      );
+    }
+
     return (
       <PhoneShell>
         <div className="flex flex-1 overflow-hidden">
@@ -88,6 +100,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
 
 function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
   switch (screen.name) {
+    case 'provider-auth': return <ProviderAuthScreen />;
     case 'provider-home': return <ProviderHomeScreen />;
     case 'provider-bookings': return <ProviderBookingsScreen />;
     case 'provider-earnings': return <ProviderEarningsScreen />;
@@ -99,6 +112,7 @@ function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
 
 function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
   switch (screen.name) {
+    case 'admin-auth': return <AdminLoginScreen />;
     case 'admin-dashboard': return <AdminDashboard />;
     case 'admin-customers': return <AdminCustomers />;
     case 'admin-providers': return <AdminProviders />;
