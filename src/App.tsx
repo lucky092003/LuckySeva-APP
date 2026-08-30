@@ -36,6 +36,7 @@ import {
   AdminProviders,
   AdminServices,
   AdminBookings,
+  AdminProfile,
 } from '@/screens/admin/AdminScreens';
 
 function Router() {
@@ -44,23 +45,19 @@ function Router() {
   if (role === 'admin') {
     if (!adminAuthed) {
       return (
-        <PhoneShell>
-          <div key="admin-auth" className="flex flex-1 flex-col overflow-hidden screen-enter">
-            <AdminLoginScreen />
-          </div>
-        </PhoneShell>
+        <div className="min-h-screen bg-gray-100">
+          <AdminLoginScreen />
+        </div>
       );
     }
 
     return (
-      <PhoneShell>
-        <div className="flex flex-1 overflow-hidden">
-          <AdminSidebar />
-          <div key={screen.name} className="flex flex-1 overflow-hidden screen-enter">
-            {renderAdmin(screen)}
-          </div>
+      <div className="flex h-screen min-h-screen overflow-hidden bg-gray-50">
+        <AdminSidebar />
+        <div key={screen.name} className="flex flex-1 flex-col overflow-hidden screen-enter">
+          {renderAdmin(screen)}
         </div>
-      </PhoneShell>
+      </div>
     );
   }
 
@@ -118,6 +115,7 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
     case 'admin-providers': return <AdminProviders />;
     case 'admin-services': return <AdminServices />;
     case 'admin-bookings': return <AdminBookings />;
+    case 'admin-profile': return <AdminProfile />;
     default: return <AdminDashboard />;
   }
 }
