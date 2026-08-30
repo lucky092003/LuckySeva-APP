@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LuckySeva</string>
+    <string name="title_activity_main">LuckySeva</string>
+    <string name="package_name">com.luckyseva.app</string>
+    <string name="custom_url_scheme">com.luckyseva.app</string>
+</resources>
