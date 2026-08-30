@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
+import { insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
@@ -51,6 +52,21 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     if (!next) return;
     setUpdating(true);
     await supabase.from('bookings').update({ status: next }).eq('id', booking.id);
+    if (next === 'on_the_way') {
+      await insertBookingNotification(booking.customer_phone, 'provider', 'Provider On The Way', `${booking.professional_name} is on the way to your location for ${booking.service_name}.`, booking.id);
+    }
+    if (next === 'completed') {
+      await insertBookingNotification(booking.customer_phone, 'review', 'Service Completed', `${booking.service_name} is complete. Please pay ${inr(booking.total_amount)} and rate your experience.`, booking.id);
+      if (booking.professional_id) {
+        const { data: pro } = await supabase
+          .from('professionals')
+          .select('completed_jobs')
+          .eq('id', booking.professional_id)
+          .maybeSingle();
+        const jobs = Number((pro as { completed_jobs?: number } | null)?.completed_jobs || 0);
+        await supabase.from('professionals').update({ completed_jobs: jobs + 1 }).eq('id', booking.professional_id);
+      }
+    }
     setUpdating(false);
     load();
   };
@@ -112,6 +128,12 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">Method</span>
             <Badge tone="info">{booking.payment_method.toUpperCase()}</Badge>
+          </div>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-gray-500">Status</span>
+            <Badge tone={booking.payment_status === 'paid' ? 'success' : 'warning'}>
+              {booking.payment_status === 'paid' ? 'Paid online' : booking.payment_status === 'cash' ? 'Cash on service' : 'Pending'}
+            </Badge>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-gray-50 pt-2">
             <span className="text-sm font-bold text-gray-900">Total Earnings</span>

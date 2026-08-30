@@ -85,10 +85,14 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <Icons.Phone size={18} />
-                </a>
-                <button className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                {professional.phone ? (
+                  <a href={`tel:${professional.phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <Icons.Phone size={18} />
+                  </a>
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600/40"><Icons.Phone size={18} /></span>
+                )}
+                <button onClick={() => navigate({ name: 'help' })} className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-sky-600">
                   <Icons.MessageCircle size={18} />
                 </button>
               </div>
@@ -132,7 +136,12 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
           <Detail icon={<Icons.MapPin size={15} />} label="Address" value={booking.customer_address} />
           <div className="flex items-center justify-between border-t border-gray-50 pt-3">
             <span className="text-sm font-bold text-gray-900">Total Paid</span>
-            <span className="text-base font-bold text-emerald-600">{inr(booking.total_amount)}</span>
+            <div className="flex items-center gap-2">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${booking.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-600' : booking.payment_status === 'cash' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                {booking.payment_status === 'cash' ? 'Cash on service' : booking.payment_status}
+              </span>
+              <span className="text-base font-bold text-emerald-600">{inr(booking.total_amount)}</span>
+            </div>
           </div>
         </Card>
 

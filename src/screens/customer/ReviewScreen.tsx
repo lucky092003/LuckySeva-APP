@@ -13,6 +13,7 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [hover, setHover] = useState(0);
 
   useEffect(() => {
@@ -30,13 +31,31 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
   const submit = async () => {
     if (!booking) return;
     setSubmitting(true);
-    await supabase.from('reviews').insert({
+    setError('');
+    const { error: err } = await supabase.from('reviews').insert({
       booking_id: booking.id,
       professional_id: booking.professional_id,
       customer_name: booking.customer_name,
       rating,
       comment,
     });
+    if (err) {
+      setError('Could not submit your review. Please try again.');
+      setSubmitting(false);
+      return;
+    }
+    if (booking.professional_id) {
+      const { data: agg } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('professional_id', booking.professional_id);
+      const rows = (agg as { rating: number }[]) || [];
+      const avg = rows.length ? rows.reduce((s, r) => s + Number(r.rating), 0) / rows.length : 0;
+      await supabase
+        .from('professionals')
+        .update({ rating: Math.round(avg * 10) / 10, reviews_count: rows.length })
+        .eq('id', booking.professional_id);
+    }
     setSubmitting(false);
     navigate({ name: 'bookings' });
   };
@@ -109,6 +128,7 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
         <Button onClick={submit} disabled={submitting} className="w-full">
           {submitting ? 'Submitting...' : 'Submit Review'}
         </Button>
+        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
       </div>
     </div>
   );

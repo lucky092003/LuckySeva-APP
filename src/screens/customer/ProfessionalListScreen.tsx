@@ -22,17 +22,33 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
   const [sort, setSort] = useState<SortKey>('rating');
   const [availOnly, setAvailOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [minRating, setMinRating] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(10000);
+  const [minExp, setMinExp] = useState(0);
+  const [maxDist, setMaxDist] = useState(25);
+  const hasFilters = minRating > 0 || maxPrice < 10000 || minExp > 0 || maxDist < 25;
 
   const filtered = useMemo(() => {
     let list = [...professionals];
     if (availOnly) list = list.filter((p) => p.status === 'available');
+    if (minRating > 0) list = list.filter((p) => p.rating >= minRating);
+    if (minExp > 0) list = list.filter((p) => p.experience_years >= minExp);
+    list = list.filter((p) => p.starting_price <= maxPrice);
+    list = list.filter((p) => p.distance_km <= maxDist);
     list.sort((a, b) => {
       if (sort === 'rating') return b.rating - a.rating;
       if (sort === 'price') return a.starting_price - b.starting_price;
       return a.distance_km - b.distance_km;
     });
     return list;
-  }, [professionals, sort, availOnly]);
+  }, [professionals, sort, availOnly, minRating, minExp, maxPrice, maxDist]);
+
+  const resetFilters = () => {
+    setMinRating(0);
+    setMaxPrice(10000);
+    setMinExp(0);
+    setMaxDist(25);
+  };
 
   const color = category?.color || '#10b981';
 
@@ -62,6 +78,29 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
           Available only
         </button>
       </div>
+
+      {showFilters && (
+        <div className="shrink-0 space-y-3 border-b border-gray-100 bg-white px-4 py-3">
+          <FilterRow label={`Min rating · ${minRating.toFixed(1)}+`}>
+            <input type="range" min={0} max={5} step={0.5} value={minRating} onChange={(e) => setMinRating(Number(e.target.value))} className="w-full accent-emerald-500" />
+          </FilterRow>
+          <FilterRow label={`Max price · ${inr(maxPrice)}`}>
+            <input type="range" min={0} max={10000} step={500} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-full accent-emerald-500" />
+          </FilterRow>
+          <FilterRow label={`Min experience · ${minExp}+ yrs`}>
+            <input type="range" min={0} max={15} step={1} value={minExp} onChange={(e) => setMinExp(Number(e.target.value))} className="w-full accent-emerald-500" />
+          </FilterRow>
+          <FilterRow label={`Within · ${maxDist} km`}>
+            <input type="range" min={1} max={25} step={1} value={maxDist} onChange={(e) => setMaxDist(Number(e.target.value))} className="w-full accent-emerald-500" />
+          </FilterRow>
+          {hasFilters && (
+            <button onClick={resetFilters} className="text-xs font-semibold text-emerald-600">
+              Reset all filters
+            </button>
+          )}
+          <p className="text-right text-[11px] text-gray-400">{filtered.length} professional{filtered.length === 1 ? '' : 's'} match</p>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
         {loading ? (
@@ -115,4 +154,13 @@ export const ProfessionalCard = ({ pro, color, onClick }: { pro: Professional; c
       <span className="text-xs font-semibold text-emerald-600">View Profile →</span>
     </div>
   </Card>
+);
+
+const FilterRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <div className="mb-1 flex items-center justify-between">
+      <span className="text-xs font-semibold text-gray-700">{label}</span>
+    </div>
+    {children}
+  </div>
 );

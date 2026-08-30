@@ -1,33 +1,58 @@
 import * as Icons from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useApp } from '@/lib/app-context';
+import { supabase } from '@/lib/supabase';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Button, EmptyState } from '@/components/ui';
-
-type Address = {
-  id: string;
-  label: string;
-  full: string;
-  icon: React.ComponentType<{ size?: number | string; className?: string }>;
-};
-
-const SAVED: Address[] = [
-  { id: '1', label: 'Home', full: '12, Green Park Apartments, Koramangala 5th Block, Bangalore - 560095', icon: Icons.Home },
-  { id: '2', label: 'Work', full: 'Prestige Tech Park, Tower B, Marathahalli, Bangalore - 560103', icon: Icons.Building2 },
-  { id: '3', label: 'Other', full: '45, Indiranagar 2nd Stage, 100 Feet Road, Bangalore - 560038', icon: Icons.MapPin },
-];
+import { Card, Button, EmptyState, Spinner } from '@/components/ui';
+import type { AddressRow } from '@/lib/types';
 
 export const AddressesScreen = () => {
-  const [addresses, setAddresses] = useState<Address[]>(SAVED);
+  const { customer } = useApp();
+  const [addresses, setAddresses] = useState<AddressRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState('');
   const [full, setFull] = useState('');
 
-  const add = () => {
-    if (!label.trim() || !full.trim()) return;
-    setAddresses([...addresses, { id: Date.now().toString(), label, full, icon: Icons.MapPin }]);
+  const load = () => {
+    if (!customer?.phone) {
+      setLoading(false);
+      return;
+    }
+    supabase
+      .from('addresses')
+      .select('*')
+      .eq('customer_phone', customer.phone)
+      .order('is_default', { ascending: false })
+      .then(({ data }) => {
+        setAddresses((data as AddressRow[]) || []);
+        setLoading(false);
+      });
+  };
+
+  useEffect(load, [customer]);
+
+  const add = async () => {
+    if (!label.trim() || !full.trim() || !customer?.phone) return;
+    const isFirst = addresses.length === 0;
+    if (isFirst) await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: full, is_default: true });
+    else await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: full, is_default: false });
     setLabel('');
     setFull('');
     setAdding(false);
+    load();
+  };
+
+  const remove = async (id: string) => {
+    await supabase.from('addresses').delete().eq('id', id);
+    load();
+  };
+
+  const setDefault = async (id: string) => {
+    if (!customer?.phone) return;
+    await supabase.from('addresses').update({ is_default: false }).eq('customer_phone', customer.phone);
+    await supabase.from('addresses').update({ is_default: true }).eq('id', id);
+    load();
   };
 
   return (
@@ -64,34 +89,36 @@ export const AddressesScreen = () => {
           </Card>
         )}
 
-        {addresses.length === 0 ? (
+        {loading ? (
+          <Spinner className="py-16" />
+        ) : addresses.length === 0 ? (
           <EmptyState icon={<Icons.MapPin size={28} />} title="No saved addresses" subtitle="Tap + to add your first address." />
         ) : (
           <div className="space-y-3">
-            {addresses.map((addr) => {
-              const Icon = addr.icon;
-              return (
-                <Card key={addr.id} className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                      <Icon size={20} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-gray-900">{addr.label}</p>
-                        <button
-                          onClick={() => setAddresses(addresses.filter((a) => a.id !== addr.id))}
-                          className="ml-auto text-[11px] font-semibold text-red-400"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{addr.full}</p>
-                    </div>
+            {addresses.map((addr) => (
+              <Card key={addr.id} className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                    {addr.label.toLowerCase().includes('work') ? <Icons.Building2 size={20} /> : addr.label.toLowerCase().includes('home') ? <Icons.Home size={20} /> : <Icons.MapPin size={20} />}
                   </div>
-                </Card>
-              );
-            })}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-gray-900">{addr.label}</p>
+                      {addr.is_default && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600">DEFAULT</span>}
+                      <button onClick={() => remove(addr.id)} className="ml-auto text-[11px] font-semibold text-red-400">
+                        Remove
+                      </button>
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{addr.full_address}</p>
+                    {!addr.is_default && (
+                      <button onClick={() => setDefault(addr.id)} className="mt-1.5 text-[11px] font-semibold text-emerald-600">
+                        Set as default
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </div>

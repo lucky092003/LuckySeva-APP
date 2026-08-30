@@ -13,6 +13,13 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Service" /><Spinner className="py-20" /></div>;
   if (!service) return <div className="flex flex-1 flex-col"><TopBar title="Service" /></div>;
 
+  const pros = professionals.filter((p) => p.reviews_count > 0);
+  const totalReviews = pros.reduce((s, p) => s + p.reviews_count, 0);
+  const avgRating = pros.length
+    ? (pros.reduce((s, p) => s + Number(p.rating) * p.reviews_count, 0) / totalReviews)
+    : 0;
+  const roundedAvg = Math.round(avgRating * 10) / 10;
+
   const cat = (service as unknown as { category: { color: string; icon: string; name: string } }).category;
   const color = cat?.color || '#10b981';
   const Icon = cat ? (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[cat.icon] || Icons.Circle : Icons.Circle;
@@ -94,23 +101,31 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
         {/* Reviews summary */}
         <div className="px-5 pt-5">
           <h3 className="mb-2 text-sm font-bold text-gray-900">Ratings & Reviews</h3>
-          <Card className="flex items-center gap-4 p-4">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">4.8</p>
-              <Stars rating={4.8} />
-              <p className="mt-1 text-[10px] text-gray-400">Based on 1,200+ reviews</p>
-            </div>
-            <div className="flex-1 space-y-1">
-              {[5, 4, 3, 2, 1].map((star) => (
-                <div key={star} className="flex items-center gap-2">
-                  <span className="w-3 text-[10px] text-gray-500">{star}</span>
-                  <div className="h-1.5 flex-1 rounded-full bg-gray-100">
-                    <div className="h-full rounded-full bg-amber-400" style={{ width: `${star >= 4 ? 80 - (5 - star) * 20 : 10}%` }} />
-                  </div>
+          {pros.length > 0 ? (
+            <>
+              <Card className="flex items-center gap-4 p-4">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-gray-900">{roundedAvg}</p>
+                  <Stars rating={avgRating} />
+                  <p className="mt-1 text-[10px] text-gray-400">Based on {totalReviews}+ reviews</p>
                 </div>
-              ))}
-            </div>
-          </Card>
+                <div className="flex-1 space-y-1">
+                  {pros.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <span className="w-3 text-[10px] text-gray-500">{p.rating}</span>
+                      <div className="h-1.5 flex-1 rounded-full bg-gray-100">
+                        <div className="h-full rounded-full bg-amber-400" style={{ width: `${Math.round(p.rating * 20)}%` }} />
+                      </div>
+                      <span className="w-10 text-right text-[10px] text-gray-400">{p.reviews_count} rev</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <p className="mt-1.5 text-[10px] text-gray-400">Aggregated from {pros.length} professionals offering this service.</p>
+            </>
+          ) : (
+            <Card className="p-4 text-center text-sm text-gray-500">No reviews yet.</Card>
+          )}
         </div>
       </div>
 

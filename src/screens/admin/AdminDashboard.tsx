@@ -61,6 +61,33 @@ export const AdminDashboard = () => {
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
+  const exportCsv = async () => {
+    const rows = bookings.map((b) => ({
+      id: b.id,
+      service: b.service_name,
+      customer: b.customer_name,
+      phone: b.customer_phone,
+      professional: b.professional_name,
+      date: b.scheduled_date,
+      time: b.scheduled_time,
+      amount: b.total_amount,
+      payment_method: b.payment_method,
+      payment_status: b.payment_status,
+      status: b.status,
+    }));
+    const headers = Object.keys(rows[0] || {});
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.join(','), ...rows.map((r) => headers.map((h) => esc((r as Record<string, unknown>)[h])).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `luckyseva-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    await supabase.from('audit_logs').insert({ action: 'export', detail: `Exported ${rows.length} bookings to CSV` });
+  };
+
   const revenue = bookings.filter((b) => b.status !== 'cancelled').reduce((s, b) => s + Number(b.total_amount), 0);
   const completed = bookings.filter((b) => b.status === 'completed').length;
   const active = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
@@ -110,7 +137,7 @@ export const AdminDashboard = () => {
           <p className="text-xs text-gray-500">{today}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">
+          <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">
             <Icons.Download size={14} /> Export
           </button>
           <button

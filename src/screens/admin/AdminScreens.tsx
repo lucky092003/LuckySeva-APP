@@ -28,6 +28,26 @@ const AdminHeader = ({
   </header>
 );
 
+const Modal = ({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h3 className="text-base font-bold text-gray-900">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icons.X size={20} /></button>
+      </div>
+      <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5">{children}</div>
+    </div>
+  </div>
+);
+
 export const AdminCustomers = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,15 +137,55 @@ export const AdminCustomers = () => {
 export const AdminProviders = () => {
   const [pros, setPros] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', category: 'other', price: '149', experience: '1' });
 
-  useEffect(() => {
-    supabase.from('professionals').select('*').order('rating', { ascending: false }).then(({ data }) => {
-      setPros((data as Professional[]) || []);
+  const load = () => {
+    Promise.all([
+      supabase.from('professionals').select('*').order('rating', { ascending: false }),
+      supabase.from('categories').select('*').order('sort_order'),
+    ]).then(([p, c]) => {
+      setPros((p.data as Professional[]) || []);
+      setCategories((c.data as Category[]) || []);
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(load, []);
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  const addProvider = async () => {
+    if (!form.name.trim()) return;
+    setAdding(true);
+    const cat = categories.find((c) => c.id === form.category);
+    const { data } = await supabase
+      .from('professionals')
+      .insert({
+        name: form.name.trim(),
+        category_slug: cat?.slug || 'other',
+        skills: [cat?.name || 'General'],
+        experience_years: Number(form.experience) || 1,
+        rating: 0,
+        reviews_count: 0,
+        completed_jobs: 0,
+        starting_price: Number(form.price) || 0,
+        avatar_url: 'https://i.pravatar.cc/200?img=68',
+        distance_km: 1.0,
+        status: 'available',
+        bio: `${cat?.name || 'Service'} professional on LuckySeva.`,
+        service_area: 'Bangalore',
+        phone: form.phone || null,
+      })
+      .select('id')
+      .maybeSingle();
+    await supabase.from('audit_logs').insert({ action: 'provider_add', detail: `Added provider ${form.name.trim()}` });
+    setAdding(false);
+    setShowAdd(false);
+    if (data) load();
+  };
 
   const available = pros.filter((p) => p.status === 'available').length;
 
@@ -135,7 +195,7 @@ export const AdminProviders = () => {
         title="Service Providers"
         subtitle={`${pros.length} professionals · ${available} available`}
         right={
-          <button className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600">
+          <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600">
             <Icons.Plus size={14} /> Add Provider
           </button>
         }
@@ -181,6 +241,42 @@ export const AdminProviders = () => {
           ))}
         </div>
       </div>
+
+      {showAdd && (
+        <Modal title="Add Service Provider" onClose={() => setShowAdd(false)}>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Full name</span>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Ramesh Yadav" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Phone (optional)</span>
+              <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit mobile" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Category</span>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100">
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Starting price (₹)</span>
+                <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value.replace(/[^\d]/g, '') })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Experience (yrs)</span>
+                <input value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value.replace(/[^\d]/g, '') })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+            </div>
+            <Button onClick={addProvider} disabled={adding || !form.name.trim()} className="w-full">
+              {adding ? 'Adding...' : 'Add Provider'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -190,8 +286,11 @@ export const AdminServices = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', category: '', price: '0', duration: '1 hr', popular: 'true' });
 
-  useEffect(() => {
+  const load = () => {
     Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('services').select('*'),
@@ -200,9 +299,38 @@ export const AdminServices = () => {
       setServices((s.data as Service[]) || []);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
+  useEffect(() => {
+    if (cats.length && !form.category) setForm((f) => ({ ...f, category: cats[0].id }));
+  }, [cats, form.category]);
+
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  const addService = async () => {
+    if (!form.name.trim() || !form.category) return;
+    setAdding(true);
+    const { data } = await supabase
+      .from('services')
+      .insert({
+        category_id: form.category,
+        name: form.name.trim(),
+        description: `${form.name.trim()} service provided by verified professionals.`,
+        starting_price: Number(form.price) || 0,
+        estimated_duration: form.duration,
+        popular: form.popular === 'true',
+      })
+      .select('id')
+      .maybeSingle();
+    await supabase.from('audit_logs').insert({ action: 'service_add', detail: `Added service ${form.name.trim()}` });
+    setAdding(false);
+    setShowAdd(false);
+    if (data) load();
+  };
 
   const filtered = activeCat ? services.filter((s) => s.category_id === activeCat) : services;
 
@@ -212,7 +340,7 @@ export const AdminServices = () => {
         title="Services & Categories"
         subtitle={`${cats.length} categories · ${services.length} services`}
         right={
-          <button className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600">
+          <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600">
             <Icons.Plus size={14} /> Add Service
           </button>
         }
@@ -271,6 +399,42 @@ export const AdminServices = () => {
           </table>
         </Card>
       </div>
+
+      {showAdd && (
+        <Modal title="Add Service" onClose={() => setShowAdd(false)}>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Service name</span>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Water Heater Repair" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Category</span>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100">
+                {cats.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Starting price (₹)</span>
+                <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value.replace(/[^\d]/g, '') })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Est. duration</span>
+                <input value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+            </div>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={form.popular === 'true'} onChange={(e) => setForm({ ...form, popular: e.target.checked ? 'true' : 'false' })} className="accent-emerald-500" />
+              <span className="text-sm text-gray-700">Mark as popular</span>
+            </label>
+            <Button onClick={addService} disabled={adding || !form.name.trim()} className="w-full">
+              {adding ? 'Adding...' : 'Add Service'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -377,18 +541,39 @@ export const AdminProfile = () => {
   const { setAdminAuthed, setRole } = useApp();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pros, setPros] = useState<Professional[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [audit, setAudit] = useState<{ id: string; action: string; detail: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<
+    { type: 'password' } | { type: 'notifications' } | { type: 'audit' } | { type: 'commission' } | { type: 'team' } | null
+  >(null);
+  const [pw, setPw] = useState('');
+  const [commission, setCommission] = useState('10');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     Promise.all([
       supabase.from('bookings').select('*'),
       supabase.from('professionals').select('*'),
-    ]).then(([b, p]) => {
+      supabase.from('admin_settings').select('*'),
+      supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(25),
+    ]).then(([b, p, s, a]) => {
       setBookings((b.data as Booking[]) || []);
       setPros((p.data as Professional[]) || []);
+      const map: Record<string, string> = {};
+      ((s.data as { key: string; value: string }[]) || []).forEach((r) => { map[r.key] = r.value; });
+      setSettings(map);
+      setCommission(map.admin_commission_pct || '10');
+      setName(map.admin_name || 'Super Admin');
+      setEmail(map.admin_email || '');
+      setAudit((a.data as typeof audit) || []);
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(load, []);
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
@@ -401,16 +586,38 @@ export const AdminProfile = () => {
     { label: 'Customers', value: `${new Set(bookings.map((b) => b.customer_phone)).size}`, icon: Icons.Users, grad: 'from-rose-500 to-pink-600' },
   ];
 
+  const saveSetting = async (key: string, value: string, action: string, detail: string) => {
+    setSaving(true);
+    await supabase.from('admin_settings').upsert({ key, value }, { onConflict: 'key' });
+    await supabase.from('audit_logs').insert({ action, detail });
+    setSaving(false);
+    load();
+  };
+
+  const changePassword = () => saveSetting('admin_password', pw, 'password_change', 'Admin password changed');
+  const changeCommission = () => saveSetting('admin_commission_pct', commission, 'commission_update', `Commission set to ${commission}%`);
+  const changeProfile = async () => {
+    await saveSetting('admin_name', name.trim(), 'profile_update', `Admin profile updated to ${name.trim()}`);
+    await supabase.from('admin_settings').upsert({ key: 'admin_email', value: email.trim() }, { onConflict: 'key' });
+    load();
+  };
+
+  const toggleNotify = async (key: string) => {
+    const next = settings[key] === 'on' ? 'off' : 'on';
+    await saveSetting(key, next, 'notify_toggle', `${key} turned ${next}`);
+  };
+
   const menuItems = [
-    { icon: Icons.KeyRound, label: 'Change Password', value: 'Last updated 3 months ago', desc: 'Update your admin credentials' },
-    { icon: Icons.Bell, label: 'Notifications', value: 'Email + Push', desc: 'Choose how the platform alerts you' },
-    { icon: Icons.ScrollText, label: 'Audit Log', value: 'View activity', desc: 'Track admin actions on the platform' },
-    { icon: Icons.Percent, label: 'Commission & Pricing', value: '3%–12%', desc: 'Configure platform commission tiers' },
-    { icon: Icons.Users, label: 'Team & Roles', value: '1 admin', desc: 'Manage admin team members' },
-    { icon: Icons.HeadphonesIcon, label: 'Help & Support', value: '', desc: 'Get help with the admin console' },
+    { icon: Icons.KeyRound, label: 'Change Password', value: 'admin123', desc: 'Update your admin credentials', onClick: () => setModal({ type: 'password' }) },
+    { icon: Icons.Bell, label: 'Notifications', value: settings.notify_email === 'on' && settings.notify_push === 'on' ? 'Email + Push' : 'Custom', desc: 'Choose how the platform alerts you', onClick: () => setModal({ type: 'notifications' }) },
+    { icon: Icons.ScrollText, label: 'Audit Log', value: `${audit.length} events`, desc: 'Track admin actions on the platform', onClick: () => setModal({ type: 'audit' }) },
+    { icon: Icons.Percent, label: 'Commission & Pricing', value: `${commission}%`, desc: 'Configure platform commission tiers', onClick: () => setModal({ type: 'commission' }) },
+    { icon: Icons.Users, label: 'Team & Roles', value: settings.admin_name || '1 admin', desc: 'Manage admin team members', onClick: () => setModal({ type: 'team' }) },
+    { icon: Icons.HeadphonesIcon, label: 'Help & Support', value: '', desc: 'Get help with the admin console', onClick: () => { window.location.href = 'mailto:support@luckyseva.com'; } },
   ];
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.from('audit_logs').insert({ action: 'logout', detail: 'Admin signed out' });
     setAdminAuthed(false);
     setRole('customer');
   };
@@ -424,14 +631,14 @@ export const AdminProfile = () => {
             <Card className="p-5">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-xl font-bold text-white">
-                  {ADMIN_CREDENTIALS.username[0].toUpperCase()}
+                  {settings.admin_name?.[0]?.toUpperCase() || 'A'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate text-base font-bold text-gray-900">LuckySeva Admin</p>
+                    <p className="truncate text-base font-bold text-gray-900">{settings.admin_name || 'Super Admin'}</p>
                     <Icons.BadgeCheck size={16} className="shrink-0 text-emerald-500" />
                   </div>
-                  <p className="text-xs text-gray-500">@{ADMIN_CREDENTIALS.username} · platform@luckyseva.in</p>
+                  <p className="text-xs text-gray-500">@{ADMIN_CREDENTIALS.username} · {settings.admin_email || 'platform@luckyseva.in'}</p>
                   <div className="mt-1.5">
                     <Badge tone="success">Super Admin</Badge>
                   </div>
@@ -469,14 +676,14 @@ export const AdminProfile = () => {
             </div>
 
             <Card className="mt-4 overflow-hidden">
-              <div className="border-b border-gray-100 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <h3 className="text-sm font-bold text-gray-900">Account Settings</h3>
               </div>
               <div className="divide-y divide-gray-50">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <button key={item.label} className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50/60">
+                    <button key={item.label} onClick={item.onClick} className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-gray-50/60">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-600">
                         <Icon size={18} />
                       </div>
@@ -494,6 +701,92 @@ export const AdminProfile = () => {
           </div>
         </div>
       </div>
+
+      {modal?.type === 'password' && (
+        <Modal title="Change Password" onClose={() => { setModal(null); setPw(''); }}>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">The current admin password is validated at login.</p>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">New password</span>
+              <input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Enter new admin password" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <Button onClick={changePassword} disabled={saving || !pw.trim()} className="w-full">{saving ? 'Saving...' : 'Update Password'}</Button>
+          </div>
+        </Modal>
+      )}
+      {modal?.type === 'commission' && (
+        <Modal title="Commission & Pricing" onClose={() => setModal(null)}>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">Default platform commission applied to provider earnings.</p>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Commission %</span>
+              <div className="flex items-center gap-2">
+                <input value={commission} onChange={(e) => setCommission(e.target.value.replace(/[^\d]/g, ''))} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+                <span className="text-sm font-bold text-gray-700">%</span>
+              </div>
+            </label>
+            <Button onClick={changeCommission} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save Commission'}</Button>
+          </div>
+        </Modal>
+      )}
+      {modal?.type === 'notifications' && (
+        <Modal title="Notifications" onClose={() => setModal(null)}>
+          <div className="space-y-3">
+            <ToggleRow label="Email notifications" value={settings.notify_email === 'off'} onChange={() => toggleNotify('notify_email')} />
+            <ToggleRow label="Push notifications" value={settings.notify_push === 'off'} onChange={() => toggleNotify('notify_push')} />
+          </div>
+        </Modal>
+      )}
+      {modal?.type === 'team' && (
+        <Modal title="Team & Roles" onClose={() => setModal(null)}>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Admin name</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Admin email</span>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <Button onClick={changeProfile} disabled={saving || !name.trim()} className="w-full">{saving ? 'Saving...' : 'Save Profile'}</Button>
+            <p className="text-center text-[11px] text-gray-400">Only super admin @{ADMIN_CREDENTIALS.username} has access.</p>
+          </div>
+        </Modal>
+      )}
+      {modal?.type === 'audit' && (
+        <Modal title="Audit Log" onClose={() => setModal(null)}>
+          {audit.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-500">No audit events yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {audit.map((a) => (
+                <div key={a.id} className="flex items-start gap-3 rounded-xl border border-gray-100 p-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                    <Icons.Activity size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-gray-900">{a.action}</p>
+                    <p className="text-[11px] text-gray-500">{a.detail}</p>
+                    <p className="text-[10px] text-gray-400">{new Date(a.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };
+
+const ToggleRow = ({ label, value, onChange }: { label: string; value: boolean; onChange: () => void }) => (
+  <div className="flex items-center justify-between rounded-xl border border-gray-100 p-4">
+    <p className="text-sm font-semibold text-gray-900">{label}</p>
+    <button
+      onClick={onChange}
+      className={`relative h-6 w-12 rounded-full transition-colors ${value ? 'bg-gray-300' : 'bg-emerald-500'}`}
+    >
+      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${value ? 'left-0.5' : 'left-[26px]'}`} />
+    </button>
+  </div>
+);

@@ -1,8 +1,7 @@
 import * as Icons from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useApp } from '@/lib/app-context';
-import { useProviderBookings } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { useProviderBookings, useProfessionalWithFallback } from '@/lib/hooks';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Badge } from '@/components/ui';
 import { inr, formatRelativeDay, formatDate } from '@/lib/format';
@@ -15,22 +14,12 @@ const TABS: { key: string; label: string }[] = [
 ];
 
 export const ProviderBookingsScreen = () => {
-  const { navigate } = useApp();
+  const { navigate, providerId } = useApp();
   const [tab, setTab] = useState('all');
-  const [proId, setProId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase
-      .from('professionals')
-      .select('id')
-      .order('rating', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => setProId((data as { id: string })?.id || null));
-  }, []);
+  const { professional } = useProfessionalWithFallback(providerId);
 
   const status = tab === 'all' ? undefined : tab;
-  const { bookings, loading } = useProviderBookings(proId, status);
+  const { bookings, loading } = useProviderBookings(professional?.id || null, status);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
