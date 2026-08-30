@@ -32,8 +32,8 @@ export const LogoMark = ({ size = 40 }: { size?: number }) => (
   </svg>
 );
 
-export const Wordmark = () => (
-  <span className="text-xl font-extrabold tracking-tight text-black">
+export const Wordmark = ({ className = 'text-black' }: { className?: string }) => (
+  <span className={`text-xl font-extrabold tracking-tight ${className}`}>
     Lucky<span className="text-orange-500">Seva</span>
   </span>
 );

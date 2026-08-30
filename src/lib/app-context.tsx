@@ -37,7 +37,8 @@ export type Screen =
   | { name: 'admin-customers' }
   | { name: 'admin-providers' }
   | { name: 'admin-services' }
-  | { name: 'admin-bookings' };
+  | { name: 'admin-bookings' }
+  | { name: 'admin-profile' };
 
 export type Customer = {
   name: string;
