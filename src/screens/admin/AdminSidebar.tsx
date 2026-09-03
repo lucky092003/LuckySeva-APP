@@ -57,7 +57,7 @@ export const AdminSidebar = () => {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto space-y-6 px-3 py-5">
+      <nav className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-3 py-5">
         <div>
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
             Main

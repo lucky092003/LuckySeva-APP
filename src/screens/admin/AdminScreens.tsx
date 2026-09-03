@@ -92,7 +92,7 @@ export const AdminCustomers = () => {
           </div>
         }
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         {customers.length === 0 ? (
           <EmptyState icon={<Icons.Users size={28} />} title="No customers yet" />
         ) : (
@@ -200,7 +200,7 @@ export const AdminProviders = () => {
           </button>
         }
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
           {pros.map((p) => (
             <Card key={p.id} className="p-4">
@@ -345,7 +345,7 @@ export const AdminServices = () => {
           </button>
         }
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="mb-4 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveCat(null)}
@@ -478,7 +478,7 @@ export const AdminBookings = () => {
           </div>
         }
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="mb-4 flex flex-wrap gap-2">
           {filters.map((f) => (
             <button
@@ -625,7 +625,7 @@ export const AdminProfile = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <AdminHeader title="Admin Profile" subtitle="Account & platform settings" />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <div className="space-y-4">
             <Card className="p-5">

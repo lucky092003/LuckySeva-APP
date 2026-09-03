@@ -61,7 +61,7 @@ export const ProfileScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Profile" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Profile card */}
         <Card className="flex items-center gap-4 p-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-xl font-bold text-white">
@@ -181,7 +181,7 @@ const Sheet = ({ title, children, onClose }: { title: string; children: React.Re
       <p className="flex-1 text-base font-bold text-gray-900">{title}</p>
       <button onClick={onClose} className="text-gray-400"><Icons.X size={22} /></button>
     </div>
-    <div className="flex flex-1 flex-col space-y-2.5 overflow-y-auto bg-gray-50 p-4">{children}</div>
+    <div className="flex flex-1 flex-col space-y-2.5 overflow-y-auto no-scrollbar bg-gray-50 p-4">{children}</div>
   </div>
 );
 

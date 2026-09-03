@@ -149,7 +149,7 @@ export const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((s) => {
             const Icon = s.icon;

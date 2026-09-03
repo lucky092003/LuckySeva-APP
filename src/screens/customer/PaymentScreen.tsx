@@ -63,7 +63,7 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Payment" />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Amount */}
         <div className="mb-4 flex flex-col items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white">
           <p className="text-sm text-white/80">Amount Payable</p>

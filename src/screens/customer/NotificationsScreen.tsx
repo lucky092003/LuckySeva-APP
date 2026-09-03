@@ -61,7 +61,7 @@ export const NotificationsScreen = () => {
           ) : undefined
         }
       />
-      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-3">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-3">
         {loading ? (
           <Spinner className="py-16" />
         ) : notifications.length === 0 ? (

@@ -68,7 +68,7 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Rate Your Experience" />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-6">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-6">
         <div className="flex flex-col items-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
             <Icons.Heart size={28} className="text-emerald-500" />

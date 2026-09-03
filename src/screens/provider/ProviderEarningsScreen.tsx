@@ -54,7 +54,7 @@ export const ProviderEarningsScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Earnings" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Balance card */}
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white">
           <p className="text-sm text-white/80">Available Balance</p>
@@ -125,7 +125,7 @@ export const ProviderEarningsScreen = () => {
             <button onClick={() => setShowStatement(false)} className="text-gray-400"><Icons.X size={22} /></button>
             <p className="flex-1 text-base font-bold text-gray-900">Statement</p>
           </div>
-          <div className="flex flex-1 flex-col overflow-y-auto space-y-2 p-4">
+          <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar space-y-2 p-4">
             {payouts.length > 0 && (
               <>
                 <h3 className="text-sm font-bold text-gray-900">Withdrawals</h3>

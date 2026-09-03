@@ -19,7 +19,7 @@ export const FavouritesScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Favourite Professionals" />
-      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
         {loading ? (
           <Spinner className="py-16" />
         ) : favourites.length === 0 ? (

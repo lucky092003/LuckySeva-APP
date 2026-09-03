@@ -29,7 +29,7 @@ export const CategoryScreen = ({ slug }: { slug: string }) => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title={category?.name || 'Category'} />
-      <div className="flex flex-1 flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
         {category && (
           <div className="flex items-center gap-3 bg-white px-5 py-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: color + '18' }}>

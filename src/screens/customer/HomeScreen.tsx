@@ -67,7 +67,7 @@ export const HomeScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
         <div className="flex items-center justify-between">
