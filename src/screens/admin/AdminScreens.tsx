@@ -43,7 +43,7 @@ const Modal = ({
         <h3 className="text-base font-bold text-gray-900">{title}</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icons.X size={20} /></button>
       </div>
-      <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5">{children}</div>
+      <div className="max-h-[70vh] space-y-3 overflow-y-auto no-scrollbar p-5">{children}</div>
     </div>
   </div>
 );

@@ -171,7 +171,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
           <div className="space-y-4">
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Select Date</h3>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                 {dates.map((d, i) => (
                   <button
                     key={i}

@@ -254,7 +254,7 @@ export const AdminDashboard = () => {
                 View all →
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 text-[10px] uppercase tracking-wider text-gray-400">
