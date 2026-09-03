@@ -67,7 +67,7 @@ export const SearchScreen = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {!q && (
           <>
             {/* Trending searches */}

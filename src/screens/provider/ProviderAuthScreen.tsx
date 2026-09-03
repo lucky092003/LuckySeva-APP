@@ -140,7 +140,7 @@ export const ProviderAuthScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-white px-6 pb-6 pt-10">
+    <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-white px-6 pb-6 pt-10">
       <div className="mb-8 flex flex-col items-center">
         <Logo size={64} />
         <h1 className="mt-4 text-center text-2xl font-extrabold text-gray-900">

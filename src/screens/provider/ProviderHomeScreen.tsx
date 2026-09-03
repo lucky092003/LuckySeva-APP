@@ -41,7 +41,7 @@ export const ProviderHomeScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Booking Requests" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
         {/* Earnings strip */}
         <div className="mb-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">

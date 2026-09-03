@@ -47,7 +47,7 @@ export const MyBookingsScreen = () => {
         ))}
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
         {loading ? (
           <Spinner className="py-16" />
         ) : bookings.length === 0 ? (

@@ -27,7 +27,7 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title={service.name} />
-      <div className="flex flex-1 flex-col overflow-y-auto pb-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar pb-4">
         {/* Hero */}
         <div className="relative px-5 py-6" style={{ backgroundColor: color + '14' }}>
           <div className="flex items-start gap-4">

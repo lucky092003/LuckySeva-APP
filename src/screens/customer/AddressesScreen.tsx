@@ -65,7 +65,7 @@ export const AddressesScreen = () => {
           </button>
         }
       />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {adding && (
           <Card className="mb-4 space-y-3 border-emerald-200 p-4">
             <h3 className="text-sm font-bold text-gray-900">Add New Address</h3>

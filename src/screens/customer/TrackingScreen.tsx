@@ -57,7 +57,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Track Booking" />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Status banner */}
         <div className={`mb-4 rounded-2xl p-4 text-white ${isCancelled ? 'bg-red-500' : isCompleted ? 'bg-emerald-600' : 'bg-gradient-to-r from-emerald-500 to-teal-600'}`}>
           <div className="flex items-center gap-3">

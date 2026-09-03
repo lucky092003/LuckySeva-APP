@@ -34,7 +34,7 @@ export const HelpScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Help & Support" />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Contact card */}
         <div className="mb-4 grid grid-cols-2 gap-3">
           <a href="tel:18002009876">
@@ -107,7 +107,7 @@ export const HelpScreen = () => {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto space-y-2 p-4">
+          <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar space-y-2 p-4">
             {tickets.length === 0 ? (
               <EmptyState icon={<Icons.MessageCircle size={26} />} title="Start a conversation" subtitle="Tell us how we can help." />
             ) : (

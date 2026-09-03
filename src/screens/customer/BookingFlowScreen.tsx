@@ -145,7 +145,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         ))}
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Service summary */}
         <Card className="mb-4 flex items-center gap-3 p-3">
           {professional && (

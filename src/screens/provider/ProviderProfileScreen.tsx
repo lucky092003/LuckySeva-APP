@@ -49,7 +49,7 @@ export const ProviderProfileScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="My Profile" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Profile header */}
         <Card className="flex items-center gap-4 p-4">
           <img src={pro.avatar_url} alt={pro.name} className="h-16 w-16 rounded-2xl bg-gray-100 object-cover" />
@@ -148,7 +148,7 @@ export const ProviderProfileScreen = () => {
               {sheet === 'services' ? 'Services Offered' : sheet === 'pricing' ? 'Pricing' : sheet === 'reviews' ? 'Ratings & Reviews' : sheet === 'bank' ? 'Bank Details' : 'Settings'}
             </p>
           </div>
-          <div className="flex flex-1 flex-col overflow-y-auto space-y-3 p-4">
+          <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar space-y-3 p-4">
             {sheet === 'services' && (
               services.length ? (
                 services.map((svc) => (

@@ -49,7 +49,7 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
           </button>
         }
       />
-      <div className="flex flex-1 flex-col overflow-y-auto pb-4">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar pb-4">
         {/* Profile header */}
         <div className="bg-white px-5 py-5">
           <div className="flex items-start gap-4">
