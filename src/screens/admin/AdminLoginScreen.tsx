@@ -3,6 +3,7 @@ import { Lock, User, Eye, EyeOff, ShieldCheck, LogOut, CheckCircle2 } from 'luci
 import { Logo, Wordmark } from '@/components/Logo';
 import { Button } from '@/components/ui';
 import { useApp, ADMIN_CREDENTIALS } from '@/lib/app-context';
+import { supabase } from '@/lib/supabase';
 
 export const AdminLoginScreen = () => {
   const { adminAuthed, setAdminAuthed, setRole, navigate } = useApp();
@@ -45,15 +46,22 @@ const AdminLoginForm = () => {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const canSubmit = username.trim() && password;
 
-  const handleLogin = () => {
-    if (
-      username.trim() === ADMIN_CREDENTIALS.username &&
-      password === ADMIN_CREDENTIALS.password
-    ) {
-      setError('');
+  const handleLogin = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError('');
+    const { data } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'admin_password')
+      .maybeSingle();
+    const dbPassword = (data as { value?: string } | null)?.value || ADMIN_CREDENTIALS.password;
+    setSubmitting(false);
+    if (username.trim() === ADMIN_CREDENTIALS.username && password === dbPassword) {
       setAdminAuthed(true);
       navigate({ name: 'admin-dashboard' });
     } else {
@@ -128,8 +136,8 @@ const AdminLoginForm = () => {
               </p>
             )}
 
-            <Button onClick={handleLogin} disabled={!canSubmit} className="w-full">
-              <ShieldCheck size={18} /> Sign in
+            <Button onClick={handleLogin} disabled={!canSubmit || submitting} className="w-full">
+              <ShieldCheck size={18} /> {submitting ? 'Signing in...' : 'Sign in'}
             </Button>
           </div>
         </div>

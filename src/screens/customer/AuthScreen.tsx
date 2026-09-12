@@ -27,8 +27,12 @@ export const AuthScreen = () => {
     setStep('otp');
   };
 
-  const verifyOtp = async () => {
+  const verifyOtp = async (code?: string) => {
     setError('');
+    if (!code || code.length !== 4) {
+      setError('Please enter the 4-digit OTP.');
+      return;
+    }
     const name = form.name.trim() || 'Aarav Sharma';
     const phone = form.phone;
     const email = mode === 'signup' ? form.email.trim() : '';

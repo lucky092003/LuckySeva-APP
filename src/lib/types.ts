@@ -75,7 +75,6 @@ export type Payout = {
 export type SupportTicket = {
   id: string;
   customer_phone: string;
-  subject: string;
   message: string;
   status: string;
   created_at: string;
@@ -92,6 +91,7 @@ export type AddressRow = {
 
 export type Review = {
   id: string;
+  booking_id: string | null;
   professional_id: string;
   customer_name: string;
   rating: number;

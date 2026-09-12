@@ -68,8 +68,12 @@ export const ProviderAuthScreen = () => {
     navigate({ name: 'provider-home' });
   };
 
-  const verifyOtp = async () => {
+  const verifyOtp = async (code?: string) => {
     setError('');
+    if (!code || code.length !== 4) {
+      setError('Please enter the 4-digit OTP.');
+      return;
+    }
     const name = form.name.trim();
     const phone = form.phone;
     try {
@@ -133,6 +137,10 @@ export const ProviderAuthScreen = () => {
         })
         .select('id')
         .maybeSingle();
+      await supabase.from('profiles').upsert(
+        { phone, name: 'Provider (Google)', email: '', location: form.serviceArea, role: 'provider' },
+        { onConflict: 'phone' }
+      );
       return signInAs((data as { id: string }) || null);
     } catch {
       setError('Could not sign you in. Please try again.');

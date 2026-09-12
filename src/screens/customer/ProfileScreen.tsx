@@ -124,7 +124,7 @@ export const ProfileScreen = () => {
           <Icons.ChevronRight size={18} />
         </button>
 
-        <Button variant="outline" onClick={() => { setCustomer(null); setRole('customer'); navigate({ name: 'splash' }); }} className="mt-4 w-full text-red-500">
+        <Button variant="outline" onClick={() => { setCustomer(null); setRole('customer'); }} className="mt-4 w-full text-red-500">
           <Icons.LogOut size={16} /> Logout
         </Button>
 

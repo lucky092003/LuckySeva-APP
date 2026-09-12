@@ -34,6 +34,7 @@ const weekRevenue = (bookings: Booking[], start: Date, out: number[]) => {
   end.setDate(end.getDate() + 7);
   bookings.forEach((b) => {
     if (b.status === 'cancelled') return;
+    if (b.payment_status === 'pending') return;
     const d = startOfDay(new Date(b.scheduled_date + 'T00:00:00'));
     if (d >= start && d < end) {
       const idx = WEEKDAY[d.getDay()];
@@ -88,7 +89,7 @@ export const AdminDashboard = () => {
     await supabase.from('audit_logs').insert({ action: 'export', detail: `Exported ${rows.length} bookings to CSV` });
   };
 
-  const revenue = bookings.filter((b) => b.status !== 'cancelled').reduce((s, b) => s + Number(b.total_amount), 0);
+  const revenue = bookings.filter((b) => b.status !== 'cancelled' && b.payment_status !== 'pending').reduce((s, b) => s + Number(b.total_amount), 0);
   const completed = bookings.filter((b) => b.status === 'completed').length;
   const active = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
   const today = new Date().toLocaleDateString('en-IN', {
