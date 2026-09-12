@@ -24,10 +24,19 @@ export const ProviderEarningsScreen = () => {
   const available = Math.max(totalEarnings - withdrawn, 0);
   const hasPendingWithdraw = payouts.some((p) => p.status === 'requested');
 
+  const startOfWeek = (d: Date) => {
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const monday = new Date(day);
+    monday.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+    return monday;
+  };
+  const weekStart = startOfWeek(new Date());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
   const thisWeek = completed
     .filter((b) => {
-      const diff = (new Date().getTime() - new Date(b.scheduled_date + 'T00:00:00').getTime()) / 86400000;
-      return diff >= 0 && diff <= 7;
+      const d = new Date(b.scheduled_date + 'T00:00:00');
+      return d >= weekStart && d < weekEnd;
     })
     .reduce((s, b) => s + Number(b.total_amount), 0);
 

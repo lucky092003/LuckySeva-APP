@@ -52,6 +52,9 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     if (!next) return;
     setUpdating(true);
     await supabase.from('bookings').update({ status: next }).eq('id', booking.id);
+    if (next === 'assigned') {
+      await insertBookingNotification(booking.customer_phone, 'provider', 'Provider Assigned', `${booking.professional_name} has accepted your ${booking.service_name} booking.`, booking.id);
+    }
     if (next === 'on_the_way') {
       await insertBookingNotification(booking.customer_phone, 'provider', 'Provider On The Way', `${booking.professional_name} is on the way to your location for ${booking.service_name}.`, booking.id);
     }

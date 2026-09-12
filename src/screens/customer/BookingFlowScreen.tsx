@@ -49,7 +49,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /><Spinner className="py-20" /></div>;
   if (!service) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /></div>;
 
-  const base = service.starting_price;
+  const base = professional ? (Number(professional.starting_price) || service.starting_price) : service.starting_price;
   const visitFee = 49;
   let discountAmount = 0;
   if (appliedCoupon) {

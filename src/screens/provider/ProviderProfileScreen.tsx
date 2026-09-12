@@ -132,7 +132,7 @@ export const ProviderProfileScreen = () => {
 
         <Button
           variant="outline"
-          onClick={() => { setProviderId(null); setRole('customer'); navigate({ name: 'splash' }); }}
+          onClick={() => { setProviderId(null); setRole('customer'); }}
           className="mt-4 w-full text-red-500"
         >
           <Icons.LogOut size={16} /> Logout

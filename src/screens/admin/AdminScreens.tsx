@@ -140,7 +140,7 @@ export const AdminProviders = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', category: 'other', price: '149', experience: '1' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', category: 'other', price: '149', experience: '1' });
 
   const load = () => {
     Promise.all([
@@ -178,6 +178,7 @@ export const AdminProviders = () => {
         bio: `${cat?.name || 'Service'} professional on LuckySeva.`,
         service_area: 'Bangalore',
         phone: form.phone || null,
+        email: form.email.trim() || null,
       })
       .select('id')
       .maybeSingle();
@@ -252,6 +253,10 @@ export const AdminProviders = () => {
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-gray-700">Phone (optional)</span>
               <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit mobile" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Email (optional)</span>
+              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="provider@email.com" type="email" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-gray-700">Category</span>
@@ -458,7 +463,7 @@ export const AdminBookings = () => {
   const tone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info', assigned: 'info', on_the_way: 'warning', started: 'warning', completed: 'success', cancelled: 'neutral',
   };
-  const totalRevenue = filtered.filter((b) => b.status !== 'cancelled').reduce((s, b) => s + Number(b.total_amount), 0);
+  const totalRevenue = filtered.filter((b) => b.status !== 'cancelled' && b.payment_status !== 'pending').reduce((s, b) => s + Number(b.total_amount), 0);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -577,7 +582,7 @@ export const AdminProfile = () => {
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
-  const revenue = bookings.filter((b) => b.status !== 'cancelled').reduce((s, b) => s + Number(b.total_amount), 0);
+  const revenue = bookings.filter((b) => b.status !== 'cancelled' && b.payment_status !== 'pending').reduce((s, b) => s + Number(b.total_amount), 0);
 
   const stats = [
     { label: 'Revenue', value: inr(revenue), icon: Icons.IndianRupee, grad: 'from-emerald-500 to-teal-600' },
@@ -608,7 +613,7 @@ export const AdminProfile = () => {
   };
 
   const menuItems = [
-    { icon: Icons.KeyRound, label: 'Change Password', value: 'admin123', desc: 'Update your admin credentials', onClick: () => setModal({ type: 'password' }) },
+    { icon: Icons.KeyRound, label: 'Change Password', value: settings.admin_password ? '••••••' : 'Set password', desc: 'Update your admin credentials', onClick: () => setModal({ type: 'password' }) },
     { icon: Icons.Bell, label: 'Notifications', value: settings.notify_email === 'on' && settings.notify_push === 'on' ? 'Email + Push' : 'Custom', desc: 'Choose how the platform alerts you', onClick: () => setModal({ type: 'notifications' }) },
     { icon: Icons.ScrollText, label: 'Audit Log', value: `${audit.length} events`, desc: 'Track admin actions on the platform', onClick: () => setModal({ type: 'audit' }) },
     { icon: Icons.Percent, label: 'Commission & Pricing', value: `${commission}%`, desc: 'Configure platform commission tiers', onClick: () => setModal({ type: 'commission' }) },

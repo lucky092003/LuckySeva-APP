@@ -18,7 +18,7 @@ export const ProviderHomeScreen = () => {
   const { professional } = useProfessionalWithFallback(providerId);
   const { bookings, loading, reload } = useProviderBookings(professional?.id || null);
 
-  const newRequests = bookings.filter((b) => b.status === 'confirmed' || b.status === 'assigned');
+  const newRequests = bookings.filter((b) => b.status === 'confirmed');
   const active = bookings.filter((b) => b.status === 'on_the_way' || b.status === 'started');
   const completed = bookings.filter((b) => b.status === 'completed');
   const todayCompleted = completed.filter((b) => isToday(b.scheduled_date));
