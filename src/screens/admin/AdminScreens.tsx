@@ -140,7 +140,7 @@ export const AdminProviders = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', category: 'other', price: '149', experience: '1' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', category: 'other', price: '149', experience: '1', serviceArea: '' });
 
   const load = () => {
     Promise.all([
@@ -172,11 +172,11 @@ export const AdminProviders = () => {
         reviews_count: 0,
         completed_jobs: 0,
         starting_price: Number(form.price) || 0,
-        avatar_url: 'https://i.pravatar.cc/200?img=68',
+        avatar_url: '',
         distance_km: 1.0,
         status: 'available',
         bio: `${cat?.name || 'Service'} professional on LuckySeva.`,
-        service_area: 'Bangalore',
+        service_area: form.serviceArea.trim() || '',
         phone: form.phone || null,
         email: form.email.trim() || null,
       })
@@ -265,6 +265,10 @@ export const AdminProviders = () => {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Service area</span>
+              <input value={form.serviceArea} onChange={(e) => setForm({ ...form, serviceArea: e.target.value })} placeholder="e.g. Indiranagar, Bangalore" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">

@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { supabase } from '@/lib/supabase';
+import { fetchCurrentLocation } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, EmptyState, Spinner } from '@/components/ui';
 import type { AddressRow } from '@/lib/types';
@@ -13,6 +14,21 @@ export const AddressesScreen = () => {
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState('');
   const [full, setFull] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState('');
+
+  const detectLocation = async () => {
+    setLocating(true);
+    setLocError('');
+    try {
+      const loc = await fetchCurrentLocation();
+      setFull((f) => (f ? f : loc.address));
+    } catch (e) {
+      setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const load = () => {
     if (!customer?.phone) {
@@ -82,6 +98,15 @@ export const AddressesScreen = () => {
               placeholder="Full address"
               className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             />
+            <button
+              onClick={detectLocation}
+              disabled={locating}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+            >
+              <Icons.LocateFixed size={14} />
+              {locating ? 'Fetching your location...' : 'Use my current location'}
+            </button>
+            {locError && <p className="text-xs text-red-500">{locError}</p>}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setAdding(false)} className="flex-1 py-2.5 text-xs">Cancel</Button>
               <Button onClick={add} disabled={!label.trim() || !full.trim()} className="flex-1 py-2.5 text-xs">Save Address</Button>
