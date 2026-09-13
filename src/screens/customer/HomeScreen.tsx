@@ -89,12 +89,32 @@ export const HomeScreen = () => {
     setTimeout(() => setSavedCoupon(null), 2000);
   };
 
+  const handleLocationTap = async () => {
+    if (customer?.location) {
+      navigate({ name: 'addresses' });
+      return;
+    }
+    setLocating(true);
+    try {
+      const loc = await fetchCurrentLocation();
+      if (customer?.phone) {
+        await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
+      }
+      if (customer) setCustomer({ ...customer, location: loc.address });
+      navigate({ name: 'addresses', detected: loc.address });
+    } catch {
+      navigate({ name: 'addresses' });
+    } finally {
+      setLocating(false);
+    }
+  };
+
   return (
     <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate({ name: 'addresses' })} className="flex items-center gap-1.5">
+          <button onClick={handleLocationTap} className="flex items-center gap-1.5">
             <MapPin size={16} />
             <span className="text-sm font-semibold">
               {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}

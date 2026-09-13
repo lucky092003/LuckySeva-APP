@@ -91,7 +91,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'reviews': return <ReviewScreen bookingId={screen.bookingId} />;
     case 'profile': return <ProfileScreen />;
     case 'help': return <HelpScreen />;
-    case 'addresses': return <AddressesScreen />;
+    case 'addresses': return <AddressesScreen detected={screen.detected} />;
     case 'favourites': return <FavouritesScreen />;
     default: return <HomeScreen />;
   }
