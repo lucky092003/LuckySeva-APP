@@ -575,7 +575,7 @@ export const AdminProfile = () => {
       ((s.data as { key: string; value: string }[]) || []).forEach((r) => { map[r.key] = r.value; });
       setSettings(map);
       setCommission(map.admin_commission_pct || '10');
-      setName(map.admin_name || 'Super Admin');
+      setName(map.admin_name || '');
       setEmail(map.admin_email || '');
       setAudit((a.data as typeof audit) || []);
       setLoading(false);
@@ -621,7 +621,7 @@ export const AdminProfile = () => {
     { icon: Icons.Bell, label: 'Notifications', value: settings.notify_email === 'on' && settings.notify_push === 'on' ? 'Email + Push' : 'Custom', desc: 'Choose how the platform alerts you', onClick: () => setModal({ type: 'notifications' }) },
     { icon: Icons.ScrollText, label: 'Audit Log', value: `${audit.length} events`, desc: 'Track admin actions on the platform', onClick: () => setModal({ type: 'audit' }) },
     { icon: Icons.Percent, label: 'Commission & Pricing', value: `${commission}%`, desc: 'Configure platform commission tiers', onClick: () => setModal({ type: 'commission' }) },
-    { icon: Icons.Users, label: 'Team & Roles', value: settings.admin_name || '1 admin', desc: 'Manage admin team members', onClick: () => setModal({ type: 'team' }) },
+    { icon: Icons.Users, label: 'Team & Roles', value: settings.admin_name || 'Not set', desc: 'Manage admin team members', onClick: () => setModal({ type: 'team' }) },
     { icon: Icons.HeadphonesIcon, label: 'Help & Support', value: '', desc: 'Get help with the admin console', onClick: () => { window.location.href = 'mailto:support@luckyseva.com'; } },
   ];
 
@@ -640,16 +640,16 @@ export const AdminProfile = () => {
             <Card className="p-5">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-xl font-bold text-white">
-                  {settings.admin_name?.[0]?.toUpperCase() || 'A'}
+                  {settings.admin_name?.[0]?.toUpperCase() || '@'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate text-base font-bold text-gray-900">{settings.admin_name || 'Super Admin'}</p>
+                    <p className="truncate text-base font-bold text-gray-900">{settings.admin_name || `@${ADMIN_CREDENTIALS.username}`}</p>
                     <Icons.BadgeCheck size={16} className="shrink-0 text-emerald-500" />
                   </div>
-                  <p className="text-xs text-gray-500">@{ADMIN_CREDENTIALS.username} · {settings.admin_email || 'platform@luckyseva.in'}</p>
+                  <p className="text-xs text-gray-500">@{ADMIN_CREDENTIALS.username}{settings.admin_email ? ` · ${settings.admin_email}` : ''}</p>
                   <div className="mt-1.5">
-                    <Badge tone="success">Super Admin</Badge>
+                    <Badge tone="success">Administrator</Badge>
                   </div>
                 </div>
               </div>

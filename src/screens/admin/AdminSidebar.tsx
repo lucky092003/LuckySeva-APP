@@ -79,11 +79,11 @@ export const AdminSidebar = () => {
       <div className="border-t border-white/10 p-4">
         <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/5 p-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 text-xs font-bold text-white">
-            A
+            @
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-white">Super Admin</p>
-            <p className="truncate text-[10px] text-gray-500">platform@luckyseva.in</p>
+            <p className="truncate text-xs font-semibold text-white">@{'admin'}</p>
+            <p className="truncate text-[10px] text-gray-500">Administrator</p>
           </div>
           <span className="h-2 w-2 rounded-full bg-emerald-400" title="Online" />
         </div>

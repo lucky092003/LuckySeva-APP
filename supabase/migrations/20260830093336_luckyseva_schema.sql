@@ -15,7 +15,7 @@
 3. Notes
 - Prices stored in INR rupees as numeric.
 - Booking status is a text enum: 'confirmed','assigned','on_the_way','started','completed','cancelled'.
-- Seeded with realistic Indian names, the 10 requested categories, ~21 services, ~12 professionals and a few reviews.
+- Seeded with the 10 service categories and ~21 services. Professionals and reviews are added live by users.
 */
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -192,31 +192,4 @@ JOIN (VALUES
   ('pest-control','Cockroach Treatment','Gel and spray treatment for cockroaches.',799,'1 hr',false),
   ('other','Smart Lock Installation','Install and configure smart door locks.',599,'1 hr',false)
 ) AS s(slug, name, description, price, duration, popular) ON c.slug = s.slug
-ON CONFLICT DO NOTHING;
-
-INSERT INTO professionals (name, category_slug, skills, experience_years, rating, reviews_count, completed_jobs, starting_price, avatar_url, distance_km, status, bio, service_area) VALUES
-('Rajesh Kumar','electrician',ARRAY['Wiring','Switchboards','Inverter'],8,4.8,213,540,149,'https://i.pravatar.cc/200?img=12',1.2,'available','Licensed electrician with 8 years experience in residential wiring and safety audits.','Koramangala, Indiranagar'),
-('Suresh Patel','plumber',ARRAY['Taps','Drainage','Bathroom fittings'],11,4.9,320,890,99,'https://i.pravatar.cc/200?img=13',2.4,'available','Expert plumber solving leaks and drainage issues across the city for over a decade.','HSR Layout, BTM'),
-('Imran Khan','ac-repair',ARRAY['Split AC','Window AC','Gas Refill'],6,4.7,156,410,499,'https://i.pravatar.cc/200?img=14',3.1,'busy','Certified AC technician specialising in servicing and gas refills.','Whitefield, Marathahalli'),
-('Anjali Sharma','cleaning',ARRAY['Deep cleaning','Sofa cleaning','Kitchen'],5,4.9,278,720,499,'https://i.pravatar.cc/200?img=45',1.8,'available','Thorough home cleaning specialist with attention to detail.','Jayanagar, JP Nagar'),
-('Mohammed Yusuf','carpenter',ARRAY['Furniture repair','Doors','Custom woodwork'],14,4.8,190,630,149,'https://i.pravatar.cc/200?img=15',4.2,'available','Master carpenter crafting and repairing furniture for 14 years.','Malleshwaram, Rajajinagar'),
-('Vikram Singh','painting',ARRAY['Interior','Exterior','Texture'],9,4.6,142,380,1999,'https://i.pravatar.cc/200?img=16',5.0,'available','Painter delivering smooth finishes and modern texture designs.','Electronic City, Bommanahalli'),
-('Priya Nair','beauty-salon',ARRAY['Haircut','Facial','Waxing','Spa'],7,4.9,305,840,199,'https://i.pravatar.cc/200?img=47',1.5,'available','Certified beautician offering premium salon services at home.','Indiranagar, Domlur'),
-('Deepak Reddy','appliance-repair',ARRAY['Washing machine','Microwave','Fridge'],10,4.7,168,520,299,'https://i.pravatar.cc/200?img=17',2.9,'busy','Appliance technician repairing all major brands at home.','Banashankari, Vijayanagar'),
-('Sunil Joshi','pest-control',ARRAY['Termite','Cockroach','General pest'],12,4.6,98,310,799,'https://i.pravatar.cc/200?img=18',6.3,'available','Pest control expert using safe, family-friendly treatments.','Hebbal, Yelahanka'),
-('Lakshmi Iyer','cleaning',ARRAY['Bathroom','Kitchen','Deep cleaning'],4,4.8,134,360,499,'https://i.pravatar.cc/200?img=48',2.0,'available','Detail-oriented cleaning professional trusted by families.','Koramangala, BTM'),
-('Arjun Mehta','electrician',ARRAY['Wiring','Smart home','Inverter'],6,4.5,87,240,149,'https://i.pravatar.cc/200?img=19',3.5,'available','Young electrician skilled in smart home setups and modern wiring.','HSR Layout, Bellandur'),
-('Ravi Teja','ac-repair',ARRAY['Split AC','Installation','Service'],5,4.7,112,300,499,'https://i.pravatar.cc/200?img=20',2.7,'available','AC technician known for quick installation and reliable servicing.','Marathahalli, Whitefield')
-ON CONFLICT DO NOTHING;
-
-INSERT INTO reviews (professional_id, customer_name, rating, comment)
-SELECT p.id, r.customer, r.rating, r.comment
-FROM professionals p
-JOIN (VALUES
-  ('Rajesh Kumar','Asha',5,'Very professional and finished the wiring quickly. Highly recommended.'),
-  ('Rajesh Kumar','Manoj',4,'Good work, arrived a bit late but fixed everything perfectly.'),
-  ('Suresh Patel','Kavya',5,'Solved a stubborn leak in minutes. Polite and tidy.'),
-  ('Anjali Sharma','Rohit',5,'Our flat looked brand new after deep cleaning. Amazing job.'),
-  ('Priya Nair','Sneha',5,'Best salon at home experience. Very hygienic and skilled.')
-) AS r(name, customer, rating, comment) ON p.name = r.name
 ON CONFLICT DO NOTHING;
