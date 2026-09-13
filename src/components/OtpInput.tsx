@@ -58,7 +58,7 @@ export const OtpSection = ({
         </p>
       </div>
 
-      <div className="flex justify-center gap-3">
+      <div className="grid w-full grid-cols-6 gap-2">
         {digits.map((d, i) => (
           <input
             key={i}
@@ -72,7 +72,7 @@ export const OtpSection = ({
             autoComplete="one-time-code"
             maxLength={6}
             aria-label={`OTP digit ${i + 1}`}
-            className={`h-16 w-14 rounded-2xl border-2 bg-gray-50 text-center text-2xl font-extrabold text-gray-900 transition-all focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
+            className={`h-14 w-full min-w-0 rounded-2xl border-2 bg-gray-50 text-center text-2xl font-extrabold text-gray-900 transition-all focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
               d ? 'border-emerald-500 bg-white' : 'border-gray-200 focus:border-emerald-500'
             }`}
           />
