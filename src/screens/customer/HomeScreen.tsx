@@ -1,4 +1,4 @@
-import { Search, MapPin, Bell, ChevronRight, Percent, Star, Calendar } from 'lucide-react';
+import { Search, MapPin, Bell, ChevronRight, Star, Calendar } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
@@ -9,12 +9,6 @@ import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
 import type { Professional, Booking } from '@/lib/types';
 
-const OFFERS = [
-  { title: 'Flat 20% off first booking', code: 'LUCKY20', grad: 'from-amber-400 to-orange-500' },
-  { title: '₹50 off on any service', code: 'SEVA50', grad: 'from-violet-500 to-purple-600' },
-  { title: '₹100 off cleaning services', code: 'CLEAN100', grad: 'from-sky-500 to-blue-600' },
-];
-
 export const HomeScreen = () => {
   const { navigate, customer, setCustomer } = useApp();
   const { categories, loading: catLoading } = useCategories();
@@ -23,8 +17,6 @@ export const HomeScreen = () => {
   const [topPros, setTopPros] = useState<Professional[]>([]);
   const [proLoading, setProLoading] = useState(true);
   const [recent, setRecent] = useState<Booking[]>([]);
-  const [offerIdx, setOfferIdx] = useState(0);
-  const [savedCoupon, setSavedCoupon] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
@@ -70,24 +62,6 @@ export const HomeScreen = () => {
       .limit(3)
       .then(({ data }) => setRecent((data as Booking[]) || []));
   }, [customer]);
-
-  // Auto-rotate offers
-  useEffect(() => {
-    const t = setInterval(() => setOfferIdx((i) => (i + 1) % OFFERS.length), 4000);
-    return () => clearInterval(t);
-  }, []);
-
-  const offer = OFFERS[offerIdx];
-
-  const copyCode = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      /* clipboard unavailable */
-    }
-    setSavedCoupon(code);
-    setTimeout(() => setSavedCoupon(null), 2000);
-  };
 
   const handleLocationTap = async () => {
     if (customer?.location) {
@@ -141,30 +115,6 @@ export const HomeScreen = () => {
           <Search size={18} />
           What service do you need?
         </button>
-      </div>
-
-      {/* Offers carousel */}
-      <div className="-mt-3 px-5">
-        <div className={`flex items-center gap-3 rounded-2xl bg-gradient-to-r ${offer.grad} p-4 text-white shadow-md transition-all duration-500`}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20">
-            <Percent size={22} />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold">{offer.title}</p>
-            <button
-              onClick={() => copyCode(offer.code)}
-              className="mt-0.5 text-xs text-white/90 underline"
-            >
-              {savedCoupon === offer.code ? 'Copied!' : `Use code ${offer.code}`}
-            </button>
-          </div>
-        </div>
-        {/* Dots */}
-        <div className="mt-2 flex justify-center gap-1.5">
-          {OFFERS.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all ${i === offerIdx ? 'w-5 bg-emerald-500' : 'w-1.5 bg-gray-300'}`} />
-          ))}
-        </div>
       </div>
 
       {/* Categories */}
