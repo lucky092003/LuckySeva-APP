@@ -20,8 +20,27 @@ export const ProviderHomeScreen = () => {
   const { professional, loading: proLoading } = useProfessionalWithFallback(providerId);
   const [requests, setRequests] = useState<Booking[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
+  const [declined, setDeclined] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!professional?.id) {
+      setDeclined(new Set());
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('booking_declines')
+      .select('booking_id')
+      .eq('professional_id', professional.id)
+      .then(({ data }) => {
+        if (!cancelled) setDeclined(new Set((data as { booking_id: string }[] || []).map((r) => r.booking_id)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [professional?.id, tick]);
 
   useEffect(() => {
     if (!professional?.id) {
@@ -85,6 +104,7 @@ export const ProviderHomeScreen = () => {
 
   const newRequests = requests.filter((b) => {
     if (b.professional_id === myId) return true;
+    if (declined.has(b.id)) return false;
     const km = distanceTo(b);
     if (km === null) return true;
     return km <= myRadius;
@@ -107,9 +127,12 @@ export const ProviderHomeScreen = () => {
   };
 
   const reject = async (b: Booking) => {
-    if (!window.confirm(`Reject the ${b.service_name} request from ${b.customer_name}?`)) return;
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', b.id);
-    await insertBookingNotification(b.customer_phone, 'alert', 'Request Declined', `Your ${b.service_name} booking could not be accepted. Please book again.`, b.id);
+    if (!professional?.id) return;
+    if (!window.confirm(`Decline the ${b.service_name} request from ${b.customer_name}? It stays available for other providers.`)) return;
+    await supabase.from('booking_declines').insert({ booking_id: b.id, professional_id: professional.id });
+    if (b.professional_id === professional.id) {
+      await supabase.from('bookings').update({ professional_id: null, professional_name: 'Auto-assign' }).eq('id', b.id);
+    }
     setTick((n) => n + 1);
   };
 
