@@ -137,15 +137,18 @@ export const AuthScreen = () => {
             placeholder="Location"
             value={form.location}
             onChange={(v) => setForm({ ...form, location: v })}
+            right={
+              <button
+                type="button"
+                onClick={fetchLocation}
+                disabled={locating}
+                title="Use my current location"
+                className="shrink-0 text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+              >
+                <LocateFixed size={18} className={locating ? 'animate-spin' : ''} />
+              </button>
+            }
           />
-          <button
-            onClick={fetchLocation}
-            disabled={locating}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
-          >
-            <LocateFixed size={16} />
-            {locating ? 'Fetching your location...' : 'Use my current location'}
-          </button>
           {locError && <p className="text-center text-xs text-red-500">{locError}</p>}
 
           <Button onClick={handleDetails} disabled={!canSubmit} className="w-full">
@@ -182,12 +185,14 @@ const Field = ({
   value,
   onChange,
   type = 'text',
+  right,
 }: {
   icon: React.ReactNode;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  right?: React.ReactNode;
 }) => (
   <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100">
     <span className="text-gray-400">{icon}</span>
@@ -198,5 +203,6 @@ const Field = ({
       onChange={(e) => onChange(e.target.value)}
       className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
     />
+    {right}
   </div>
 );
