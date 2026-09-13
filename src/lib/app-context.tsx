@@ -35,7 +35,7 @@ export type Screen =
   | { name: 'reviews'; bookingId: string }
   | { name: 'profile' }
   | { name: 'help' }
-  | { name: 'addresses' }
+  | { name: 'addresses'; detected?: string }
   | { name: 'favourites' }
   | { name: 'provider-auth' }
   | { name: 'provider-home' }
