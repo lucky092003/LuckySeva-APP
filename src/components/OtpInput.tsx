@@ -11,7 +11,7 @@ export const OtpSection = ({
   onVerify: (code: string) => void;
   onBack: () => void;
 }) => {
-  const [digits, setDigits] = useState<string[]>(['', '', '', '']);
+  const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -28,15 +28,15 @@ export const OtpSection = ({
   const setDigit = (i: number, v: string) => {
     const val = v.replace(/\D/g, '');
     if (val.length > 1) {
-      const arr = val.slice(0, 4).split('');
-      setDigits([...arr, ...Array(Math.max(0, 4 - arr.length)).fill('')]);
-      inputs.current[Math.min(arr.length, 3)]?.focus();
+      const arr = val.slice(0, 6).split('');
+      setDigits([...arr, ...Array(Math.max(0, 6 - arr.length)).fill('')]);
+      inputs.current[Math.min(arr.length, 5)]?.focus();
       return;
     }
     const next = [...digits];
     next[i] = val;
     setDigits(next);
-    if (val && i < 3) inputs.current[i + 1]?.focus();
+    if (val && i < 5) inputs.current[i + 1]?.focus();
   };
 
   const onKeyDown = (i: number, e: React.KeyboardEvent) => {
@@ -53,7 +53,7 @@ export const OtpSection = ({
           <PhoneCall size={24} />
         </div>
         <p className="text-center text-sm text-gray-500">
-          We sent a 4-digit code to{' '}
+          We sent a 6-digit code to{' '}
           <span className="font-semibold text-gray-900">+91 {formattedPhone || phone}</span>
         </p>
       </div>
@@ -70,7 +70,7 @@ export const OtpSection = ({
             onKeyDown={(e) => onKeyDown(i, e)}
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={4}
+            maxLength={6}
             aria-label={`OTP digit ${i + 1}`}
             className={`h-16 w-14 rounded-2xl border-2 bg-gray-50 text-center text-2xl font-extrabold text-gray-900 transition-all focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
               d ? 'border-emerald-500 bg-white' : 'border-gray-200 focus:border-emerald-500'
@@ -91,7 +91,7 @@ export const OtpSection = ({
           <button
             onClick={() => {
               setTimer(60);
-              setDigits(['', '', '', '']);
+              setDigits(['', '', '', '', '', '']);
               inputs.current[0]?.focus();
             }}
             className="font-semibold text-emerald-600 hover:text-emerald-700"

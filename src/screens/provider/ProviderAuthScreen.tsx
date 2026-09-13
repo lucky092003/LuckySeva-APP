@@ -69,8 +69,8 @@ export const ProviderAuthScreen = () => {
 
   const verifyOtp = async (code?: string) => {
     setError('');
-    if (!code || code.length !== 4) {
-      setError('Please enter the 4-digit OTP.');
+    if (!code || code.length !== 6) {
+      setError('Please enter the 6-digit OTP.');
       return;
     }
     const name = form.name.trim();
