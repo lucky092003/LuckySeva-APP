@@ -130,20 +130,15 @@ export const HomeScreen = () => {
                 <button
                   key={cat.id}
                   onClick={() => navigate({ name: 'category', slug: cat.slug })}
-                  className="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
+                  className="group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 p-3 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-lg md:p-4"
                 >
                   <div
-                    className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm"
-                    style={{ backgroundColor: cat.color + '18' }}
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-transform duration-200 group-hover:scale-110 md:h-16 md:w-16"
+                    style={{ background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)` }}
                   >
-                    <Icon size={26} />
+                    <Icon size={26} className="text-white" />
                   </div>
-                  <span
-                    className="text-center text-[10px] font-semibold leading-tight"
-                    style={{ color: cat.color }}
-                  >
-                    {cat.name}
-                  </span>
+                  <span className="text-center text-[11px] font-bold leading-tight text-gray-800 md:text-xs">{cat.name}</span>
                 </button>
               );
             })}
