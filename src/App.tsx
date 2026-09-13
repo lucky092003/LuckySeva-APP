@@ -1,6 +1,7 @@
 import { AppProvider, useApp } from '@/lib/app-context';
 import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
+import { WebTopNav } from '@/components/WebTopNav';
 import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 
 import { SplashScreen } from '@/screens/customer/SplashScreen';
@@ -64,6 +65,7 @@ function Router() {
 
   return (
     <PhoneShell>
+      <WebTopNav role={role} />
       <div key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')} className="flex flex-1 flex-col overflow-hidden screen-enter">
         {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
