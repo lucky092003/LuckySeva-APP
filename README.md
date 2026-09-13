@@ -34,6 +34,21 @@ and navigation.
 | Admin    | ✅ admin dashboard (web only)     | ❌ No                                       | ❌ No                                           |
 
 > Full publishing walkthrough: see [PUBLISHING.md](PUBLISHING.md).
+> In-depth feature & architecture docs: see [docs/FEATURES.md](docs/FEATURES.md).
+
+---
+
+## ✨ What's inside
+
+| Area | Highlights |
+|------|-----------|
+| Customer app | Browse & book services, structured addresses, saved-address picker, click-only location, OTP auth, favourites, notifications, payments, reviews, tracking |
+| Provider app | **Radius-based request matching** (set your location + service radius in km, get only in-radius requests with distance shown), accept/reject, job status flow, earnings & payouts, availability, pricing |
+| Admin (web) | Real-time dashboard, customers/providers/services/bookings tables, add & edit, export CSV, audit log, platform settings |
+| Matching engine | Customer request coords → Haversine distance → provider's `service_radius_km` decides visibility |
+
+> Full feature walkthrough (data model, booking lifecycle, radius matching, geocoding):
+> see [docs/FEATURES.md](docs/FEATURES.md).
 
 ---
 
