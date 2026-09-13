@@ -78,7 +78,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
     let latitude: number | null = coords?.latitude ?? null;
     let longitude: number | null = coords?.longitude ?? null;
     if (latitude === null || longitude === null) {
-      const geo = await geocodeAddress({ house: houseNo, city, state, pincode });
+      const geo = await geocodeAddress({ house: houseNo, area, city, state, pincode });
       if (geo) {
         latitude = geo.latitude;
         longitude = geo.longitude;

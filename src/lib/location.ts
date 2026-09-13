@@ -90,29 +90,55 @@ export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: numb
 
 export async function geocodeAddress(parts: {
   house: string;
+  area: string;
   city: string;
   state: string;
   pincode: string;
 }): Promise<{ latitude: number; longitude: number } | null> {
-  const params = new URLSearchParams({ format: 'json', limit: '1', countrycodes: 'in' });
-  const street = parts.house.trim();
+  const house = parts.house.trim();
+  const area = parts.area.trim();
   const city = parts.city.trim();
   const state = parts.state.trim();
   const pincode = parts.pincode.trim();
-  if (street) params.set('street', street);
-  if (city) params.set('city', city);
-  if (state) params.set('state', state);
-  if (pincode) params.set('postalcode', pincode);
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const latitude = Number.parseFloat(data[0].lat);
-      const longitude = Number.parseFloat(data[0].lon);
-      if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) return { latitude, longitude };
+
+  const segments = house.split(',').map((s) => s.trim()).filter(Boolean);
+  const housenumber = segments[0] || '';
+  const street = segments.length > 1 ? segments.slice(1).join(', ') : (segments.length === 1 ? segments[0] : '');
+
+  const mk = (extra: Record<string, string>) => {
+    const params = new URLSearchParams({ format: 'json', limit: '1', countrycodes: 'in' });
+    for (const key of Object.keys(extra)) {
+      if (extra[key]) params.set(key, extra[key]);
     }
-  } catch {
-    /* geocoding is best-effort */
+    return params;
+  };
+
+  const freeFull = [house, area, city, state, pincode].filter(Boolean).join(', ');
+  const attempts = [
+    ...(housenumber || street ? [mk({ housenumber, street, city, state, postalcode: pincode }), mk({ street: house, city, state, postalcode: pincode })] : []),
+    mk({ q: freeFull }),
+    mk({ q: [area, city, state, pincode].filter(Boolean).join(', ') }),
+    mk({ q: [city, state, pincode].filter(Boolean).join(', ') }),
+    mk({ q: pincode || city || state }),
+  ];
+
+  for (const params of attempts) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+      if (!res.ok) {
+        await new Promise((r) => setTimeout(r, 1100));
+        continue;
+      }
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const latitude = Number.parseFloat(data[0].lat);
+        const longitude = Number.parseFloat(data[0].lon);
+        if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) return { latitude, longitude };
+      }
+    } catch {
+      /* keep trying */
+    }
+    await new Promise((r) => setTimeout(r, 1100));
   }
   return null;
 }
