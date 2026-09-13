@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useProfessionalWithFallback, useReviews } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
+import { fetchCurrentLocation, areaFrom } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars, EmptyState } from '@/components/ui';
 import { inr } from '@/lib/format';
@@ -16,6 +17,9 @@ export const ProviderProfileScreen = () => {
   const [sheet, setSheet] = useState<'services' | 'pricing' | 'reviews' | 'bank' | 'settings' | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [price, setPrice] = useState('');
+  const [radius, setRadius] = useState('60');
+  const [updatingLoc, setUpdatingLoc] = useState(false);
+  const [savingRadius, setSavingRadius] = useState(false);
 
   useEffect(() => {
     if (!pro?.id) return;
@@ -27,10 +31,22 @@ export const ProviderProfileScreen = () => {
         setServices(((data || []) as unknown as { service: Service }[]).map((r) => r.service).filter(Boolean));
       });
     setPrice(String(pro.starting_price));
-  }, [pro?.id, pro?.starting_price]);
+    setRadius(String(pro.service_radius_km || 60));
+  }, [pro?.id, pro?.starting_price, pro?.service_radius_km]);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Profile" showBack={false} /><Spinner className="py-20" /></div>;
-  if (!pro) return <div className="flex flex-1 flex-col"><TopBar title="Profile" showBack={false} /></div>;
+  if (!pro)
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+        <TopBar title="My Profile" showBack={false} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+          <Icons.UserPlus size={40} className="text-gray-300" />
+          <p className="text-sm font-semibold text-gray-800">No provider account found</p>
+          <p className="text-xs text-gray-500">Sign in or create a provider account to continue.</p>
+          <Button onClick={() => navigate({ name: 'provider-auth' })}>Sign in as provider</Button>
+        </div>
+      </div>
+    );
 
   const toggleAvailability = async () => {
     if (!pro) return;
@@ -43,6 +59,43 @@ export const ProviderProfileScreen = () => {
   const savePricing = async () => {
     await supabase.from('professionals').update({ starting_price: Number(price) || 0 }).eq('id', pro.id);
     setSheet(null);
+    reload();
+  };
+
+  const updateLocation = async () => {
+    setUpdatingLoc(true);
+    try {
+      const loc = await fetchCurrentLocation();
+      await supabase
+        .from('professionals')
+        .update({
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          service_area: areaFrom(loc.details) || pro.service_area,
+        })
+        .eq('id', pro.id);
+    } catch {
+      /* location remains unchanged on failure */
+    }
+    setUpdatingLoc(false);
+    reload();
+  };
+
+  const saveRadius = async () => {
+    setSavingRadius(true);
+    await supabase
+      .from('professionals')
+      .update({ service_radius_km: Number(radius) || 60 })
+      .eq('id', pro.id);
+    setSavingRadius(false);
+    reload();
+  };
+
+  const applyRadius = async (km: number) => {
+    setRadius(String(km));
+    setSavingRadius(true);
+    await supabase.from('professionals').update({ service_radius_km: km }).eq('id', pro.id);
+    setSavingRadius(false);
     reload();
   };
 
@@ -89,14 +142,69 @@ export const ProviderProfileScreen = () => {
           </button>
         </Card>
 
-        {/* Service area */}
-        <Card className="mt-3 flex items-center gap-3 p-4">
-          <Icons.MapPin size={18} className="text-emerald-500" />
-          <div className="flex-1">
-            <p className="text-[11px] text-gray-400">Service Area</p>
-            <p className="text-sm font-semibold text-gray-900">{pro.service_area}</p>
+        {/* Service area = my location + radius */}
+        <Card className="mt-3 p-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Icons.MapPin size={18} />
+              {pro.latitude != null && pro.longitude != null && (
+                <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900">My Location</p>
+              <p className="truncate text-[11px] text-gray-500">
+                {pro.service_area || (pro.latitude != null && pro.longitude != null ? `${pro.latitude.toFixed(4)}, ${pro.longitude.toFixed(4)}` : 'No location set')}
+              </p>
+            </div>
+            <Button variant="outline" onClick={updateLocation} disabled={updatingLoc} className="shrink-0 py-1.5 text-[11px]">
+              <Icons.LocateFixed size={12} />
+              {updatingLoc ? 'Detecting...' : 'Update'}
+            </Button>
           </div>
-          <Icons.ChevronRight size={16} className="text-gray-300" />
+
+          <div className="mt-4 border-t border-gray-50 pt-3">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-900">Service Radius</p>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-600">{radius} km</span>
+            </div>
+            <p className="mb-3 text-[11px] text-gray-500">
+              Receive booking requests from customers within this radius of your location.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {[10, 25, 50, 75, 100].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => applyRadius(n)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                    String(n) === radius
+                      ? 'border-emerald-500 bg-emerald-500 text-white'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
+                  }`}
+                >
+                  {n} km
+                </button>
+              ))}
+              <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white py-1 pl-3 pr-1.5">
+                <input
+                  value={radius}
+                  onChange={(e) => setRadius(e.target.value.replace(/[^\d]/g, '').slice(0, 3))}
+                  inputMode="numeric"
+                  placeholder="?"
+                  aria-label="Custom service radius in km"
+                  className="w-9 text-center text-xs font-semibold text-gray-700 focus:outline-none"
+                />
+                <span className="text-[10px] text-gray-400">km</span>
+                <button
+                  onClick={saveRadius}
+                  disabled={savingRadius || String(pro.service_radius_km || 60) === radius}
+                  className="rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+                >
+                  {savingRadius ? '...' : 'Set'}
+                </button>
+              </div>
+            </div>
+          </div>
         </Card>
 
         {/* Menu */}

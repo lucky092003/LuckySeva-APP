@@ -3,7 +3,7 @@ import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useService, useProfessional, insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentLocation, applyDetails, splitAddress } from '@/lib/location';
+import { fetchCurrentLocation, applyDetails, splitAddress, geocodeAddress } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
 import { inr } from '@/lib/format';
@@ -37,6 +37,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
+  const [locCoords, setLocCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [savedAddrs, setSavedAddrs] = useState<AddressRow[]>([]);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
@@ -50,19 +51,19 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const address = [house, area, city, state, pincode].filter(Boolean).join(', ').trim();
   const hasAddress = house || area || city || state || pincode;
 
-  const fillFromDetails = (loc: { address: string; details: Record<string, string> }) => {
+  const fillFromDetails = (loc: { address: string; details: Record<string, string>; latitude: number; longitude: number }, overwrite = false) => {
+    setLocCoords({ latitude: loc.latitude, longitude: loc.longitude });
+    if (!overwrite && hasAddress) return;
     let parts = applyDetails(loc.details);
-    if (!hasAddress && !parts.houseNo && !parts.area && !parts.city) {
+    if (!parts.houseNo && !parts.area && !parts.city) {
       const fallback = splitAddress(loc.address);
       if (fallback.houseNo || fallback.area || fallback.city) parts = fallback;
     }
-    if (!hasAddress) {
-      setHouse(parts.houseNo || '');
-      setArea(parts.area || '');
-      setCity(parts.city || '');
-      setState(parts.state || '');
-      setPincode(parts.pincode || '');
-    }
+    setHouse(parts.houseNo || '');
+    setArea(parts.area || '');
+    setCity(parts.city || '');
+    setState(parts.state || '');
+    setPincode(parts.pincode || '');
   };
 
   useEffect(() => {
@@ -88,6 +89,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       setCity(parts.city || '');
       setState(parts.state || '');
       setPincode(parts.pincode || '');
+      setLocCoords(def.latitude != null && def.longitude != null ? { latitude: def.latitude, longitude: def.longitude } : null);
     }
   }, [step, savedAddrs, hasAddress]);
 
@@ -144,12 +146,23 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     }
     setSubmitting(true);
     const bookingDate = dates[date].toISOString().split('T')[0];
+    let latitude: number | null = locCoords?.latitude ?? null;
+    let longitude: number | null = locCoords?.longitude ?? null;
+    if (latitude === null || longitude === null) {
+      const geo = await geocodeAddress({ house, city, state, pincode });
+      if (geo) {
+        latitude = geo.latitude;
+        longitude = geo.longitude;
+      }
+    }
     const { data, error } = await supabase
       .from('bookings')
       .insert({
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_address: address,
+        latitude,
+        longitude,
         service_id: service.id,
         service_name: service.name,
         professional_id: professional?.id || null,
@@ -188,7 +201,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     setLocError('');
     try {
       const loc = await fetchCurrentLocation();
-      if (!hasAddress) fillFromDetails(loc);
+      fillFromDetails(loc, true);
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {
@@ -293,6 +306,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                           setCity(parts.city || '');
                           setState(parts.state || '');
                           setPincode(parts.pincode || '');
+                          setLocCoords(a.latitude != null && a.longitude != null ? { latitude: a.latitude, longitude: a.longitude } : null);
                         }}
                         className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
                       >

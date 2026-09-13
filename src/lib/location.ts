@@ -76,3 +76,43 @@ export function areaFrom(details: Record<string, string>): string {
     .slice(0, 2);
   return parts.join(', ');
 }
+
+export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+export async function geocodeAddress(parts: {
+  house: string;
+  city: string;
+  state: string;
+  pincode: string;
+}): Promise<{ latitude: number; longitude: number } | null> {
+  const params = new URLSearchParams({ format: 'json', limit: '1', countrycodes: 'in' });
+  const street = parts.house.trim();
+  const city = parts.city.trim();
+  const state = parts.state.trim();
+  const pincode = parts.pincode.trim();
+  if (street) params.set('street', street);
+  if (city) params.set('city', city);
+  if (state) params.set('state', state);
+  if (pincode) params.set('postalcode', pincode);
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const latitude = Number.parseFloat(data[0].lat);
+      const longitude = Number.parseFloat(data[0].lon);
+      if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) return { latitude, longitude };
+    }
+  } catch {
+    /* geocoding is best-effort */
+  }
+  return null;
+}

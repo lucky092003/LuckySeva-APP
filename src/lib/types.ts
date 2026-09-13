@@ -35,6 +35,9 @@ export type Professional = {
   service_area: string;
   phone: string | null;
   email: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  service_radius_km: number;
 };
 
 export type Profile = {
@@ -87,6 +90,8 @@ export type AddressRow = {
   full_address: string;
   is_default: boolean;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type Review = {
@@ -126,4 +131,6 @@ export type Booking = {
   payment_status: string;
   status: BookingStatus;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
 };

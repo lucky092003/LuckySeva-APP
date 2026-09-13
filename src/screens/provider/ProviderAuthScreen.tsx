@@ -43,6 +43,8 @@ export const ProviderAuthScreen = () => {
     profession: '',
     experience: '',
     serviceArea: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
@@ -53,7 +55,7 @@ export const ProviderAuthScreen = () => {
     try {
       const loc = await fetchCurrentLocation();
       const area = areaFrom(loc.details) || loc.address;
-      setForm((f) => ({ ...f, serviceArea: area }));
+      setForm((f) => ({ ...f, serviceArea: area, latitude: loc.latitude, longitude: loc.longitude }));
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {
@@ -118,6 +120,9 @@ export const ProviderAuthScreen = () => {
           status: 'available',
           bio: `${profession} professional serving ${form.serviceArea}.`,
           service_area: form.serviceArea,
+          latitude: form.latitude,
+          longitude: form.longitude,
+          service_radius_km: 60,
           phone,
           email: mode === 'signup' ? form.email.trim() : null,
         })
