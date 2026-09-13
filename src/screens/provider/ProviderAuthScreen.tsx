@@ -38,7 +38,7 @@ function categoryFor(profession: string): string {
 }
 
 export const ProviderAuthScreen = () => {
-  const { setRole, setProviderId, navigate } = useApp();
+  const { setProviderId, navigate } = useApp();
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [error, setError] = useState('');
@@ -64,7 +64,6 @@ export const ProviderAuthScreen = () => {
 
   const signInAs = async (pro: { id: string } | null) => {
     setProviderId(pro?.id || null);
-    setRole('provider');
     navigate({ name: 'provider-home' });
   };
 
