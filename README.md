@@ -3,7 +3,7 @@
 **LuckySeva — Trusted Services, At Your Doorstep**
 
 A mobile-first home services marketplace. Customers discover and book verified local
-professionals (plumbers, electricians, appliance repair, cleaning, and more); providers manage
+professionals (plumbers, electricians, appliance repair, cleaning, and more); partners manage
 their bookings and earnings; an admin dashboard oversees the platform.
 
 Built with **React + Vite + TypeScript + Tailwind CSS** and wrapped as a native mobile app with
@@ -18,6 +18,22 @@ Built with **React + Vite + TypeScript + Tailwind CSS** and wrapped as a native 
 | Mark     | Wrench icon on emerald rounded square |
 | Wordmark | `Lucky` in **black**, `Seva` in **orange** |
 | Tagline  | Trusted Services, At Your Doorstep |
+
+---
+
+## 🎯 One codebase, three role-locked builds
+
+Each build is locked to **exactly one role** via the `VITE_APP_ROLE` environment variable.
+There is **no runtime role switching** — a build only contains that role's screens, auth flow,
+and navigation.
+
+| Role     | Website (Vercel)                  | Android app                                 | iOS app                                        |
+|----------|-----------------------------------|---------------------------------------------|-------------------------------------------------|
+| Customer | ✅ customer site                  | ✅ LuckySeva (`com.luckyseva.app`)          | ✅ LuckySeva                                    |
+| Partner  | ✅ partner site                   | ✅ LuckySeva Partner (`com.luckyseva.partner`) | ✅ LuckySeva Partner                        |
+| Admin    | ✅ admin dashboard (web only)     | ❌ No                                       | ❌ No                                           |
+
+> Full publishing walkthrough: see [PUBLISHING.md](PUBLISHING.md).
 
 ---
 
@@ -40,11 +56,12 @@ npm install
 
 ### 2. Configure environment
 
-Copy `.env.example` to `.env` (or edit the existing `.env`) and set your Supabase credentials:
+Copy `.env.example` to `.env` (or edit the existing `.env`) and set your credentials:
 
 ```sh
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_APP_ROLE=customer        # customer | provider | admin
 ```
 
 ### 3. Run the web app (development)
@@ -53,8 +70,48 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 npm run dev
 ```
 
-Open the printed local URL (default `http://localhost:5173`) in your browser. The app renders
-inside a phone mockup in the browser and full-screen on real devices.
+Open the printed local URL (default `http://localhost:5173`) in your browser.
+The app renders full-screen like a website on web and full-screen on real devices.
+
+---
+
+## 🏗️ Building for a specific role
+
+Always set `VITE_APP_ROLE` for **both** `npm run build` and `npx cap sync`.
+
+PowerShell (Windows):
+
+```powershell
+$env:VITE_APP_ROLE="customer"   # or "provider" (admin has no native app)
+npm run build
+npx cap sync
+```
+
+macOS / Linux:
+
+```sh
+VITE_APP_ROLE=customer npm run build   # or "provider"
+VITE_APP_ROLE=customer npx cap sync
+```
+
+- `customer` → LuckySeva app (`com.luckyseva.app`)
+- `provider` → LuckySeva Partner app (`com.luckyseva.partner`)
+- `admin` → web only — do **not** run `cap sync`
+
+---
+
+## 🌐 Web (Vercel) — three separate sites
+
+One repo deployed as **three Vercel projects**, each with its own `VITE_APP_ROLE`:
+
+1. Create three projects from this repo on [Vercel](https://vercel.com).
+2. Add the same `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` to each.
+3. Set the role per project:
+   - Customer site → `VITE_APP_ROLE=customer`
+   - Partner site → `VITE_APP_ROLE=provider`
+   - Admin site → `VITE_APP_ROLE=admin`
+4. Build settings come from [`vercel.json`](vercel.json) — no manual config needed.
+5. Every push to `master` auto-deploys all three sites.
 
 ---
 
@@ -84,16 +141,18 @@ npx cap sync
 
 ### Android
 
-1. Open `android/` in Android Studio (`File > Open`).
-2. Run on an emulator or connected device, or build a signed bundle.
+1. Set the role (`customer` or `provider`) and run the build + sync above.
+2. Open `android/` in Android Studio (`File > Open`).
+3. Run on an emulator or connected device, or build a signed bundle.
 
 ### iOS (requires macOS + Xcode)
 
-1. Open `ios/App/App.xcworkspace` in Xcode.
-2. Select your Team under `Signing & Capabilities` (requires an Apple Developer account).
-3. Choose a simulator or a device and run.
+1. Set the role (`customer` or `provider`) and run the build + sync above.
+2. Open `ios/App/App.xcworkspace` in Xcode.
+3. Select your Team under `Signing & Capabilities` (requires an Apple Developer account).
+4. Choose a simulator or a device and run.
 
-> See [PUBLISHING.md](PUBLISHING.md) for the full app-store publishing guide.
+> See [PUBLISHING.md](PUBLISHING.md) for the full app-store & Vercel publishing guide.
 
 ---
 
@@ -105,13 +164,14 @@ npx cap sync
 ├── public/                  # Static assets (favicon)
 ├── src/
 │   ├── components/          # Shared UI (Logo, PhoneShell, BottomNav, ui)
-│   ├── lib/                 # App context, Supabase client, types, helpers
+│   ├── lib/                 # App context (APP_ROLE), Supabase client, types, helpers
 │   └── screens/
 │       ├── customer/        # Customer-facing screens
-│       ├── provider/        # Provider-facing screens
-│       └── admin/           # Admin dashboard screens
+│       ├── provider/        # Partner-facing screens
+│       └── admin/           # Admin dashboard screens (web only)
 ├── supabase/migrations/     # Supabase SQL schema + seed data
-├── capacitor.config.ts      # Capacitor config
+├── capacitor.config.ts      # Capacitor config (role-aware app id/name)
+├── vercel.json              # Vercel build settings
 └── index.html               # HTML entry
 ```
 
