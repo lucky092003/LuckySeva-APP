@@ -123,7 +123,7 @@ export const HomeScreen = () => {
         {catLoading ? (
           <Spinner className="py-8" />
         ) : (
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-3 md:grid-cols-8 md:gap-5">
             {categories.map((cat) => {
               const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[cat.icon] || Icons.Circle;
               return (
@@ -157,7 +157,7 @@ export const HomeScreen = () => {
         {svcLoading ? (
           <Spinner className="py-8" />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {popularServices.slice(0, 4).map((svc) => {
               const cat = (svc as unknown as { category: { color: string; icon: string; name: string } }).category;
               const color = cat?.color || '#10b981';
@@ -213,7 +213,7 @@ export const HomeScreen = () => {
         {proLoading ? (
           <Spinner className="py-6" />
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+          <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar md:flex-wrap md:overflow-visible">
             {topPros.map((pro) => {
               const cat = categories.find((c) => c.slug === pro.category_slug);
               return (

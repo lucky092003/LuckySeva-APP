@@ -1,5 +1,6 @@
 import { Home, CalendarCheck, LayoutGrid, User } from 'lucide-react';
 import { useApp, Screen } from '@/lib/app-context';
+import { isNative } from '@/lib/native';
 
 const tabs: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: 'Home', icon: Home, screen: { name: 'home' } },
@@ -21,9 +22,10 @@ export const BottomNav = () => {
 
   const items = role === 'provider' ? providerTabs : tabs;
   const activeName = screen.name;
+  const hideOnDesktop = isNative ? '' : ' md:hidden';
 
   return (
-    <div className="flex shrink-0 items-stretch justify-around border-t border-gray-100 bg-white px-[max(0.5rem,env(safe-area-inset-left))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5">
+    <div className={`flex shrink-0 items-stretch justify-around border-t border-gray-100 bg-white px-[max(0.5rem,env(safe-area-inset-left))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
