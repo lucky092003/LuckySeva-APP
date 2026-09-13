@@ -25,11 +25,11 @@ export const WebTopNav = ({ role }: { role: Role }) => {
   const activeName = screen.name;
 
   return (
-    <>
-      <nav className="hidden shrink-0 items-center justify-between gap-4 bg-gradient-to-r from-emerald-100 via-emerald-50 to-teal-100 px-6 py-3 md:flex">
+    <div className="sticky top-0 z-50">
+      <nav className="hidden shrink-0 items-center justify-between gap-4 bg-gradient-to-r from-emerald-100 via-emerald-50 to-teal-100 px-5 py-2 md:flex">
         <button onClick={() => navigate(items[0].screen)} className="flex items-center gap-2">
-          <Logo size={32} />
-          <span className="text-xl font-extrabold tracking-tight">
+          <Logo size={36} />
+          <span className="text-lg font-extrabold tracking-tight">
             <span className="text-black">Lucky</span>
             <span className="text-orange-500">Seva</span>
           </span>
@@ -52,6 +52,6 @@ export const WebTopNav = ({ role }: { role: Role }) => {
         </div>
       </nav>
       <div className="hidden h-0.5 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500 md:block" />
-    </>
+    </div>
   );
 };
