@@ -158,21 +158,30 @@ export const HomeScreen = () => {
               const color = cat?.color || '#10b981';
               const Icon = cat ? (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[cat.icon] || Icons.Circle : Icons.Circle;
               return (
-                <Card
+                <button
                   key={svc.id}
                   onClick={() => navigate({ name: 'service', id: svc.id })}
-                  className="overflow-hidden p-3.5"
+                  className="group relative overflow-hidden rounded-2xl border border-gray-100 p-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-100 hover:shadow-2xl"
+                  style={{ background: `linear-gradient(150deg, ${color}30 0%, ${color}0d 45%, #ffffff 100%)` }}
                 >
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: color + '18' }}>
-                    <Icon size={20} />
+                  <div
+                    className="pointer-events-none absolute -right-3 -top-3 opacity-[0.14] transition-transform duration-300 group-hover:rotate-[-10deg] group-hover:scale-110"
+                    style={{ color }}
+                  >
+                    <Icon size={52} />
                   </div>
-                  <p className="text-sm font-bold leading-snug text-gray-900">{svc.name}</p>
-                  <p className="mt-1 text-[11px] text-gray-500">{svc.estimated_duration}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm font-bold text-emerald-600">{inr(svc.starting_price)}</span>
-                    <span className="text-[10px] text-gray-400">onwards</span>
+                  <div className="relative">
+                    <div className="mb-2.5 flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg ring-2 ring-white/50" style={{ background: `linear-gradient(135deg, ${color}, ${color}c0)` }}>
+                      <Icon size={22} className="text-white" />
+                    </div>
+                    <p className="text-sm font-extrabold leading-snug text-gray-900">{svc.name}</p>
+                    <p className="mt-0.5 text-[11px] text-gray-500">{svc.estimated_duration}</p>
+                    <div className="mt-2.5 flex items-center justify-between">
+                      <span className="text-base font-extrabold text-emerald-600">{inr(svc.starting_price)}</span>
+                      <span className="rounded-full bg-emerald-50/80 px-2 py-0.5 text-[9px] font-semibold text-emerald-600">onwards</span>
+                    </div>
                   </div>
-                </Card>
+                </button>
               );
             })}
           </div>
