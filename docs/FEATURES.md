@@ -75,7 +75,8 @@ plus `latitude` / `longitude` (captured from GPS or geocoding).
 
 ### Supporting tables
 `profiles`, `reviews`, `favourites`, `notifications`, `support_tickets`, `payouts`,
-`admin_settings`, `audit_logs`, `professional_services`.
+`admin_settings`, `audit_logs`, `professional_services`, `booking_declines`
+(per-provider decline tracker: `booking_id`, `professional_id`).
 
 ---
 
@@ -92,7 +93,9 @@ confirmed → assigned → on_the_way → started → completed
 - **assigned** — accepted by a provider (also set immediately for prepaid online
   bookings).
 - **on_the_way / started / completed** — advanced by the provider in the booking detail.
-- **cancelled** — provider rejects or customer cancels.
+- **cancelled** — the customer cancels. **A provider declining does not cancel** the
+  booking: it records a per-provider decline (`booking_declines`) so the request stays
+  visible to the other providers.
 
 ---
 
@@ -129,6 +132,19 @@ show if:
 
 Each request card shows `X km away` + an **IN RADIUS** badge when computable.
 The feed refreshes automatically every **15 seconds** (and after accept/reject).
+
+### Many providers, one request
+When several providers in the same area see an open request, the state is managed so
+that *accepted* removes it everywhere, but *declined* is **per-provider**:
+
+- **Accept** → booking becomes `assigned` with `professional_id` set → it stops being
+  `confirmed`, so it disappears from **every** provider's "New Requests". No double-accept.
+- **Reject / Decline** → a row is inserted into `booking_declines`
+  (`booking_id`, `professional_id`); the booking status is **unchanged**, so the other
+  providers still see it. Only the declining provider filters it out of their feed.
+- For a request that was created directly for a specific provider, declining also resets
+  `professional_id`/`professional_name` back to `Auto-assign`, turning it into an open
+  request that other providers in radius can accept.
 
 ### Example
 Provider located in Faridabad with `service_radius_km = 60`:

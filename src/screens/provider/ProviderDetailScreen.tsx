@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
-  const { back } = useApp();
+  const { back, providerId } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -76,8 +76,14 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
   const reject = async () => {
     if (!booking) return;
+    if (!window.confirm(`Decline the ${booking.service_name} request? It goes back to other providers.`)) return;
     setUpdating(true);
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id);
+    if (providerId) {
+      await supabase.from('booking_declines').insert({ booking_id: booking.id, professional_id: providerId });
+    }
+    if (booking.professional_id === providerId) {
+      await supabase.from('bookings').update({ professional_id: null, professional_name: 'Auto-assign' }).eq('id', booking.id);
+    }
     setUpdating(false);
     back();
   };
