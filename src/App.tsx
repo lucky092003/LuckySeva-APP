@@ -1,6 +1,6 @@
 import { AppProvider, useApp } from '@/lib/app-context';
 import { PhoneShell } from '@/components/PhoneShell';
-import { BottomNav, RoleSwitcher } from '@/components/BottomNav';
+import { BottomNav } from '@/components/BottomNav';
 import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 
 import { SplashScreen } from '@/screens/customer/SplashScreen';
@@ -126,7 +126,6 @@ export default function App() {
   return (
     <AppProvider>
       <Router />
-      <RoleSwitcher />
     </AppProvider>
   );
 }

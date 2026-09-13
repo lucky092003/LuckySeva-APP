@@ -7,6 +7,16 @@ export const ADMIN_CREDENTIALS = {
   password: 'admin123',
 };
 
+// Each build targets exactly ONE role (set via VITE_APP_ROLE at build time).
+// A build for a role contains only that role's screens — no runtime role switching.
+//   customer -> web + LuckySeva app (com.luckyseva.app)
+//   provider -> web + LuckySeva Partner app (com.luckyseva.partner)
+//   admin    -> web only
+export const APP_ROLE: Role =
+  import.meta.env.VITE_APP_ROLE === 'provider' ? 'provider'
+  : import.meta.env.VITE_APP_ROLE === 'admin' ? 'admin'
+  : 'customer';
+
 export type Screen =
   | { name: 'splash' }
   | { name: 'auth' }
@@ -71,7 +81,6 @@ function save(key: string, value: unknown) {
 
 type AppState = {
   role: Role;
-  setRole: (r: Role) => void;
   screen: Screen;
   navigate: (s: Screen) => void;
   back: () => void;
@@ -85,12 +94,23 @@ type AppState = {
 
 const AppContext = createContext<AppState | null>(null);
 
+const initialCustomer = load<Customer>(LS_CUSTOMER, null);
+const initialProviderId = load<string | null>(LS_PROVIDER, null);
+const initialAdminAuthed = load<boolean>(LS_ADMIN, false);
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [role, setRoleState] = useState<Role>('customer');
-  const [stack, setStack] = useState<Screen[]>([{ name: 'splash' }]);
-  const [customer, setCustomerState] = useState<Customer>(load<Customer>(LS_CUSTOMER, null));
-  const [providerId, setProviderIdState] = useState<string | null>(load<string | null>(LS_PROVIDER, null));
-  const [adminAuthed, setAdminAuthedState] = useState<boolean>(load<boolean>(LS_ADMIN, false));
+  const [stack, setStack] = useState<Screen[]>(() => {
+    if (APP_ROLE === 'provider') {
+      return [{ name: initialProviderId ? 'provider-home' : 'provider-auth' }];
+    }
+    if (APP_ROLE === 'admin') {
+      return [{ name: initialAdminAuthed ? 'admin-dashboard' : 'admin-auth' }];
+    }
+    return [{ name: 'splash' }];
+  });
+  const [customer, setCustomerState] = useState<Customer>(initialCustomer);
+  const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);
+  const [adminAuthed, setAdminAuthedState] = useState<boolean>(initialAdminAuthed);
 
   const setCustomer = useCallback((c: Customer) => {
     setCustomerState(c);
@@ -122,25 +142,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
   }, []);
 
-  const setRole = useCallback(
-    (r: Role) => {
-      setRoleState(r);
-      if (r === 'customer') {
-        setStack([{ name: 'splash' }]);
-      } else if (r === 'provider') {
-        setStack([{ name: providerId ? 'provider-home' : 'provider-auth' }]);
-      } else {
-        setStack([{ name: adminAuthed ? 'admin-dashboard' : 'admin-auth' }]);
-      }
-    },
-    [providerId, adminAuthed]
-  );
-
   return (
     <AppContext.Provider
       value={{
-        role,
-        setRole,
+        role: APP_ROLE,
         screen,
         navigate,
         back,

@@ -36,11 +36,11 @@ const AdminNavItem = ({ item, active }: { item: NavItem; active: boolean }) => {
 };
 
 export const AdminSidebar = () => {
-  const { screen, setAdminAuthed, setRole } = useApp();
+  const { screen, setAdminAuthed, navigate } = useApp();
 
   const logout = () => {
     setAdminAuthed(false);
-    setRole('customer');
+    navigate({ name: 'admin-auth' });
   };
 
   const isActive = (s: Screen) => screen.name === s.name;

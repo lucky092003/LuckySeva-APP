@@ -543,7 +543,7 @@ export const AdminBookings = () => {
 };
 
 export const AdminProfile = () => {
-  const { setAdminAuthed, setRole } = useApp();
+  const { setAdminAuthed, navigate } = useApp();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pros, setPros] = useState<Professional[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -624,7 +624,7 @@ export const AdminProfile = () => {
   const logout = async () => {
     await supabase.from('audit_logs').insert({ action: 'logout', detail: 'Admin signed out' });
     setAdminAuthed(false);
-    setRole('customer');
+    navigate({ name: 'admin-auth' });
   };
 
   return (

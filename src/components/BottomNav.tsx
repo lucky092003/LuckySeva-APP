@@ -1,5 +1,5 @@
 import { Home, CalendarCheck, LayoutGrid, User } from 'lucide-react';
-import { useApp, Screen, Role } from '@/lib/app-context';
+import { useApp, Screen } from '@/lib/app-context';
 
 const tabs: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: 'Home', icon: Home, screen: { name: 'home' } },
@@ -44,32 +44,6 @@ export const BottomNav = () => {
           </button>
         );
       })}
-    </div>
-  );
-};
-
-export const RoleSwitcher = () => {
-  const { role, setRole } = useApp();
-  const roles: { key: Role; label: string }[] = [
-    { key: 'customer', label: 'Customer' },
-    { key: 'provider', label: 'Provider' },
-    { key: 'admin', label: 'Admin' },
-  ];
-  return (
-    <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
-      <div className="flex items-center gap-1 rounded-full border border-gray-200 bg-white/90 p-1 shadow-lg backdrop-blur">
-        {roles.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRole(r.key)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-              role === r.key ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
     </div>
   );
 };

@@ -14,7 +14,7 @@ const PAYMENT_METHODS = [
 ];
 
 export const ProfileScreen = () => {
-  const { customer, setCustomer, navigate, setRole } = useApp();
+  const { customer, setCustomer, navigate } = useApp();
   const { bookings } = useBookings('completed', customer?.phone || undefined);
   const { favourites } = useFavourites(customer?.phone || null);
   const { unread } = useUnreadNotifications(customer?.phone || null);
@@ -124,7 +124,7 @@ export const ProfileScreen = () => {
           <Icons.ChevronRight size={18} />
         </button>
 
-        <Button variant="outline" onClick={() => { setCustomer(null); setRole('customer'); }} className="mt-4 w-full text-red-500">
+        <Button variant="outline" onClick={() => { setCustomer(null); navigate({ name: 'auth' }); }} className="mt-4 w-full text-red-500">
           <Icons.LogOut size={16} /> Logout
         </Button>
 

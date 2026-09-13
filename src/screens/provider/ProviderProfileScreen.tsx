@@ -9,7 +9,7 @@ import { inr } from '@/lib/format';
 import type { Service } from '@/lib/types';
 
 export const ProviderProfileScreen = () => {
-  const { setRole, setProviderId, navigate, providerId } = useApp();
+  const { setProviderId, navigate, providerId } = useApp();
   const { professional: pro, loading, reload } = useProfessionalWithFallback(providerId);
   const { reviews, loading: revLoading } = useReviews(pro?.id || null);
   const [updatingAvail, setUpdatingAvail] = useState(false);
@@ -132,7 +132,7 @@ export const ProviderProfileScreen = () => {
 
         <Button
           variant="outline"
-          onClick={() => { setProviderId(null); setRole('customer'); }}
+          onClick={() => { setProviderId(null); navigate({ name: 'provider-auth' }); }}
           className="mt-4 w-full text-red-500"
         >
           <Icons.LogOut size={16} /> Logout

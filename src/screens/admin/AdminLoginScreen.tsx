@@ -6,7 +6,7 @@ import { useApp, ADMIN_CREDENTIALS } from '@/lib/app-context';
 import { supabase } from '@/lib/supabase';
 
 export const AdminLoginScreen = () => {
-  const { adminAuthed, setAdminAuthed, setRole, navigate } = useApp();
+  const { adminAuthed, setAdminAuthed, navigate } = useApp();
 
   if (adminAuthed) {
     return (
@@ -20,11 +20,11 @@ export const AdminLoginScreen = () => {
           <Button
             onClick={() => {
               setAdminAuthed(false);
-              setRole('customer');
+              navigate({ name: 'admin-auth' });
             }}
             className="mt-6 w-full"
           >
-            <LogOut size={18} /> Logout & go to Customer app
+            <LogOut size={18} /> Log out
           </Button>
           <button
             onClick={() => navigate({ name: 'admin-dashboard' })}

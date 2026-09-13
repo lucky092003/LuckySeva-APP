@@ -3,6 +3,10 @@ import { ChevronLeft } from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { isNative } from '@/lib/native';
 
+const showPhoneMockup =
+  isNative === false &&
+  import.meta.env.VITE_PHONE_MOCKUP === 'true';
+
 export const PhoneShell = ({ children }: { children: ReactNode }) => {
   if (isNative) {
     return (
@@ -12,7 +16,8 @@ export const PhoneShell = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  return (
+  if (showPhoneMockup) {
+    return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 py-4">
       <div className="relative flex h-[860px] max-h-[95vh] w-full max-w-[420px] flex-col overflow-hidden rounded-[44px] border-[10px] border-gray-900 bg-white shadow-2xl">
         {/* Notch */}
@@ -29,6 +34,13 @@ export const PhoneShell = ({ children }: { children: ReactNode }) => {
         {/* Content */}
         <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
       </div>
+    </div>
+  );
+  }
+
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col border-x border-gray-200 bg-white">
+      <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   );
 };
