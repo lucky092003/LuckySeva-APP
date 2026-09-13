@@ -39,7 +39,7 @@ export const PhoneShell = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col border-x border-gray-200 bg-white md:max-w-none md:border-x-0">
+    <div className="mx-auto flex h-screen w-full max-w-lg flex-col border-x border-gray-200 bg-white md:max-w-none md:border-x-0">
       <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   );
