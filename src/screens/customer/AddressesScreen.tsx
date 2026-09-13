@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentLocation, splitAddress, applyDetails } from '@/lib/location';
+import { fetchCurrentLocation, splitAddress, applyDetails, geocodeAddress } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, Spinner } from '@/components/ui';
 import type { AddressRow } from '@/lib/types';
@@ -20,6 +20,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
   const [pincode, setPincode] = useState('');
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const fullAddress = [houseNo, area, city, state, pincode].filter(Boolean).join(', ').trim();
 
@@ -46,6 +47,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
       setCity((c) => c || parts.city);
       setState((s) => s || parts.state);
       setPincode((p) => p || parts.pincode);
+      setCoords({ latitude: loc.latitude, longitude: loc.longitude });
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {
@@ -73,15 +75,25 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
 
   const add = async () => {
     if (!label.trim() || !fullAddress || !customer?.phone) return;
+    let latitude: number | null = coords?.latitude ?? null;
+    let longitude: number | null = coords?.longitude ?? null;
+    if (latitude === null || longitude === null) {
+      const geo = await geocodeAddress({ house: houseNo, city, state, pincode });
+      if (geo) {
+        latitude = geo.latitude;
+        longitude = geo.longitude;
+      }
+    }
     const isFirst = addresses.length === 0;
-    if (isFirst) await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: true });
-    else await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: false });
+    if (isFirst) await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: true, latitude, longitude });
+    else await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: false, latitude, longitude });
     setLabel('');
     setHouseNo('');
     setArea('');
     setCity('');
     setState('');
     setPincode('');
+    setCoords(null);
     setAdding(false);
     load();
   };
