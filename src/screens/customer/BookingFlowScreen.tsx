@@ -3,11 +3,11 @@ import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useService, useProfessional, insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentLocation } from '@/lib/location';
+import { fetchCurrentLocation, applyDetails, splitAddress } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
 import { inr } from '@/lib/format';
-import type { Booking } from '@/lib/types';
+import type { Booking, AddressRow } from '@/lib/types';
 
 const TIME_SLOTS = ['08:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '04:00 PM', '06:00 PM'];
 
@@ -32,7 +32,12 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(0);
   const [slot, setSlot] = useState('');
-  const [address, setAddress] = useState('');
+  const [house, setHouse] = useState('');
+  const [area, setArea] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [savedAddrs, setSavedAddrs] = useState<AddressRow[]>([]);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
   const [notes, setNotes] = useState('');
@@ -42,25 +47,49 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [couponError, setCouponError] = useState('');
   const [method, setMethod] = useState<string>('cash');
 
+  const address = [house, area, city, state, pincode].filter(Boolean).join(', ').trim();
+  const hasAddress = house || area || city || state || pincode;
+
+  const fillFromDetails = (loc: { address: string; details: Record<string, string> }) => {
+    let parts = applyDetails(loc.details);
+    if (!hasAddress && !parts.houseNo && !parts.area && !parts.city) {
+      const fallback = splitAddress(loc.address);
+      if (fallback.houseNo || fallback.area || fallback.city) parts = fallback;
+    }
+    if (!hasAddress) {
+      setHouse(parts.houseNo || '');
+      setArea(parts.area || '');
+      setCity(parts.city || '');
+      setState(parts.state || '');
+      setPincode(parts.pincode || '');
+    }
+  };
+
   useEffect(() => {
-    if (step !== 2 || address) return;
-    let cancelled = false;
-    (async () => {
-      setLocating(true);
-      setLocError('');
-      try {
-        const loc = await fetchCurrentLocation();
-        if (!cancelled) setAddress((a) => (a ? a : loc.address));
-      } catch {
-        if (!cancelled) setLocError('Could not auto-detect your location.');
-      } finally {
-        if (!cancelled) setLocating(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [step, address]);
+    if (step !== 2 || !customer?.phone) {
+      setSavedAddrs([]);
+      return;
+    }
+    supabase
+      .from('addresses')
+      .select('*')
+      .eq('customer_phone', customer.phone)
+      .order('is_default', { ascending: false })
+      .then(({ data }) => setSavedAddrs((data as AddressRow[]) || []));
+  }, [step, customer]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    const def = savedAddrs.find((a) => a.is_default);
+    if (def && !hasAddress) {
+      const parts = splitAddress(def.full_address);
+      setHouse(parts.houseNo || '');
+      setArea(parts.area || '');
+      setCity(parts.city || '');
+      setState(parts.state || '');
+      setPincode(parts.pincode || '');
+    }
+  }, [step, savedAddrs, hasAddress]);
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -159,7 +188,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     setLocError('');
     try {
       const loc = await fetchCurrentLocation();
-      setAddress((a) => (a ? a : loc.address));
+      if (!hasAddress) fillFromDetails(loc);
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {
@@ -248,19 +277,85 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
 
         {step === 2 && (
           <div className="space-y-4">
+            {savedAddrs.length > 0 && (
+              <div>
+                <h3 className="mb-2 text-sm font-bold text-gray-900">Saved Addresses</h3>
+                <div className="space-y-2">
+                  {savedAddrs.map((a) => {
+                    const selected = address === a.full_address;
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => {
+                          const parts = splitAddress(a.full_address);
+                          setHouse(parts.houseNo || '');
+                          setArea(parts.area || '');
+                          setCity(parts.city || '');
+                          setState(parts.state || '');
+                          setPincode(parts.pincode || '');
+                        }}
+                        className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
+                      >
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                          {a.label.toLowerCase().includes('work') ? <Icons.Building2 size={16} /> : a.label.toLowerCase().includes('home') ? <Icons.Home size={16} /> : <Icons.MapPin size={16} />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-gray-900">{a.label}</p>
+                            {a.is_default && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600">DEFAULT</span>}
+                          </div>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-gray-600">{a.full_address}</p>
+                        </div>
+                        <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-emerald-500' : 'border-gray-300'}`}>
+                          {selected && <span className="h-3 w-3 rounded-full bg-emerald-500" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Service Address</h3>
-              <textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                rows={3}
-                placeholder="Flat / House no, Building, Area, Landmark"
-                className="w-full rounded-xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-              />
+              <div className="space-y-2.5">
+                <input
+                  value={house}
+                  onChange={(e) => setHouse(e.target.value)}
+                  placeholder="House/Flat No, Street, Road"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+                <input
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Area / Locality"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+                <div className="grid grid-cols-2 gap-2.5">
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="City / District"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  />
+                  <input
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="State"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+                <input
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Pincode"
+                  inputMode="numeric"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
               <button
                 onClick={fetchLocation}
                 disabled={locating}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
               >
                 <Icons.LocateFixed size={16} />
                 {locating ? 'Fetching your location...' : 'Use my current location'}

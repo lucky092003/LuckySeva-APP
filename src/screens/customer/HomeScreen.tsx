@@ -20,27 +20,6 @@ export const HomeScreen = () => {
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
-    if (!customer?.phone || customer.location) return;
-    let cancelled = false;
-    (async () => {
-      setLocating(true);
-      try {
-        const loc = await fetchCurrentLocation();
-        if (cancelled) return;
-        await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
-        setCustomer({ ...customer, location: loc.address });
-      } catch {
-        /* leave existing profile location untouched */
-      } finally {
-        if (!cancelled) setLocating(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [customer, setCustomer]);
-
-  useEffect(() => {
     supabase
       .from('professionals')
       .select('*')
