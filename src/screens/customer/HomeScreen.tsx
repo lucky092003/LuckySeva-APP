@@ -114,12 +114,12 @@ export const HomeScreen = () => {
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
         <div className="flex items-center justify-between">
-          <button onClick={handleLocationTap} className="flex items-center gap-1.5">
-            <MapPin size={16} />
-            <span className="text-sm font-semibold">
+          <button onClick={handleLocationTap} className="flex min-w-0 items-center gap-1.5 text-left">
+            <MapPin size={14} className="shrink-0" />
+            <span className="max-w-[160px] truncate text-xs font-medium text-white/90">
               {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
             </span>
-            <ChevronRight size={16} />
+            <ChevronRight size={14} className="shrink-0" />
           </button>
           <button onClick={() => navigate({ name: 'notifications' })} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
             <Bell size={18} />
