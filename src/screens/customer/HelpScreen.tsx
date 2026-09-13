@@ -84,7 +84,7 @@ export const HelpScreen = () => {
           <h4 className="text-sm font-bold">About LuckySeva</h4>
           <p className="mt-1 text-xs leading-relaxed text-white/90">
             LuckySeva connects you with verified local service professionals for all your home needs.
-            Trusted by over 50,000 customers across Bangalore. Your satisfaction is our priority.
+            Your satisfaction is our priority.
           </p>
         </div>
 

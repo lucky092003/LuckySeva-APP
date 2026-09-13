@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useBookings, useFavourites, useUnreadNotifications } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
+import { fetchCurrentLocation } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button } from '@/components/ui';
 
@@ -23,6 +24,19 @@ export const ProfileScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [copied, setCopied] = useState('');
   const [form, setForm] = useState({ name: '', email: '', location: '' });
+  const [detecting, setDetecting] = useState(false);
+
+  const detectLocation = async () => {
+    setDetecting(true);
+    try {
+      const loc = await fetchCurrentLocation();
+      setForm((f) => ({ ...f, location: loc.address }));
+    } catch {
+      /* ignore */
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   useEffect(() => {
     if (customer) setForm({ name: customer.name, email: customer.email, location: customer.location });
@@ -40,6 +54,19 @@ export const ProfileScreen = () => {
       </div>
     );
   }
+
+  const saveCurrentLocation = async () => {
+    setDetecting(true);
+    try {
+      const loc = await fetchCurrentLocation();
+      await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
+      setCustomer({ ...customer, location: loc.address });
+    } catch {
+      /* ignore */
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const saveProfile = async () => {
     await supabase.from('profiles').update({ name: form.name, email: form.email, location: form.location }).eq('phone', customer.phone);
@@ -72,6 +99,9 @@ export const ProfileScreen = () => {
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
               <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
               <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
+              <button onClick={detectLocation} disabled={detecting} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60">
+                {detecting ? 'Detecting...' : 'Use my current location'}
+              </button>
               <div className="flex gap-2">
                 <Button onClick={saveProfile} className="flex-1 py-2 text-xs">Save</Button>
                 <Button variant="outline" onClick={() => setEditing(false)} className="flex-1 py-2 text-xs">Cancel</Button>
@@ -96,8 +126,11 @@ export const ProfileScreen = () => {
           <Icons.MapPin size={18} className="text-emerald-500" />
           <div className="flex-1">
             <p className="text-[11px] text-gray-400">Current Location</p>
-            <p className="text-sm font-semibold text-gray-900">{customer.location}</p>
+            <p className="text-sm font-semibold text-gray-900">{customer.location || 'Not set'}</p>
           </div>
+          <button onClick={saveCurrentLocation} disabled={detecting} className="text-emerald-500" title="Detect current location">
+            <Icons.LocateFixed size={18} />
+          </button>
           <button onClick={() => navigate({ name: 'addresses' })} className="text-gray-300">
             <Icons.ChevronRight size={18} />
           </button>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useCategories, usePopularServices, useUnreadNotifications } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
+import { fetchCurrentLocation } from '@/lib/location';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
 import type { Professional, Booking } from '@/lib/types';
@@ -15,7 +16,7 @@ const OFFERS = [
 ];
 
 export const HomeScreen = () => {
-  const { navigate, customer } = useApp();
+  const { navigate, customer, setCustomer } = useApp();
   const { categories, loading: catLoading } = useCategories();
   const { popularServices, loading: svcLoading } = usePopularServices();
   const { unread } = useUnreadNotifications(customer?.phone || null);
@@ -24,6 +25,28 @@ export const HomeScreen = () => {
   const [recent, setRecent] = useState<Booking[]>([]);
   const [offerIdx, setOfferIdx] = useState(0);
   const [savedCoupon, setSavedCoupon] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  useEffect(() => {
+    if (!customer?.phone || customer.location) return;
+    let cancelled = false;
+    (async () => {
+      setLocating(true);
+      try {
+        const loc = await fetchCurrentLocation();
+        if (cancelled) return;
+        await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
+        setCustomer({ ...customer, location: loc.address });
+      } catch {
+        /* leave existing profile location untouched */
+      } finally {
+        if (!cancelled) setLocating(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [customer, setCustomer]);
 
   useEffect(() => {
     supabase
@@ -74,7 +97,7 @@ export const HomeScreen = () => {
           <button onClick={() => navigate({ name: 'addresses' })} className="flex items-center gap-1.5">
             <MapPin size={16} />
             <span className="text-sm font-semibold">
-              {customer?.location || 'Koramangala, Bangalore'}
+              {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
             </span>
             <ChevronRight size={16} />
           </button>

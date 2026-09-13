@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useService, useProfessional, insertBookingNotification } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
+import { fetchCurrentLocation } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
 import { inr } from '@/lib/format';
@@ -31,13 +32,35 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(0);
   const [slot, setSlot] = useState('');
-  const [address, setAddress] = useState(customer ? '12, Green Park Apartments, Koramangala 5th Block, Bangalore' : '');
+  const [address, setAddress] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [method, setMethod] = useState<string>('cash');
+
+  useEffect(() => {
+    if (step !== 2 || address) return;
+    let cancelled = false;
+    (async () => {
+      setLocating(true);
+      setLocError('');
+      try {
+        const loc = await fetchCurrentLocation();
+        if (!cancelled) setAddress((a) => (a ? a : loc.address));
+      } catch {
+        if (!cancelled) setLocError('Could not auto-detect your location.');
+      } finally {
+        if (!cancelled) setLocating(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, address]);
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -86,13 +109,17 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   };
 
   const confirm = async () => {
+    if (!customer?.name || !customer?.phone) {
+      navigate({ name: 'auth' });
+      return;
+    }
     setSubmitting(true);
     const bookingDate = dates[date].toISOString().split('T')[0];
     const { data, error } = await supabase
       .from('bookings')
       .insert({
-        customer_name: customer?.name || 'Aarav Sharma',
-        customer_phone: customer?.phone || '9876543210',
+        customer_name: customer.name,
+        customer_phone: customer.phone,
         customer_address: address,
         service_id: service.id,
         service_name: service.name,
@@ -124,6 +151,19 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       navigate({ name: 'booking-success', bookingId: booking.id });
     } else {
       navigate({ name: 'payment', bookingId: booking.id });
+    }
+  };
+
+  const fetchLocation = async () => {
+    setLocating(true);
+    setLocError('');
+    try {
+      const loc = await fetchCurrentLocation();
+      setAddress((a) => (a ? a : loc.address));
+    } catch (e) {
+      setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -217,6 +257,15 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                 placeholder="Flat / House no, Building, Area, Landmark"
                 className="w-full rounded-xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
               />
+              <button
+                onClick={fetchLocation}
+                disabled={locating}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
+              >
+                <Icons.LocateFixed size={16} />
+                {locating ? 'Fetching your location...' : 'Use my current location'}
+              </button>
+              {locError && <p className="mt-1.5 text-xs text-red-500">{locError}</p>}
             </div>
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Add Notes / Instructions</h3>
