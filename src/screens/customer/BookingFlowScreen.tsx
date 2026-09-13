@@ -149,7 +149,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     let latitude: number | null = locCoords?.latitude ?? null;
     let longitude: number | null = locCoords?.longitude ?? null;
     if (latitude === null || longitude === null) {
-      const geo = await geocodeAddress({ house, city, state, pincode });
+      const geo = await geocodeAddress({ house, area, city, state, pincode });
       if (geo) {
         latitude = geo.latitude;
         longitude = geo.longitude;
