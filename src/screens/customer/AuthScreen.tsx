@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Phone, Mail, MapPin, User, ArrowRight, LocateFixed } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
@@ -33,26 +33,6 @@ export const AuthScreen = () => {
       setLocating(false);
     }
   };
-
-  useEffect(() => {
-    if (form.location) return;
-    let cancelled = false;
-    (async () => {
-      setLocating(true);
-      setLocError('');
-      try {
-        const loc = await fetchCurrentLocation();
-        if (!cancelled) setForm((f) => (f.location ? f : { ...f, location: loc.address }));
-      } catch {
-        if (!cancelled) setLocError('Could not auto-detect your location.');
-      } finally {
-        if (!cancelled) setLocating(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [form.location]);
 
   const canSubmit =
     form.name.trim() && form.phone.length >= 10 && (mode === 'login' || form.email.trim());

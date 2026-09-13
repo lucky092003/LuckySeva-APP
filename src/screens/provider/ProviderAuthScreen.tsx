@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Phone,
   Mail,
@@ -60,29 +60,6 @@ export const ProviderAuthScreen = () => {
       setLocating(false);
     }
   };
-
-  useEffect(() => {
-    if (form.serviceArea) return;
-    let cancelled = false;
-    (async () => {
-      setLocating(true);
-      setLocError('');
-      try {
-        const loc = await fetchCurrentLocation();
-        if (!cancelled) {
-          const area = areaFrom(loc.details) || loc.address;
-          setForm((f) => (f.serviceArea ? f : { ...f, serviceArea: area }));
-        }
-      } catch {
-        if (!cancelled) setLocError('Could not auto-detect your service area.');
-      } finally {
-        if (!cancelled) setLocating(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [form.serviceArea]);
 
   const canSubmit =
     form.name.trim() &&

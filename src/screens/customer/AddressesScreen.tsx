@@ -2,20 +2,10 @@ import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { supabase } from '@/lib/supabase';
-import { fetchCurrentLocation } from '@/lib/location';
+import { fetchCurrentLocation, splitAddress, applyDetails } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, Spinner } from '@/components/ui';
 import type { AddressRow } from '@/lib/types';
-
-function splitAddress(full: string): { houseNo: string; area: string; city: string; state: string; pincode: string } {
-  const parts = full.split(',').map((s) => s.trim()).filter(Boolean);
-  let pincode = '';
-  if (parts.length && /^\d{4,6}$/.test(parts[parts.length - 1])) pincode = parts.pop() || '';
-  const state = parts.pop() || '';
-  const city = parts.pop() || '';
-  const area = parts.pop() || '';
-  return { houseNo: parts.join(', '), area, city, state, pincode };
-}
 
 export const AddressesScreen = ({ detected }: { detected?: string }) => {
   const { customer } = useApp();
@@ -50,12 +40,12 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
     setLocError('');
     try {
       const loc = await fetchCurrentLocation();
-      const d = loc.details;
-      setHouseNo((h) => h || [d.house_number, d.road].filter(Boolean).join(', ') || '');
-      setArea((a) => a || d.suburb || d.neighbourhood || '');
-      setCity((c) => c || d.city || d.town || d.village || d.city_district || '');
-      setState((s) => s || d.state || '');
-      setPincode((p) => p || d.postcode || '');
+      const parts = applyDetails(loc.details);
+      setHouseNo((h) => h || parts.houseNo);
+      setArea((a) => a || parts.area);
+      setCity((c) => c || parts.city);
+      setState((s) => s || parts.state);
+      setPincode((p) => p || parts.pincode);
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {

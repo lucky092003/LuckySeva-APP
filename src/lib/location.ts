@@ -50,6 +50,26 @@ export async function fetchCurrentLocation(): Promise<LocationResult> {
   }
 }
 
+export function splitAddress(full: string): { houseNo: string; area: string; city: string; state: string; pincode: string } {
+  const parts = full.split(',').map((s) => s.trim()).filter(Boolean);
+  let pincode = '';
+  if (parts.length && /^\d{4,6}$/.test(parts[parts.length - 1])) pincode = parts.pop() || '';
+  const state = parts.pop() || '';
+  const city = parts.pop() || '';
+  const area = parts.pop() || '';
+  return { houseNo: parts.join(', '), area, city, state, pincode };
+}
+
+export function applyDetails(details: Record<string, string>): { houseNo: string; area: string; city: string; state: string; pincode: string } {
+  return {
+    houseNo: [details.house_number, details.road].filter(Boolean).join(', '),
+    area: details.suburb || details.neighbourhood || '',
+    city: details.city || details.town || details.village || details.city_district || '',
+    state: details.state || '',
+    pincode: details.postcode || '',
+  };
+}
+
 export function areaFrom(details: Record<string, string>): string {
   const parts = [details.suburb, details.neighbourhood, details.city_district, details.city, details.state]
     .filter((x) => !!x)
