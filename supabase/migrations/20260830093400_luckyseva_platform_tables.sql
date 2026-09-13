@@ -118,12 +118,7 @@ END $$;
 
 INSERT INTO admin_settings (key, value) VALUES
   ('admin_password', 'admin123'),
-  ('admin_name', 'Super Admin'),
-  ('admin_email', 'platform@luckyseva.in'),
   ('admin_commission_pct', '10'),
   ('notify_email', 'on'),
   ('notify_push', 'on')
 ON CONFLICT (key) DO NOTHING;
-
-UPDATE professionals SET phone = '9' || lpad(floor(random() * 1000000000)::bigint::text, 9, '0')
-WHERE phone IS NULL;
