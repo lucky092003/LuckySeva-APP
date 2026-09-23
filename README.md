@@ -6,8 +6,33 @@ A mobile-first home services marketplace. Customers discover and book verified l
 professionals (plumbers, electricians, appliance repair, cleaning, and more); partners manage
 their bookings and earnings; an admin dashboard oversees the platform.
 
-Built with **React + Vite + TypeScript + Tailwind CSS** and wrapped as a native mobile app with
-**Capacitor** for Android & iOS. Backend data is powered by **Supabase**.
+## 🏗️ Architecture
+
+```
+┌─────────────────────────── APP/WEBSITE (Vercel) ───────────────────────────┐
+│  React + Vite + TypeScript + Tailwind   ·   Capacitor (Android & iOS)      │
+│  src/lib/api.ts  →  calls the FastAPI backend (VITE_API_URL)               │
+└───────────────┬────────────────────────────────────────────────────────────┘
+                │ HTTPS / JSON + JWT (Bearer token)
+┌───────────────▼────────────────────────────────────────────────────────────┐
+│  BACKEND (FastAPI · Python) — api/app/                                     │
+│  · Auth: /auth/verify-otp mints a JWT (customer / provider / admin roles)  │
+│  · Routers: auth · catalog · customer · provider · admin                   │
+│  · Writes/reads data through supabase-py (service role)                    │
+└───────────────┬────────────────────────────────────────────────────────────┘
+                │ SQL (via PostgREST)
+┌───────────────▼────────────────────────────────────────────────────────────┐
+│  DATABASE (Supabase)  — PostgreSQL + Row Level Security                    │
+│  Tables: categories, services, professionals, bookings, reviews, ...       │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Frontend** = this repo (web + mobile), deployed on **Vercel**.
+- **Backend** = `api/` FastAPI server (Python), deployed anywhere (Render/Railway/VPS).
+- **Database** = **Supabase** Postgres — the single source of truth for both the app and the API.
+
+> 👉 The frontend can keep working directly against Supabase (legacy `src/lib/supabase.ts`
+> calls) while new features go through `src/lib/api.ts`. All new code should use the API.
 
 ---
 
@@ -55,31 +80,70 @@ and navigation.
 ## 📋 Prerequisites
 
 - **Node.js** v18+ (v20 recommended) and npm
+- **Python 3.11+** (for the FastAPI backend)
 - (Optional) **Android Studio** — to build/run the Android app
 - (Optional) **Xcode** on macOS — to build/run the iOS app
-- (Recommended) [Supabase](https://supabase.com) project — for real backend data
+- [Supabase](https://supabase.com) project — the database (required)
 
 ---
 
 ## 🚀 Setup & Run
 
-### 1. Install dependencies
+### 1. Database (Supabase)
+
+Create a project on [supabase.com](https://supabase.com), then apply the schema:
+
+```sh
+npx supabase link          # link your project
+npx supabase db push       # apply supabase/migrations/*
+```
+
+Or copy the `.sql` files from `supabase/migrations/` into the Supabase
+**SQL Editor** and run them in order.
+
+### 2. Backend (FastAPI, Python)
+
+```sh
+cd api
+py -m pip install -r requirements.txt
+```
+
+Copy `api/.env.example` to `api/.env` and set your Supabase credentials
+(Project Settings → API):
+
+```sh
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # secret — never expose publicly
+SUPABASE_JWT_SECRET=your-jwt-secret
+```
+
+Run locally:
+
+```sh
+py -m uvicorn app.main:app --reload
+```
+
+Interactive API docs: `http://localhost:8000/docs`.
+
+> **JWT note:** the backend mints and verifies its own JWTs using `SUPABASE_JWT_SECRET`
+> (same secret Supabase uses), so tokens are valid for the API only.
+
+### 3. Frontend (React + Vite)
 
 ```sh
 npm install
 ```
 
-### 2. Configure environment
-
-Copy `.env.example` to `.env` (or edit the existing `.env`) and set your credentials:
+Copy `.env.example` to `.env` and set:
 
 ```sh
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_APP_ROLE=customer        # customer | provider | admin
+VITE_API_URL=http://localhost:8000   # FastAPI base URL
 ```
 
-### 3. Run the web app (development)
+Run the web app (development):
 
 ```sh
 npm run dev
@@ -120,13 +184,65 @@ VITE_APP_ROLE=customer npx cap sync
 One repo deployed as **three Vercel projects**, each with its own `VITE_APP_ROLE`:
 
 1. Create three projects from this repo on [Vercel](https://vercel.com).
-2. Add the same `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` to each.
+2. Add the same `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` + `VITE_API_URL` to each.
 3. Set the role per project:
    - Customer site → `VITE_APP_ROLE=customer`
    - Partner site → `VITE_APP_ROLE=provider`
    - Admin site → `VITE_APP_ROLE=admin`
 4. Build settings come from [`vercel.json`](vercel.json) — no manual config needed.
 5. Every push to `master` auto-deploys all three sites.
+
+## 🐍 Backend (FastAPI) — deployment
+
+The API is a plain Python service; deploy it on any host. Recommended: **Render**:
+
+1. Push this repo to GitHub.
+2. On [Render](https://render.com) → **New → Web Service** → pick the repo.
+3. Root Directory: `api`
+4. Build Command: `pip install -r requirements.txt`
+5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+6. Add the environment variables from `api/.env.example`
+   (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`).
+7. Copy the generated URL (e.g. `https://luckyseva-api.onrender.com`) into
+   `VITE_API_URL` on every Vercel project.
+
+<details>
+<summary>Other hosts</summary>
+
+**Railway** — same build/start commands, env vars set under Variables.
+
+**Docker VPS** — or run with:
+
+```sh
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+**Render blueprint** — a ready-made [`render.yaml`](render.yaml) is included:
+use **New → Blueprint** and pick this repo to deploy with zero manual config.
+
+</details>
+
+## API reference
+
+The backend exposes these endpoint groups (full docs at `/docs` when it's running):
+
+| Prefix | Auth      | Purpose |
+|--------|-----------|---------|
+| `/auth` | none (OTP) | `POST /verify-otp` mints a JWT, `GET /me` |
+| `/catalog` | none | Public: categories, services, professionals, reviews, search |
+| `/customer` | JWT (customer) | Profile, addresses, bookings, favourites, notifications, reviews |
+| `/provider` | JWT (provider) | Feed, accept/decline, status, earnings, payouts, dashboard |
+| `/admin` | JWT (admin) | Stats, professionals/services CRUD, settings, audit logs |
+
+Frontend calls live in one place: [`src/lib/api.ts`](src/lib/api.ts).
+
+```ts
+import { api } from '@/lib/api';
+const catalog = await api.catalog.home();
+await api.auth.verifyOtp({ phone: '9876543210', code: '123456', role: 'customer' });
+await api.customer.createBooking({ service_id, scheduled_date, scheduled_time });
+```
 
 ---
 
@@ -139,7 +255,9 @@ One repo deployed as **three Vercel projects**, each with its own `VITE_APP_ROLE
 | `npm run preview`     | Preview the production build locally        |
 | `npm run lint`        | Run ESLint                                 |
 | `npm run typecheck`   | Run TypeScript type checking                |
+| `npm run test:unit`   | Run Vitest unit tests                       |
 | `npx cap sync`        | Sync web build into native projects         |
+| `cd api && py -m uvicorn app.main:app --reload` | Run the FastAPI backend      |
 
 ---
 
@@ -179,14 +297,24 @@ npx cap sync
 ├── public/                  # Static assets (favicon)
 ├── src/
 │   ├── components/          # Shared UI (Logo, PhoneShell, BottomNav, ui)
-│   ├── lib/                 # App context (APP_ROLE), Supabase client, types, helpers
+│   ├── lib/                 # App context (APP_ROLE), Supabase client, API client, types
 │   └── screens/
 │       ├── customer/        # Customer-facing screens
 │       ├── provider/        # Partner-facing screens
 │       └── admin/           # Admin dashboard screens (web only)
+├── api/                     # FastAPI backend (Python)
+│   ├── app/
+│   │   ├── main.py          # FastAPI app + CORS + routers
+│   │   ├── security.py      # JWT sign/verify (PyJWT)
+│   │   ├── dependencies.py  # Role guards (customer/provider/admin)
+│   │   ├── db.py            # Supabase client (supabase-py, service role)
+│   │   └── routers/         # auth, catalog, customer, provider, admin
+│   ├── requirements.txt
+│   └── .env.example
 ├── supabase/migrations/     # Supabase SQL schema + seed data
 ├── capacitor.config.ts      # Capacitor config (role-aware app id/name)
 ├── vercel.json              # Vercel build settings
+├── render.yaml              # Render blueprint (one-click API deploy)
 └── index.html               # HTML entry
 ```
 
@@ -198,5 +326,7 @@ npx cap sync
 - **Vite 5** build tooling
 - **Tailwind CSS 3** styling
 - **Capacitor 8** native mobile wrapper
-- **Supabase** backend
+- **Supabase** — PostgreSQL database (schema in `supabase/migrations/`)
+- **FastAPI** (Python) — backend API (`api/`) talking to Supabase via `supabase-py`
+- **Vercel** — frontend hosting (three role-locked sites)
 - **lucide-react** icons
