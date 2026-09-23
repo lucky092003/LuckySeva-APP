@@ -1,4 +1,4 @@
-# LuckySeva — Publishing Guide (Web, Android, iOS)
+# LuckySeva — Publishing Guide (Web, Android, iOS, API)
 
 The same React + Vite + Capacitor codebase produces three role-specific products.
 Each build is locked to **one role** via the `VITE_APP_ROLE` environment variable:
@@ -13,6 +13,25 @@ There is **no runtime role switching** — each build contains only that role's 
 auth flow, and navigation.
 
 ---
+
+## Backend (FastAPI) — publish once
+
+The app, the website, and the admin dashboard all talk to **one Python API**
+(`api/`). Deploy it before (or alongside) the frontends:
+
+**Render (recommended):** New → Web Service → this repo
+- Root Directory: `api`
+- Build: `pip install -r requirements.txt`
+- Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Env vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
+
+> A [`render.yaml`](render.yaml) blueprint is included — use **New → Blueprint**
+> and it will deploy the API automatically with the env vars you fill in once.
+
+**Railway / Docker / VPS** — same build (`pip install -r requirements.txt`) and
+start (`uvicorn app.main:app`) commands; set the same three env vars.
+
+After deploying, put the API URL into every frontend project as `VITE_API_URL`.
 
 ## Build for a specific role
 
@@ -40,7 +59,8 @@ Only `customer` and `provider` produce native apps. If you build with
 ## Web (Vercel) — three separate sites
 
 Create **three Vercel projects** from this repo; each gets its own `VITE_APP_ROLE`
-environment variable (plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`):
+environment variable (plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` /
+`VITE_API_URL` — the deployed FastAPI base URL):
 
 1. Customer site → `VITE_APP_ROLE=customer`
 2. Partner site → `VITE_APP_ROLE=provider`
@@ -89,7 +109,9 @@ Repeat for the other role to publish the second app.
 
 | File | Purpose |
 |------|---------|
-| `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE` |
+| `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE`, `VITE_API_URL` |
+| `api/.env.example` | Backend env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
+| `render.yaml` | Render blueprint — one-click API deploy |
 | `vercel.json` | Vercel build settings for all three web projects |
 | `capacitor.config.ts` | Sets native app id/name from `VITE_APP_ROLE` |
 | `src/lib/app-context.tsx` | `APP_ROLE` — locks each build to one role |
