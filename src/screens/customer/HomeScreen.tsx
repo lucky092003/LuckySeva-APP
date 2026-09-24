@@ -3,7 +3,7 @@ import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useCategories, usePopularServices, useUnreadNotifications } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { fetchCurrentLocation } from '@/lib/location';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -20,27 +20,19 @@ export const HomeScreen = () => {
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('professionals')
-      .select('*')
-      .order('rating', { ascending: false })
-      .limit(6)
-      .then(({ data }) => {
-        setTopPros((data as Professional[]) || []);
-        setProLoading(false);
-      });
+    api.catalog
+      .professionals({ limit: 6 })
+      .then((data) => setTopPros(data))
+      .catch(() => setTopPros([]))
+      .finally(() => setProLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!customer?.phone) return;
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('customer_phone', customer.phone)
-      .order('created_at', { ascending: false })
-      .limit(3)
-      .then(({ data }) => setRecent((data as Booking[]) || []));
-  }, [customer]);
+    api.customer
+      .bookings()
+      .then((rows) => setRecent((rows || []).slice(0, 3)))
+      .catch(() => setRecent([]));
+  }, []);
 
   const handleLocationTap = async () => {
     if (customer?.location) {
@@ -51,7 +43,7 @@ export const HomeScreen = () => {
     try {
       const loc = await fetchCurrentLocation();
       if (customer?.phone) {
-        await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
+        await api.customer.updateProfile({ location: loc.address }).catch(() => {});
       }
       if (customer) setCustomer({ ...customer, location: loc.address });
       navigate({ name: 'addresses', detected: loc.address });
@@ -133,7 +125,7 @@ export const HomeScreen = () => {
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {popularServices.slice(0, 4).map((svc) => {
-              const cat = (svc as unknown as { category: { color: string; icon: string; name: string } }).category;
+              const cat = categories.find((c) => c.id === svc.category_id);
               const color = cat?.color || '#10b981';
               const Icon = cat ? (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[cat.icon] || Icons.Circle : Icons.Circle;
               return (

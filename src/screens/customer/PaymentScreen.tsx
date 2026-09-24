@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { insertBookingNotification } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, Spinner } from '@/components/ui';
 import { inr } from '@/lib/format';
@@ -24,13 +23,14 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setBooking((data as Booking) || null);
+    api.customer
+      .booking(bookingId)
+      .then((data) => {
+        setBooking(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setBooking(null);
         setLoading(false);
       });
   }, [bookingId]);
@@ -38,20 +38,10 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
   const pay = async () => {
     setPaying(true);
     await new Promise((r) => setTimeout(r, 1500));
-    await supabase
-      .from('bookings')
-      .update({ payment_method: method, payment_status: method === 'cash' ? 'cash' : 'paid', status: 'assigned' })
-      .eq('id', bookingId);
-    const updated = await supabase.from('bookings').select('*').eq('id', bookingId).maybeSingle();
-    const b = updated.data as Booking | null;
-    if (b) {
-      await insertBookingNotification(
-        b.customer_phone,
-        'payment',
-        'Payment Successful',
-        `Payment of ${inr(b.total_amount)} received for ${b.service_name}.`,
-        b.id
-      );
+    try {
+      await api.customer.payBooking(bookingId, { payment_method: method, payment_status: method === 'cash' ? 'cash' : 'paid' });
+    } catch {
+      // ignore; navigation still proceeds
     }
     setPaying(false);
     navigate({ name: 'booking-success', bookingId });

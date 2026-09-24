@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Lock, User, Eye, EyeOff, ShieldCheck, LogOut, CheckCircle2 } from 'lucide-react';
 import { Logo, Wordmark } from '@/components/Logo';
 import { Button } from '@/components/ui';
-import { useApp, ADMIN_CREDENTIALS } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { useApp } from '@/lib/app-context';
+import { api, setApiToken } from '@/lib/api';
 
 export const AdminLoginScreen = () => {
   const { adminAuthed, setAdminAuthed, navigate } = useApp();
@@ -19,6 +19,7 @@ export const AdminLoginScreen = () => {
           <p className="mt-1 text-sm text-gray-500">You have full access to the LuckySeva platform.</p>
           <Button
             onClick={() => {
+              setApiToken(null);
               setAdminAuthed(false);
               navigate({ name: 'admin-auth' });
             }}
@@ -54,18 +55,19 @@ const AdminLoginForm = () => {
     if (!canSubmit) return;
     setSubmitting(true);
     setError('');
-    const { data } = await supabase
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'admin_password')
-      .maybeSingle();
-    const dbPassword = (data as { value?: string } | null)?.value || ADMIN_CREDENTIALS.password;
-    setSubmitting(false);
-    if (username.trim() === ADMIN_CREDENTIALS.username && password === dbPassword) {
+    try {
+      const res = await api.auth.verifyOtp({
+        phone: username.trim(),
+        code: password,
+        role: 'admin',
+      });
+      setApiToken(res.access_token);
       setAdminAuthed(true);
       navigate({ name: 'admin-dashboard' });
-    } else {
+    } catch {
       setError('Invalid username or password.');
+    } finally {
+      setSubmitting(false);
     }
   };
 

@@ -13,9 +13,8 @@ import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
 import { OtpSection } from '@/components/OtpInput';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api, setApiToken } from '@/lib/api';
 import { fetchCurrentLocation, areaFrom } from '@/lib/location';
-import type { Professional } from '@/lib/types';
 
 function categoryFor(profession: string): string {
   const p = profession.toLowerCase();
@@ -74,11 +73,6 @@ export const ProviderAuthScreen = () => {
     setStep('otp');
   };
 
-  const signInAs = async (pro: { id: string } | null) => {
-    setProviderId(pro?.id || null);
-    navigate({ name: 'provider-home' });
-  };
-
   const verifyOtp = async (code?: string) => {
     setError('');
     if (!code || code.length !== 6) {
@@ -96,43 +90,24 @@ export const ProviderAuthScreen = () => {
       return;
     }
     try {
-      const { data: existing } = await supabase
-        .from('professionals')
-        .select('*')
-        .eq('phone', phone)
-        .maybeSingle();
-      if (existing) return signInAs(existing as Professional);
-
       const profession = form.profession.trim();
-      const { data } = await supabase
-        .from('professionals')
-        .insert({
-          name,
-          category_slug: categoryFor(profession),
-          skills: [profession],
-          experience_years: Number(form.experience) || 1,
-          rating: 0,
-          reviews_count: 0,
-          completed_jobs: 0,
-          starting_price: 99,
-          avatar_url: '',
-          distance_km: 1.0,
-          status: 'available',
-          bio: `${profession} professional serving ${form.serviceArea}.`,
-          service_area: form.serviceArea,
-          latitude: form.latitude,
-          longitude: form.longitude,
-          service_radius_km: 60,
-          phone,
-          email: mode === 'signup' ? form.email.trim() : null,
-        })
-        .select('id')
-        .maybeSingle();
-      await supabase.from('profiles').upsert(
-        { phone, name, email: mode === 'signup' ? form.email.trim() : '', location: form.serviceArea, role: 'provider' },
-        { onConflict: 'phone' }
-      );
-      return signInAs((data as { id: string }) || null);
+      const res = await api.auth.verifyOtp({
+        phone,
+        code,
+        role: 'provider',
+        name,
+        email: mode === 'signup' ? form.email.trim() : undefined,
+        profession,
+        experience: Number(form.experience) || 1,
+        serviceArea: form.serviceArea,
+        service_radius_km: 60,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        category_slug: categoryFor(profession),
+      });
+      setApiToken(res.access_token);
+      setProviderId(res.professional_id || null);
+      navigate({ name: 'provider-home' });
     } catch {
       setError('Could not create your account. Please try again.');
     }

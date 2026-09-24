@@ -1,8 +1,8 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
-import { useProfessionalWithFallback, insertBookingNotification } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { useProfessionalWithFallback } from '@/lib/hooks';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Button } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -26,42 +26,23 @@ export const ProviderHomeScreen = () => {
 
   useEffect(() => {
     if (!professional?.id) {
-      setDeclined(new Set());
-      return;
-    }
-    let cancelled = false;
-    supabase
-      .from('booking_declines')
-      .select('booking_id')
-      .eq('professional_id', professional.id)
-      .then(({ data }) => {
-        if (!cancelled) setDeclined(new Set((data as { booking_id: string }[] || []).map((r) => r.booking_id)));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [professional?.id, tick]);
-
-  useEffect(() => {
-    if (!professional?.id) {
       setRequests([]);
       setLoading(false);
       return;
     }
     let cancelled = false;
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('status', 'confirmed')
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .then(({ data }) => {
+    api.provider
+      .bookings()
+      .then((data) => {
         if (cancelled) return;
-        const list = ((data as Booking[]) || []).filter(
-          (b) => b.professional_id === professional.id || b.professional_id === null
-        );
-        setRequests(list);
+        setRequests(data || []);
         setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRequests([]);
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -74,13 +55,13 @@ export const ProviderHomeScreen = () => {
       return;
     }
     let cancelled = false;
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('professional_id', professional.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!cancelled) setMyBookings((data as Booking[]) || []);
+    api.provider
+      .myBookings()
+      .then((data) => {
+        if (!cancelled) setMyBookings(data || []);
+      })
+      .catch(() => {
+        /* ignore */
       });
     return () => {
       cancelled = true;
@@ -116,12 +97,7 @@ export const ProviderHomeScreen = () => {
   const todayEarnings = todayCompleted.reduce((s, b) => s + Number(b.total_amount), 0);
 
   const accept = async (b: Booking) => {
-    const next = {
-      status: 'assigned',
-      ...(b.professional_id ? {} : { professional_id: professional?.id || null, professional_name: professional?.name || b.professional_name }),
-    };
-    await supabase.from('bookings').update(next).eq('id', b.id);
-    await insertBookingNotification(b.customer_phone, 'provider', 'Provider Assigned', `${professional?.name || 'A professional'} has accepted your ${b.service_name} booking.`, b.id);
+    await api.provider.accept(b.id).catch(() => {});
     setTick((n) => n + 1);
     navigate({ name: 'provider-detail', bookingId: b.id });
   };
@@ -129,10 +105,8 @@ export const ProviderHomeScreen = () => {
   const reject = async (b: Booking) => {
     if (!professional?.id) return;
     if (!window.confirm(`Decline the ${b.service_name} request from ${b.customer_name}? It stays available for other providers.`)) return;
-    await supabase.from('booking_declines').insert({ booking_id: b.id, professional_id: professional.id });
-    if (b.professional_id === professional.id) {
-      await supabase.from('bookings').update({ professional_id: null, professional_name: 'Auto-assign' }).eq('id', b.id);
-    }
+    await api.provider.decline(b.id).catch(() => {});
+    setDeclined((prev) => new Set(prev).add(b.id));
     setTick((n) => n + 1);
   };
 

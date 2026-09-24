@@ -1,18 +1,18 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useFavourites, useProfessional } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button } from '@/components/ui';
 import { inr } from '@/lib/format';
 import type { Professional } from '@/lib/types';
 
 export const FavouritesScreen = () => {
-  const { navigate, customer } = useApp();
-  const { favourites, loading, reload } = useFavourites(customer?.phone || null);
+  const { navigate } = useApp();
+  const { favourites, loading, reload } = useFavourites(null);
 
   const remove = async (professionalId: string) => {
-    await supabase.from('favourites').delete().eq('customer_phone', customer?.phone || '').eq('professional_id', professionalId);
+    await api.customer.removeFavourite(professionalId).catch(() => {});
     reload();
   };
 
@@ -33,12 +33,12 @@ export const FavouritesScreen = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {favourites.map((f) => (
+            {favourites.map((pro) => (
               <FavCard
-                key={f.id}
-                pro={f.professional as Professional}
-                onOpen={() => navigate({ name: 'professional', id: (f.professional as Professional).id })}
-                onRemove={() => remove((f.professional as Professional).id)}
+                key={pro.id}
+                pro={pro}
+                onOpen={() => navigate({ name: 'professional', id: pro.id })}
+                onRemove={() => remove(pro.id)}
               />
             ))}
           </div>

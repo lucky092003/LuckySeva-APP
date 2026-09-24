@@ -1,6 +1,6 @@
 import * as Icons from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api, setApiToken } from '@/lib/api';
 import { useApp, ADMIN_CREDENTIALS } from '@/lib/app-context';
 import { Logo } from '@/components/Logo';
 import { Card, Spinner, Badge, EmptyState, Button } from '@/components/ui';
@@ -53,10 +53,10 @@ export const AdminCustomers = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from('bookings').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      setBookings((data as Booking[]) || []);
+    api.admin.bookings().then((data) => {
+      setBookings(data || []);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
@@ -143,14 +143,13 @@ export const AdminProviders = () => {
   const [form, setForm] = useState({ name: '', phone: '', email: '', category: 'other', price: '149', experience: '1', serviceArea: '' });
 
   const load = () => {
-    Promise.all([
-      supabase.from('professionals').select('*').order('rating', { ascending: false }),
-      supabase.from('categories').select('*').order('sort_order'),
-    ]).then(([p, c]) => {
-      setPros((p.data as Professional[]) || []);
-      setCategories((c.data as Category[]) || []);
-      setLoading(false);
-    });
+    Promise.all([api.admin.professionals(), api.admin.categories()])
+      .then(([p, c]) => {
+        setPros(p || []);
+        setCategories(c || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -161,31 +160,21 @@ export const AdminProviders = () => {
     if (!form.name.trim()) return;
     setAdding(true);
     const cat = categories.find((c) => c.id === form.category);
-    const { data } = await supabase
-      .from('professionals')
-      .insert({
+    await api.admin
+      .createProfessional({
         name: form.name.trim(),
         category_slug: cat?.slug || 'other',
         skills: [cat?.name || 'General'],
         experience_years: Number(form.experience) || 1,
-        rating: 0,
-        reviews_count: 0,
-        completed_jobs: 0,
         starting_price: Number(form.price) || 0,
-        avatar_url: '',
-        distance_km: 1.0,
-        status: 'available',
-        bio: `${cat?.name || 'Service'} professional on LuckySeva.`,
         service_area: form.serviceArea.trim() || '',
         phone: form.phone || null,
         email: form.email.trim() || null,
       })
-      .select('id')
-      .maybeSingle();
-    await supabase.from('audit_logs').insert({ action: 'provider_add', detail: `Added provider ${form.name.trim()}` });
+      .catch(() => {});
     setAdding(false);
     setShowAdd(false);
-    if (data) load();
+    load();
   };
 
   const available = pros.filter((p) => p.status === 'available').length;
@@ -300,14 +289,13 @@ export const AdminServices = () => {
   const [form, setForm] = useState({ name: '', category: '', price: '0', duration: '1 hr', popular: 'true' });
 
   const load = () => {
-    Promise.all([
-      supabase.from('categories').select('*').order('sort_order'),
-      supabase.from('services').select('*'),
-    ]).then(([c, s]) => {
-      setCats((c.data as Category[]) || []);
-      setServices((s.data as Service[]) || []);
-      setLoading(false);
-    });
+    Promise.all([api.admin.categories(), api.admin.services()])
+      .then(([c, s]) => {
+        setCats(c || []);
+        setServices(s || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -323,22 +311,20 @@ export const AdminServices = () => {
   const addService = async () => {
     if (!form.name.trim() || !form.category) return;
     setAdding(true);
-    const { data } = await supabase
-      .from('services')
-      .insert({
-        category_id: form.category,
+    const cat = cats.find((c) => c.id === form.category);
+    await api.admin
+      .createService({
         name: form.name.trim(),
+        category_slug: cat?.slug || '',
         description: `${form.name.trim()} service provided by verified professionals.`,
         starting_price: Number(form.price) || 0,
         estimated_duration: form.duration,
         popular: form.popular === 'true',
       })
-      .select('id')
-      .maybeSingle();
-    await supabase.from('audit_logs').insert({ action: 'service_add', detail: `Added service ${form.name.trim()}` });
+      .catch(() => {});
     setAdding(false);
     setShowAdd(false);
-    if (data) load();
+    load();
   };
 
   const filtered = activeCat ? services.filter((s) => s.category_id === activeCat) : services;
@@ -454,10 +440,10 @@ export const AdminBookings = () => {
   const [filter, setFilter] = useState<string>('all');
 
   useEffect(() => {
-    supabase.from('bookings').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      setBookings((data as Booking[]) || []);
+    api.admin.bookings().then((data) => {
+      setBookings(data || []);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
@@ -563,23 +549,18 @@ export const AdminProfile = () => {
   const [saving, setSaving] = useState(false);
 
   const load = () => {
-    Promise.all([
-      supabase.from('bookings').select('*'),
-      supabase.from('professionals').select('*'),
-      supabase.from('admin_settings').select('*'),
-      supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(25),
-    ]).then(([b, p, s, a]) => {
-      setBookings((b.data as Booking[]) || []);
-      setPros((p.data as Professional[]) || []);
-      const map: Record<string, string> = {};
-      ((s.data as { key: string; value: string }[]) || []).forEach((r) => { map[r.key] = r.value; });
-      setSettings(map);
-      setCommission(map.admin_commission_pct || '10');
-      setName(map.admin_name || '');
-      setEmail(map.admin_email || '');
-      setAudit((a.data as typeof audit) || []);
-      setLoading(false);
-    });
+    Promise.all([api.admin.bookings(), api.admin.professionals(), api.admin.settings(), api.admin.auditLogs()])
+      .then(([b, p, s, a]) => {
+        setBookings(b || []);
+        setPros(p || []);
+        setSettings(s || {});
+        setCommission((s && s.admin_commission_pct) || '10');
+        setName((s && s.admin_name) || '');
+        setEmail((s && s.admin_email) || '');
+        setAudit((a as typeof audit) || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -597,8 +578,8 @@ export const AdminProfile = () => {
 
   const saveSetting = async (key: string, value: string, action: string, detail: string) => {
     setSaving(true);
-    await supabase.from('admin_settings').upsert({ key, value }, { onConflict: 'key' });
-    await supabase.from('audit_logs').insert({ action, detail });
+    await api.admin.setSetting(key, value).catch(() => {});
+    await api.admin.addAuditLog(action, detail).catch(() => {});
     setSaving(false);
     load();
   };
@@ -607,7 +588,7 @@ export const AdminProfile = () => {
   const changeCommission = () => saveSetting('admin_commission_pct', commission, 'commission_update', `Commission set to ${commission}%`);
   const changeProfile = async () => {
     await saveSetting('admin_name', name.trim(), 'profile_update', `Admin profile updated to ${name.trim()}`);
-    await supabase.from('admin_settings').upsert({ key: 'admin_email', value: email.trim() }, { onConflict: 'key' });
+    await api.admin.setSetting('admin_email', email.trim()).catch(() => {});
     load();
   };
 
@@ -626,7 +607,8 @@ export const AdminProfile = () => {
   ];
 
   const logout = async () => {
-    await supabase.from('audit_logs').insert({ action: 'logout', detail: 'Admin signed out' });
+    await api.admin.addAuditLog('logout', 'Admin signed out').catch(() => {});
+    setApiToken(null);
     setAdminAuthed(false);
     navigate({ name: 'admin-auth' });
   };

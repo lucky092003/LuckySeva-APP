@@ -4,7 +4,7 @@ import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
 import { OtpSection } from '@/components/OtpInput';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api, setApiToken } from '@/lib/api';
 import { fetchCurrentLocation } from '@/lib/location';
 
 export const AuthScreen = () => {
@@ -57,17 +57,22 @@ export const AuthScreen = () => {
     const phone = form.phone;
     const email = mode === 'signup' ? form.email.trim() : '';
     try {
-      await supabase.from('profiles').upsert(
-        {
-          phone,
-          name,
-          email: email || null,
-          location: form.location,
-          role: 'customer',
-        },
-        { onConflict: 'phone' }
-      );
-      setCustomer({ name, phone, email: email || '', location: form.location });
+      const res = await api.auth.verifyOtp({
+        phone,
+        code,
+        role: 'customer',
+        name,
+        email: email || undefined,
+        location: form.location || undefined,
+      });
+      setApiToken(res.access_token);
+      const profile = res.profile;
+      setCustomer({
+        name: profile?.name || name,
+        phone,
+        email: profile?.email || email || '',
+        location: profile?.location || form.location,
+      });
       navigate({ name: 'home' });
     } catch {
       setError('Could not sign you in. Please try again.');

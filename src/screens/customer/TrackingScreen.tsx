@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -25,24 +25,19 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
 
   const load = () => {
     setLoading(true);
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .maybeSingle()
-      .then(({ data }) => {
-        const b = data as Booking;
-        setBooking(b || null);
-        if (b?.professional_id) {
-          supabase
-            .from('professionals')
-            .select('*')
-            .eq('id', b.professional_id)
-            .maybeSingle()
-            .then(({ data }) => setProfessional((data as Professional) || null));
+    api.customer
+      .booking(bookingId)
+      .then((b) => {
+        setBooking(b);
+        if (b.professional_id) {
+          api.catalog
+            .professional(b.professional_id)
+            .then((res) => setProfessional(res.professional))
+            .catch(() => setProfessional(null));
         }
-        setLoading(false);
-      });
+      })
+      .catch(() => setBooking(null))
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [bookingId]);

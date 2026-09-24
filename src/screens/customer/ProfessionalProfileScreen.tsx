@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useProfessional, useReviews, useIsFavourite, toggleFavourite } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Stars, Badge, Button, EmptyState } from '@/components/ui';
 import { inr, formatDate } from '@/lib/format';
@@ -27,13 +27,10 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
 
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from('professional_services')
-      .select('service:services(*)')
-      .eq('professional_id', id)
-      .then(({ data }) => {
-        setServices(((data || []) as unknown as { service: Service }[]).map((r) => r.service).filter(Boolean));
-      });
+    api.catalog
+      .professional(id)
+      .then((res) => setServices(res.services.map((r) => r.service).filter(Boolean)))
+      .catch(() => setServices([]));
   }, [id]);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Profile" /><Spinner className="py-20" /></div>;

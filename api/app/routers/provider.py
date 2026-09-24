@@ -45,6 +45,12 @@ def update_me(body: dict, claims: dict = Depends(require_provider)):
         patch["bio"] = body["bio"]
     if isinstance(body.get("service_area"), str):
         patch["service_area"] = body["service_area"]
+    if isinstance(body.get("latitude"), (int, float)):
+        patch["latitude"] = body["latitude"]
+    if isinstance(body.get("longitude"), (int, float)):
+        patch["longitude"] = body["longitude"]
+    if isinstance(body.get("name"), str) and body["name"].strip():
+        patch["name"] = body["name"].strip()
     if not patch:
         raise ApiError(400, "Nothing to update")
     client = db()
@@ -152,7 +158,7 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
     client = db()
     booking_row = (
         client.table("bookings")
-        .select("professional_id, status")
+        .select("professional_id, status, customer_phone, service_name")
         .eq("id", booking_id)
         .maybe_single()
         .execute()
@@ -173,6 +179,29 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
         jobs = int(pro.data.get("completed_jobs") or 0) if pro.data else 0
         client.table("professionals").update({"completed_jobs": jobs + 1}).eq(
             "id", provider_id(claims)
+        ).execute()
+    customer_phone = booking_row.data.get("customer_phone")
+    if status == "on_the_way" and customer_phone:
+        client.table("notifications").insert(
+            {
+                "customer_phone": customer_phone,
+                "type": "provider",
+                "title": "Provider On The Way",
+                "message": "Your service provider is on the way to your location.",
+                "booking_id": booking_id,
+                "read": False,
+            }
+        ).execute()
+    if status == "completed" and customer_phone:
+        client.table("notifications").insert(
+            {
+                "customer_phone": customer_phone,
+                "type": "review",
+                "title": "Service Completed",
+                "message": "Your service is complete. Please leave a review.",
+                "booking_id": booking_id,
+                "read": False,
+            }
         ).execute()
     return res.data[0]
 
