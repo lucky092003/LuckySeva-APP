@@ -32,6 +32,7 @@ export type Screen =
   | { name: 'payment'; bookingId: string }
   | { name: 'booking-success'; bookingId: string }
   | { name: 'tracking'; bookingId: string }
+  | { name: 'invoice'; bookingId: string }
   | { name: 'bookings' }
   | { name: 'reviews'; bookingId: string }
   | { name: 'profile' }

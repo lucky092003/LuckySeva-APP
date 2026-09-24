@@ -26,7 +26,7 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
-  const { back } = useApp();
+  const { back, navigate } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -142,6 +142,13 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
           )}
           <Button onClick={advance} disabled={updating} className="flex-1">
             {updating ? 'Updating...' : nextStatus === 'assigned' ? 'Accept Request' : nextStatus === 'on_the_way' ? 'Start Journey' : nextStatus === 'started' ? 'Start Service' : 'Mark Complete'}
+          </Button>
+        </div>
+      )}
+      {isCompleted && (
+        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
+          <Button onClick={() => navigate({ name: 'invoice', bookingId })} className="flex-1">
+            <Icons.Receipt size={16} /> Generate Invoice
           </Button>
         </div>
       )}

@@ -438,6 +438,7 @@ export const AdminBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const { navigate } = useApp();
 
   useEffect(() => {
     api.admin.bookings().then((data) => {
@@ -500,6 +501,7 @@ export const AdminBookings = () => {
                   <th className="px-5 py-3 font-semibold">Payment</th>
                   <th className="px-5 py-3 font-semibold">Amount</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold"></th>
                 </tr>
               </thead>
               <tbody>
@@ -520,6 +522,16 @@ export const AdminBookings = () => {
                     <td className="px-5 py-3 font-semibold text-emerald-600">{inr(b.total_amount)}</td>
                     <td className="px-5 py-3">
                       <Badge tone={tone[b.status]}>{b.status.replace('_', ' ')}</Badge>
+                    </td>
+                    <td className="px-5 py-3">
+                      {b.status === 'completed' && (
+                        <button
+                          onClick={() => navigate({ name: 'invoice', bookingId: b.id })}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                        >
+                          <Icons.Receipt size={13} /> Invoice
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
