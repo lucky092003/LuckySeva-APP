@@ -3,8 +3,9 @@ import { ReactNode, useEffect, useState } from 'react';
 import { api, setApiToken } from '@/lib/api';
 import { useApp, ADMIN_CREDENTIALS } from '@/lib/app-context';
 import { Logo } from '@/components/Logo';
-import { Card, Spinner, Badge, EmptyState, Button } from '@/components/ui';
+import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge } from '@/components/ui';
 import { inr, formatDate, slugToLabel } from '@/lib/format';
+import { isVerified, kycStatus, KYC_STATUS_LABEL, kycDocLabel } from '@/lib/kyc';
 import type { Booking, Professional, Category, Service } from '@/lib/types';
 
 const AdminHeader = ({
@@ -141,6 +142,9 @@ export const AdminProviders = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', category: 'other', price: '149', experience: '1', serviceArea: '' });
+  const [reviewing, setReviewing] = useState<Professional | null>(null);
+  const [reviewNote, setReviewNote] = useState('');
+  const [reviewSaving, setReviewSaving] = useState(false);
 
   const load = () => {
     Promise.all([api.admin.professionals(), api.admin.categories()])
@@ -199,7 +203,7 @@ export const AdminProviders = () => {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-bold text-gray-900">{p.name}</p>
-                    <Icons.BadgeCheck size={14} className="shrink-0 text-emerald-500" />
+                    {isVerified(p) && <VerifiedBadge />}
                   </div>
                   <p className="text-[11px] text-gray-500">{slugToLabel(p.category_slug)}</p>
                 </div>
@@ -226,6 +230,37 @@ export const AdminProviders = () => {
                   <p className="text-xs font-bold text-emerald-600">{inr(p.starting_price)}</p>
                   <p className="text-[9px] text-gray-400">Starting</p>
                 </div>
+              </div>
+
+              {/* KYC status */}
+              <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
+                <div className="flex items-center gap-2">
+                  <Icons.ShieldCheck size={15} className={kycStatus(p) === 'approved' ? 'text-emerald-500' : kycStatus(p) === 'rejected' ? 'text-red-400' : kycStatus(p) === 'pending' ? 'text-amber-500' : 'text-gray-300'} />
+                  <span className="text-xs font-semibold text-gray-700">KYC: {KYC_STATUS_LABEL[kycStatus(p)]}</span>
+                </div>
+                {kycStatus(p) === 'pending' ? (
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => { setReviewing(p); setReviewNote(''); }}
+                      className="rounded-lg bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white hover:bg-emerald-600"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => { setReviewing(p); setReviewNote(''); }}
+                      className="rounded-lg border border-red-200 px-2.5 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setReviewing(p); setReviewNote(p.kyc_review_note || ''); }}
+                    className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-500 hover:bg-gray-50"
+                  >
+                    Review
+                  </button>
+                )}
               </div>
             </Card>
           ))}
@@ -272,6 +307,56 @@ export const AdminProviders = () => {
             <Button onClick={addProvider} disabled={adding || !form.name.trim()} className="w-full">
               {adding ? 'Adding...' : 'Add Provider'}
             </Button>
+          </div>
+        </Modal>
+      )}
+
+      {reviewing && (
+        <Modal title={`Review KYC · ${reviewing.name}`} onClose={() => setReviewing(null)}>
+          <div className="space-y-3">
+            <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm">
+              <p className="text-gray-900">{kycDocLabel(reviewing)} <span className="font-semibold">{reviewing.kyc_doc_number}</span></p>
+              <p className="text-[11px] text-gray-500">Submitted {reviewing.kyc_submitted_at ? formatDate(reviewing.kyc_submitted_at) : '—'}</p>
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Review note (shown to provider if rejected)</span>
+              <textarea
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                rows={3}
+                placeholder="e.g. Document could not be verified. Please upload a clear photo."
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+            </label>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={reviewSaving}
+                onClick={async () => {
+                  setReviewSaving(true);
+                  await api.admin.reviewKyc(reviewing.id, 'rejected', reviewNote).catch(() => {});
+                  setReviewSaving(false);
+                  setReviewing(null);
+                  load();
+                }}
+                className="flex-1 py-2 text-xs text-red-500"
+              >
+                Reject
+              </Button>
+              <Button
+                disabled={reviewSaving}
+                onClick={async () => {
+                  setReviewSaving(true);
+                  await api.admin.reviewKyc(reviewing.id, 'approved', reviewNote).catch(() => {});
+                  setReviewSaving(false);
+                  setReviewing(null);
+                  load();
+                }}
+                className="flex-1 py-2 text-xs"
+              >
+                {reviewSaving ? 'Saving...' : 'Approve'}
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

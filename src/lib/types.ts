@@ -18,6 +18,8 @@ export type Service = {
   popular: boolean;
 };
 
+export type KYCStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
+
 export type Professional = {
   id: string;
   name: string;
@@ -38,6 +40,12 @@ export type Professional = {
   latitude: number | null;
   longitude: number | null;
   service_radius_km: number;
+  kyc_status?: KYCStatus;
+  kyc_doc_type?: string | null;
+  kyc_doc_number?: string | null;
+  kyc_review_note?: string | null;
+  kyc_submitted_at?: string | null;
+  kyc_reviewed_at?: string | null;
 };
 
 export type Profile = {
