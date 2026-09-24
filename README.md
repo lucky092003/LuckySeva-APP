@@ -15,7 +15,7 @@ their bookings and earnings; an admin dashboard oversees the platform.
 └───────────────┬────────────────────────────────────────────────────────────┘
                 │ HTTPS / JSON + JWT (Bearer token)
 ┌───────────────▼────────────────────────────────────────────────────────────┐
-│  BACKEND (FastAPI · Python) — api/app/                                     │
+│  BACKEND (FastAPI · Python) — backend/app/                             │
 │  · Auth: /auth/verify-otp mints a JWT (customer / provider / admin roles)  │
 │  · Routers: auth · catalog · customer · provider · admin                   │
 │  · Writes/reads data through supabase-py (service role)                    │
@@ -28,7 +28,7 @@ their bookings and earnings; an admin dashboard oversees the platform.
 ```
 
 - **Frontend** = this repo (web + mobile), deployed on **Vercel**.
-- **Backend** = `api/` FastAPI server (Python), deployed anywhere (Render/Railway/VPS).
+- **Backend** = `backend/` FastAPI server (Python), deployed anywhere (Render/Railway/VPS).
 - **Database** = **Supabase** Postgres — the single source of truth for both the app and the API.
 
 > 👉 The frontend can keep working directly against Supabase (legacy `src/lib/supabase.ts`
@@ -104,11 +104,11 @@ Or copy the `.sql` files from `supabase/migrations/` into the Supabase
 ### 2. Backend (FastAPI, Python)
 
 ```sh
-cd api
+cd backend
 py -m pip install -r requirements.txt
 ```
 
-Copy `api/.env.example` to `api/.env` and set your Supabase credentials
+Copy `backend/.env.example` to `backend/.env` and set your Supabase credentials
 (Project Settings → API):
 
 ```sh
@@ -198,10 +198,10 @@ The API is a plain Python service; deploy it on any host. Recommended: **Render*
 
 1. Push this repo to GitHub.
 2. On [Render](https://render.com) → **New → Web Service** → pick the repo.
-3. Root Directory: `api`
+3. Root Directory: `backend`
 4. Build Command: `pip install -r requirements.txt`
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-6. Add the environment variables from `api/.env.example`
+6. Add the environment variables from `backend/.env.example`
    (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`).
 7. Copy the generated URL (e.g. `https://luckyseva-api.onrender.com`) into
    `VITE_API_URL` on every Vercel project.
@@ -257,7 +257,7 @@ await api.customer.createBooking({ service_id, scheduled_date, scheduled_time })
 | `npm run typecheck`   | Run TypeScript type checking                |
 | `npm run test:unit`   | Run Vitest unit tests                       |
 | `npx cap sync`        | Sync web build into native projects         |
-| `cd api && py -m uvicorn app.main:app --reload` | Run the FastAPI backend      |
+| `cd backend && py -m uvicorn app.main:app --reload` | Run the FastAPI backend      |
 
 ---
 
@@ -302,7 +302,7 @@ npx cap sync
 │       ├── customer/        # Customer-facing screens
 │       ├── provider/        # Partner-facing screens
 │       └── admin/           # Admin dashboard screens (web only)
-├── api/                     # FastAPI backend (Python)
+├── backend/                # FastAPI backend (Python)
 │   ├── app/
 │   │   ├── main.py          # FastAPI app + CORS + routers
 │   │   ├── security.py      # JWT sign/verify (PyJWT)
@@ -327,6 +327,6 @@ npx cap sync
 - **Tailwind CSS 3** styling
 - **Capacitor 8** native mobile wrapper
 - **Supabase** — PostgreSQL database (schema in `supabase/migrations/`)
-- **FastAPI** (Python) — backend API (`api/`) talking to Supabase via `supabase-py`
+- **FastAPI** (Python) — backend API (`backend/`) talking to Supabase via `supabase-py`
 - **Vercel** — frontend hosting (three role-locked sites)
 - **lucide-react** icons

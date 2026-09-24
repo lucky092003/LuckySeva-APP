@@ -3,7 +3,7 @@
 **LuckySeva** is a mobile-first home-services marketplace. One React + Vite + TypeScript
 codebase is built with **three role-locked apps** (customer, provider, admin), wrapped
 natively with **Capacitor**. Data lives in **Supabase** (PostgreSQL); the business API is a
-**FastAPI** (Python) service in `api/` that reads/writes Supabase and mints JWTs.
+**FastAPI** (Python) service in `backend/` that reads/writes Supabase and mints JWTs.
 
 This document describes the current system, its data model, and the key features
 (especially the **provider radius-based matching system**).
@@ -34,7 +34,7 @@ VITE_APP_ROLE=customer      # customer | provider | admin
 VITE_API_URL=http://localhost:8000   # FastAPI base URL (deployed: https://your-api)
 ```
 
-Backend (`api/.env` — see `api/.env.example`):
+Backend (`backend/.env` — see `backend/.env.example`):
 
 ```sh
 SUPABASE_URL=...
@@ -45,7 +45,7 @@ SUPABASE_JWT_SECRET=...         # from Supabase: Settings → API → JWT Secret
 > **Data access — two layers.** The current web/app code still calls the Supabase
 > PostgREST client directly (`src/lib/supabase.ts`); RLS is intentionally open for
 > this single-tenant demo (SELECT/INSERT/UPDATE allowed). New features go through
-> the FastAPI backend (`src/lib/api.ts` → `api/`), which uses the **service role**
+> the FastAPI backend (`src/lib/api.ts` → `backend/`), which uses the **service role**
 > key server-side and authorizes requests with a custom JWT. Backend endpooints are
 > grouped by role: `auth`, `catalog` (public), `customer`, `provider`, `admin`.
 
@@ -254,7 +254,7 @@ is responsive — phone column on mobile, full width on desktop web.
 | `npm run typecheck` | TypeScript checks |
 | `npm run test:unit` | Vitest unit tests |
 | `npx cap sync` | Sync web build into native projects |
-| `py -m uvicorn app.main:app --reload` (from `api/`) | Run the FastAPI backend |
+| `py -m uvicorn app.main:app --reload` (from `backend/`) | Run the FastAPI backend |
 
 See [README.md](../README.md) for setup, [PUBLISHING.md](../PUBLISHING.md) for releases,
-and `api/` for the backend.
+and `backend/` for the backend.

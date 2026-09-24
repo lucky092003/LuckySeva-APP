@@ -17,10 +17,10 @@ auth flow, and navigation.
 ## Backend (FastAPI) — publish once
 
 The app, the website, and the admin dashboard all talk to **one Python API**
-(`api/`). Deploy it before (or alongside) the frontends:
+(`backend/`). Deploy it before (or alongside) the frontends:
 
 **Render (recommended):** New → Web Service → this repo
-- Root Directory: `api`
+- Root Directory: `backend`
 - Build: `pip install -r requirements.txt`
 - Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Env vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
@@ -110,7 +110,7 @@ Repeat for the other role to publish the second app.
 | File | Purpose |
 |------|---------|
 | `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE`, `VITE_API_URL` |
-| `api/.env.example` | Backend env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
+| `backend/.env.example` | Backend env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
 | `render.yaml` | Render blueprint — one-click API deploy |
 | `vercel.json` | Vercel build settings for all three web projects |
 | `capacitor.config.ts` | Sets native app id/name from `VITE_APP_ROLE` |
