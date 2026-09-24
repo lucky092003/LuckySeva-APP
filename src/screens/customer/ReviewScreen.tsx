@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, Spinner } from '@/components/ui';
 import type { Booking } from '@/lib/types';
@@ -17,13 +17,14 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
   const [hover, setHover] = useState(0);
 
   useEffect(() => {
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setBooking((data as Booking) || null);
+    api.customer
+      .booking(bookingId)
+      .then((data) => {
+        setBooking(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setBooking(null);
         setLoading(false);
       });
   }, [bookingId]);
@@ -32,32 +33,19 @@ export const ReviewScreen = ({ bookingId }: { bookingId: string }) => {
     if (!booking) return;
     setSubmitting(true);
     setError('');
-    const { error: err } = await supabase.from('reviews').insert({
-      booking_id: booking.id,
-      professional_id: booking.professional_id,
-      customer_name: booking.customer_name,
-      rating,
-      comment,
-    });
-    if (err) {
+    try {
+      await api.customer.addReview({
+        booking_id: booking.id,
+        professional_id: booking.professional_id || '',
+        rating,
+        comment,
+      });
+      setSubmitting(false);
+      navigate({ name: 'bookings' });
+    } catch {
       setError('Could not submit your review. Please try again.');
       setSubmitting(false);
-      return;
     }
-    if (booking.professional_id) {
-      const { data: agg } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('professional_id', booking.professional_id);
-      const rows = (agg as { rating: number }[]) || [];
-      const avg = rows.length ? rows.reduce((s, r) => s + Number(r.rating), 0) / rows.length : 0;
-      await supabase
-        .from('professionals')
-        .update({ rating: Math.round(avg * 10) / 10, reviews_count: rows.length })
-        .eq('id', booking.professional_id);
-    }
-    setSubmitting(false);
-    navigate({ name: 'bookings' });
   };
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Review" /><Spinner className="py-20" /></div>;

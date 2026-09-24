@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { Card, Spinner, EmptyState, Stars, Badge } from '@/components/ui';
 import { inr } from '@/lib/format';
 import type { Service, Professional, Category } from '@/lib/types';
@@ -17,16 +17,14 @@ export const SearchScreen = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('services').select('*, category:categories(*)'),
-      supabase.from('professionals').select('*'),
-      supabase.from('categories').select('*').order('sort_order'),
-    ]).then(([s, p, c]) => {
-      setServices((s.data as unknown as Service[]) || []);
-      setPros((p.data as Professional[]) || []);
-      setCategories((c.data as Category[]) || []);
-      setLoading(false);
-    });
+    Promise.all([api.catalog.services(), api.catalog.professionals(), api.catalog.categories()])
+      .then(([s, p, c]) => {
+        setServices(s);
+        setPros(p);
+        setCategories(c);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const q = query.toLowerCase().trim();
@@ -117,7 +115,7 @@ export const SearchScreen = () => {
                 <h3 className="mb-2 text-sm font-bold text-gray-900">Services ({matchedServices.length})</h3>
                 <div className="space-y-2">
                   {matchedServices.map((svc) => {
-                    const cat = (svc as unknown as { category: { color: string; icon: string; name: string } }).category;
+                    const cat = categories.find((c) => c.id === svc.category_id);
                     const Icon = cat ? (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[cat.icon] || Icons.Circle : Icons.Circle;
                     return (
                       <Card key={svc.id} onClick={() => navigate({ name: 'service', id: svc.id })} className="flex items-center gap-3 p-3.5">

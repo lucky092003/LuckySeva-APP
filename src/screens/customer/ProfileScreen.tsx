@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useBookings, useFavourites, useUnreadNotifications } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api, setApiToken } from '@/lib/api';
 import { fetchCurrentLocation } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button } from '@/components/ui';
@@ -59,7 +59,7 @@ export const ProfileScreen = () => {
     setDetecting(true);
     try {
       const loc = await fetchCurrentLocation();
-      await supabase.from('profiles').update({ location: loc.address }).eq('phone', customer.phone);
+      await api.customer.updateProfile({ location: loc.address });
       setCustomer({ ...customer, location: loc.address });
     } catch {
       /* ignore */
@@ -69,7 +69,7 @@ export const ProfileScreen = () => {
   };
 
   const saveProfile = async () => {
-    await supabase.from('profiles').update({ name: form.name, email: form.email, location: form.location }).eq('phone', customer.phone);
+    await api.customer.updateProfile({ name: form.name, email: form.email, location: form.location }).catch(() => {});
     setCustomer({ ...customer, name: form.name, email: form.email, location: form.location });
     setEditing(false);
   };
@@ -157,7 +157,7 @@ export const ProfileScreen = () => {
           <Icons.ChevronRight size={18} />
         </button>
 
-        <Button variant="outline" onClick={() => { setCustomer(null); navigate({ name: 'auth' }); }} className="mt-4 w-full text-red-500">
+        <Button variant="outline" onClick={() => { setApiToken(null); setCustomer(null); navigate({ name: 'auth' }); }} className="mt-4 w-full text-red-500">
           <Icons.LogOut size={16} /> Logout
         </Button>
 

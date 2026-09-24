@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { useState } from 'react';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button } from '@/components/ui';
@@ -14,13 +14,14 @@ export const BookingSuccessScreen = ({ bookingId }: { bookingId: string }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setBooking((data as Booking) || null);
+    api.customer
+      .booking(bookingId)
+      .then((data) => {
+        setBooking(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setBooking(null);
         setLoading(false);
       });
   }, [bookingId]);

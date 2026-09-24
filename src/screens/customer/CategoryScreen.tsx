@@ -1,25 +1,31 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useServicesByCategory } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState } from '@/components/ui';
 import { inr } from '@/lib/format';
 import { useEffect, useState } from 'react';
-import type { Category } from '@/lib/types';
+import type { Category, Service } from '@/lib/types';
 
 export const CategoryScreen = ({ slug }: { slug: string }) => {
   const { navigate } = useApp();
   const [category, setCategory] = useState<Category | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    supabase
-      .from('categories')
-      .select('*')
-      .eq('slug', slug)
-      .maybeSingle()
-      .then(({ data }) => setCategory((data as Category) || null));
+    setLoading(true);
+    api.catalog
+      .category(slug)
+      .then((res) => {
+        setCategory(res.category);
+        setServices(res.services);
+      })
+      .catch(() => {
+        setCategory(null);
+        setServices([]);
+      })
+      .finally(() => setLoading(false));
   }, [slug]);
-  const { services, loading } = useServicesByCategory(category?.id || null);
 
   const color = category?.color || '#10b981';
   const Icon = category

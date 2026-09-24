@@ -89,7 +89,6 @@ export type AddressRow = {
   label: string;
   full_address: string;
   is_default: boolean;
-  created_at: string;
   latitude: number | null;
   longitude: number | null;
 };

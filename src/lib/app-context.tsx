@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { api, getApiToken, setApiToken } from './api';
 
 export type Role = 'customer' | 'provider' | 'admin';
 
@@ -111,6 +112,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [customer, setCustomerState] = useState<Customer>(initialCustomer);
   const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);
   const [adminAuthed, setAdminAuthedState] = useState<boolean>(initialAdminAuthed);
+
+  useEffect(() => {
+    const token = getApiToken();
+    const resetToAuth = () => {
+      setCustomerState(null);
+      setProviderIdState(null);
+      setAdminAuthedState(false);
+      setStack(APP_ROLE === 'provider' ? [{ name: 'provider-auth' }] : APP_ROLE === 'admin' ? [{ name: 'admin-auth' }] : [{ name: 'auth' }]);
+    };
+    if (!token) {
+      if (initialCustomer || initialProviderId || initialAdminAuthed) {
+        save(LS_CUSTOMER, null);
+        save(LS_PROVIDER, null);
+        save(LS_ADMIN, false);
+        resetToAuth();
+      }
+      return;
+    }
+    api.auth
+      .me()
+      .then((res) => {
+        if (res.role === 'provider' && res.professional) {
+          setProviderId(res.professional.id);
+          if (!initialProviderId) setStack([{ name: 'provider-home' }]);
+        } else if (res.role === 'admin') {
+          setAdminAuthed(true);
+          if (!initialAdminAuthed) setStack([{ name: 'admin-dashboard' }]);
+        } else if (res.profile) {
+          setCustomer({
+            name: res.profile.name,
+            phone: res.profile.phone,
+            email: res.profile.email || '',
+            location: res.profile.location || '',
+          });
+          if (!initialCustomer) setStack([{ name: 'home' }]);
+        } else {
+          resetToAuth();
+        }
+      })
+      .catch(() => {
+        setApiToken(null);
+        resetToAuth();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setCustomer = useCallback((c: Customer) => {
     setCustomerState(c);

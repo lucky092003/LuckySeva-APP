@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useProfessionalsByCategory } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Stars, Badge } from '@/components/ui';
 import { inr } from '@/lib/format';
@@ -15,7 +15,7 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
   const { navigate } = useApp();
   const [category, setCategory] = useState<Category | null>(null);
   useEffect(() => {
-    supabase.from('categories').select('*').eq('slug', slug).maybeSingle().then(({ data }) => setCategory((data as Category) || null));
+    api.catalog.category(slug).then((res) => setCategory(res.category)).catch(() => setCategory(null));
   }, [slug]);
   const { professionals, loading } = useProfessionalsByCategory(slug);
 

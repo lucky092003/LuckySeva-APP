@@ -1,8 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
-import { insertBookingNotification } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -27,20 +26,21 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
-  const { back, providerId } = useApp();
+  const { back } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   const load = () => {
     setLoading(true);
-    supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setBooking((data as Booking) || null);
+    api.provider
+      .booking(bookingId)
+      .then((data) => {
+        setBooking(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setBooking(null);
         setLoading(false);
       });
   };
@@ -51,24 +51,10 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     const next = NEXT_STATUS[booking.status];
     if (!next) return;
     setUpdating(true);
-    await supabase.from('bookings').update({ status: next }).eq('id', booking.id);
     if (next === 'assigned') {
-      await insertBookingNotification(booking.customer_phone, 'provider', 'Provider Assigned', `${booking.professional_name} has accepted your ${booking.service_name} booking.`, booking.id);
-    }
-    if (next === 'on_the_way') {
-      await insertBookingNotification(booking.customer_phone, 'provider', 'Provider On The Way', `${booking.professional_name} is on the way to your location for ${booking.service_name}.`, booking.id);
-    }
-    if (next === 'completed') {
-      await insertBookingNotification(booking.customer_phone, 'review', 'Service Completed', `${booking.service_name} is complete. Please pay ${inr(booking.total_amount)} and rate your experience.`, booking.id);
-      if (booking.professional_id) {
-        const { data: pro } = await supabase
-          .from('professionals')
-          .select('completed_jobs')
-          .eq('id', booking.professional_id)
-          .maybeSingle();
-        const jobs = Number((pro as { completed_jobs?: number } | null)?.completed_jobs || 0);
-        await supabase.from('professionals').update({ completed_jobs: jobs + 1 }).eq('id', booking.professional_id);
-      }
+      await api.provider.accept(booking.id).catch(() => {});
+    } else {
+      await api.provider.updateStatus(booking.id, next as BookingStatus).catch(() => {});
     }
     setUpdating(false);
     load();
@@ -78,12 +64,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     if (!booking) return;
     if (!window.confirm(`Decline the ${booking.service_name} request? It goes back to other providers.`)) return;
     setUpdating(true);
-    if (providerId) {
-      await supabase.from('booking_declines').insert({ booking_id: booking.id, professional_id: providerId });
-    }
-    if (booking.professional_id === providerId) {
-      await supabase.from('bookings').update({ professional_id: null, professional_name: 'Auto-assign' }).eq('id', booking.id);
-    }
+    await api.provider.decline(booking.id).catch(() => {});
     setUpdating(false);
     back();
   };

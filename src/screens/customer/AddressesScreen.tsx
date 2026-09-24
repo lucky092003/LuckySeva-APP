@@ -1,14 +1,12 @@
 import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useApp } from '@/lib/app-context';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { fetchCurrentLocation, splitAddress, applyDetails, geocodeAddress } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, Spinner } from '@/components/ui';
 import type { AddressRow } from '@/lib/types';
 
 export const AddressesScreen = ({ detected }: { detected?: string }) => {
-  const { customer } = useApp();
   const [addresses, setAddresses] = useState<AddressRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -56,25 +54,22 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
   };
 
   const load = () => {
-    if (!customer?.phone) {
-      setLoading(false);
-      return;
-    }
-    supabase
-      .from('addresses')
-      .select('*')
-      .eq('customer_phone', customer.phone)
-      .order('is_default', { ascending: false })
-      .then(({ data }) => {
-        setAddresses((data as AddressRow[]) || []);
+    api.customer
+      .addresses()
+      .then((data) => {
+        setAddresses(data || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setAddresses([]);
         setLoading(false);
       });
   };
 
-  useEffect(load, [customer]);
+  useEffect(load, []);
 
   const add = async () => {
-    if (!label.trim() || !fullAddress || !customer?.phone) return;
+    if (!label.trim() || !fullAddress) return;
     let latitude: number | null = coords?.latitude ?? null;
     let longitude: number | null = coords?.longitude ?? null;
     if (latitude === null || longitude === null) {
@@ -84,9 +79,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
         longitude = geo.longitude;
       }
     }
-    const isFirst = addresses.length === 0;
-    if (isFirst) await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: true, latitude, longitude });
-    else await supabase.from('addresses').insert({ customer_phone: customer.phone, label, full_address: fullAddress, is_default: false, latitude, longitude });
+    await api.customer.addAddress({ label, full_address: fullAddress, latitude, longitude }).catch(() => {});
     setLabel('');
     setHouseNo('');
     setArea('');
@@ -99,14 +92,12 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
   };
 
   const remove = async (id: string) => {
-    await supabase.from('addresses').delete().eq('id', id);
+    await api.customer.deleteAddress(id).catch(() => {});
     load();
   };
 
   const setDefault = async (id: string) => {
-    if (!customer?.phone) return;
-    await supabase.from('addresses').update({ is_default: false }).eq('customer_phone', customer.phone);
-    await supabase.from('addresses').update({ is_default: true }).eq('id', id);
+    await api.customer.updateAddress(id, { is_default: true }).catch(() => {});
     load();
   };
 

@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useProfessionalWithFallback, useReviews } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api, setApiToken } from '@/lib/api';
 import { fetchCurrentLocation, areaFrom } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars, EmptyState } from '@/components/ui';
@@ -23,13 +23,12 @@ export const ProviderProfileScreen = () => {
 
   useEffect(() => {
     if (!pro?.id) return;
-    supabase
-      .from('professional_services')
-      .select('service:services(*)')
-      .eq('professional_id', pro.id)
-      .then(({ data }) => {
-        setServices(((data || []) as unknown as { service: Service }[]).map((r) => r.service).filter(Boolean));
-      });
+    api.provider
+      .me()
+      .then(({ services }) => {
+        setServices((services || []).map((r) => r.service).filter(Boolean));
+      })
+      .catch(() => {});
     setPrice(String(pro.starting_price));
     setRadius(String(pro.service_radius_km || 60));
   }, [pro?.id, pro?.starting_price, pro?.service_radius_km]);
@@ -51,13 +50,13 @@ export const ProviderProfileScreen = () => {
   const toggleAvailability = async () => {
     if (!pro) return;
     setUpdatingAvail(true);
-    await supabase.from('professionals').update({ status: pro.status === 'available' ? 'busy' : 'available' }).eq('id', pro.id);
+    await api.provider.updateMe({ status: pro.status === 'available' ? 'busy' : 'available' }).catch(() => {});
     setUpdatingAvail(false);
     reload();
   };
 
   const savePricing = async () => {
-    await supabase.from('professionals').update({ starting_price: Number(price) || 0 }).eq('id', pro.id);
+    await api.provider.updateMe({ starting_price: Number(price) || 0 }).catch(() => {});
     setSheet(null);
     reload();
   };
@@ -66,14 +65,13 @@ export const ProviderProfileScreen = () => {
     setUpdatingLoc(true);
     try {
       const loc = await fetchCurrentLocation();
-      await supabase
-        .from('professionals')
-        .update({
+      await api.provider
+        .updateMe({
           latitude: loc.latitude,
           longitude: loc.longitude,
           service_area: areaFrom(loc.details) || pro.service_area,
         })
-        .eq('id', pro.id);
+        .catch(() => {});
     } catch {
       /* location remains unchanged on failure */
     }
@@ -83,10 +81,7 @@ export const ProviderProfileScreen = () => {
 
   const saveRadius = async () => {
     setSavingRadius(true);
-    await supabase
-      .from('professionals')
-      .update({ service_radius_km: Number(radius) || 60 })
-      .eq('id', pro.id);
+    await api.provider.updateMe({ service_radius_km: Number(radius) || 60 }).catch(() => {});
     setSavingRadius(false);
     reload();
   };
@@ -94,7 +89,7 @@ export const ProviderProfileScreen = () => {
   const applyRadius = async (km: number) => {
     setRadius(String(km));
     setSavingRadius(true);
-    await supabase.from('professionals').update({ service_radius_km: km }).eq('id', pro.id);
+    await api.provider.updateMe({ service_radius_km: km }).catch(() => {});
     setSavingRadius(false);
     reload();
   };
@@ -240,7 +235,7 @@ export const ProviderProfileScreen = () => {
 
         <Button
           variant="outline"
-          onClick={() => { setProviderId(null); navigate({ name: 'provider-auth' }); }}
+          onClick={() => { setApiToken(null); setProviderId(null); navigate({ name: 'provider-auth' }); }}
           className="mt-4 w-full text-red-500"
         >
           <Icons.LogOut size={16} /> Logout

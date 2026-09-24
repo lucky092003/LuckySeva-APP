@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useSupportTickets } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button, EmptyState } from '@/components/ui';
 
@@ -23,9 +23,9 @@ export const HelpScreen = () => {
   const [sending, setSending] = useState(false);
 
   const sendMessage = async () => {
-    if (!customer?.phone || !draft.trim()) return;
+    if (!customer || !draft.trim()) return;
     setSending(true);
-    await supabase.from('support_tickets').insert({ customer_phone: customer.phone, message: draft.trim() });
+    await api.customer.addTicket(draft.trim()).catch(() => {});
     setDraft('');
     setSending(false);
     reload();

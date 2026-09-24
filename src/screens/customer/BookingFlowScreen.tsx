@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useService, useProfessional, insertBookingNotification } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { useService, useProfessional } from '@/lib/hooks';
+import { api } from '@/lib/api';
 import { fetchCurrentLocation, applyDetails, splitAddress, geocodeAddress } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
@@ -67,17 +67,15 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   };
 
   useEffect(() => {
-    if (step !== 2 || !customer?.phone) {
+    if (step !== 2) {
       setSavedAddrs([]);
       return;
     }
-    supabase
-      .from('addresses')
-      .select('*')
-      .eq('customer_phone', customer.phone)
-      .order('is_default', { ascending: false })
-      .then(({ data }) => setSavedAddrs((data as AddressRow[]) || []));
-  }, [step, customer]);
+    api.customer
+      .addresses()
+      .then((data) => setSavedAddrs(data || []))
+      .catch(() => setSavedAddrs([]));
+  }, [step]);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -155,9 +153,9 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         longitude = geo.longitude;
       }
     }
-    const { data, error } = await supabase
-      .from('bookings')
-      .insert({
+    let booking: Booking;
+    try {
+      booking = await api.customer.createBooking({
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_address: address,
@@ -176,19 +174,12 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         payment_method: method,
         payment_status: method === 'cash' ? 'cash' : 'pending',
         status: 'confirmed',
-      })
-      .select()
-      .maybeSingle();
+      });
+    } catch {
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(false);
-    if (error || !data) return;
-    const booking = data as Booking;
-    await insertBookingNotification(
-      booking.customer_phone,
-      'booking',
-      'Booking Confirmed',
-      `${booking.service_name} is confirmed for ${dateLabel}, ${booking.scheduled_time}.`,
-      booking.id
-    );
     if (method === 'cash') {
       navigate({ name: 'booking-success', bookingId: booking.id });
     } else {

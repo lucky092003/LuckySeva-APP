@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
-import { useBookings, BookingFilter, insertBookingNotification } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { useBookings, BookingFilter } from '@/lib/hooks';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Badge, Button } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/lib/format';
@@ -24,8 +24,7 @@ export const MyBookingsScreen = () => {
   const cancel = async (b: Booking) => {
     if (!window.confirm(`Cancel your ${b.service_name} booking?`)) return;
     setCancellingId(b.id);
-    await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', b.id);
-    await insertBookingNotification(b.customer_phone, 'alert', 'Booking Cancelled', `Your ${b.service_name} booking has been cancelled.`, b.id);
+    await api.customer.cancelBooking(b.id).catch(() => {});
     setCancellingId(null);
     reload();
   };

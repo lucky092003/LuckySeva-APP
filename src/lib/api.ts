@@ -6,6 +6,7 @@ import type {
   Profile,
   Review,
   Service,
+  SupportTicket,
 } from './types';
 
 const BASE = import.meta.env.VITE_API_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
@@ -80,6 +81,10 @@ export const api = {
     booking: (id: string) => request<Booking>('customer', `/bookings/${id}`),
     createBooking: (b: Partial<Booking>) => request<Booking>('customer', '/bookings', 'POST', b),
     cancelBooking: (id: string) => request<Booking>('customer', `/bookings/${id}/cancel`, 'PUT'),
+    payBooking: (id: string, patch: { payment_method: string; payment_status: 'cash' | 'paid' | 'pending' }) =>
+      request<Booking>('customer', `/bookings/${id}/payment`, 'PUT', patch),
+    tickets: () => request<SupportTicket[]>('customer', '/tickets'),
+    addTicket: (message: string) => request<SupportTicket>('customer', '/tickets', 'POST', { message }),
     favourites: () => request<Professional[]>('customer', '/favourites'),
     addFavourite: (professional_id: string) => request<Favourite>('customer', '/favourites', 'POST', { professional_id }),
     removeFavourite: (professionalId: string) => request<{ ok: boolean }>('customer', `/favourites/${professionalId}`, 'DELETE'),
@@ -92,7 +97,7 @@ export const api = {
 
   provider: {
     me: () => request<{ professional: Professional; services: { service: Service }[] }>('provider', '/me'),
-    updateMe: (patch: { status?: string; starting_price?: number | string; service_radius_km?: number | string; bio?: string; service_area?: string }) =>
+    updateMe: (patch: { status?: string; starting_price?: number | string; service_radius_km?: number | string; bio?: string; service_area?: string; latitude?: number; longitude?: number; name?: string }) =>
       request<Professional>('provider', '/me', 'PUT', patch),
     bookings: () => request<Booking[]>('provider', '/bookings'),
     myBookings: () => request<Booking[]>('provider', '/bookings/mine'),
@@ -122,6 +127,7 @@ export const api = {
     updateService: (id: string, patch: Record<string, unknown>) => request<Service>('admin', `/services/${id}`, 'PUT', patch),
     deleteService: (id: string) => request<{ ok: boolean }>('admin', `/services/${id}`, 'DELETE'),
     setSetting: (key: string, value: string) => request<{ key: string; value: string }>('admin', '/settings', 'POST', { key, value }),
+    addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
   },
 };
 

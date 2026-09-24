@@ -273,3 +273,20 @@ def audit_logs(limit: int = Query(default=50, le=200)):
         client.table("audit_logs").select("*").order("created_at", desc=True).limit(limit).execute()
     )
     return res.data or []
+
+
+@router.post("/audit-logs", status_code=201)
+def create_audit_log(body: dict):
+    action = body.get("action")
+    if not isinstance(action, str) or not action.strip():
+        raise ApiError(400, "action required")
+    client = db()
+    res = (
+        client.table("audit_logs")
+        .insert({"action": action.strip(), "detail": body.get("detail") if isinstance(body.get("detail"), str) else ""})
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(400, "Could not create audit log")
+    return res.data[0]

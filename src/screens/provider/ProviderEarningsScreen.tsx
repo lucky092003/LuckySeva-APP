@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/lib/app-context';
 import { useProviderBookings, useProfessionalWithFallback, usePayouts } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, EmptyState } from '@/components/ui';
 import { inr, formatDate } from '@/lib/format';
@@ -55,7 +55,7 @@ export const ProviderEarningsScreen = () => {
   const withdraw = async () => {
     if (!professional || available <= 0 || hasPendingWithdraw) return;
     setWithdrawing(true);
-    await supabase.from('payouts').insert({ professional_id: professional.id, amount: available, status: 'requested' });
+    await api.provider.requestPayout(available).catch(() => {});
     setWithdrawing(false);
     reloadPayouts();
   };

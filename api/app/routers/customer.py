@@ -252,12 +252,57 @@ def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
         raise ApiError(400, "Completed bookings cannot be cancelled")
     res = (
         client.table("bookings")
-        .update({"status": "cancelled"})
+        .update({"status": "cancelled", "payment_status": "cancelled"})
         .eq("id", booking_id)
         .select("*")
         .execute()
     )
+    client.table("notifications").insert(
+        {
+            "customer_phone": customer_phone(claims),
+            "type": "alert",
+            "title": "Booking Cancelled",
+            "message": "Your booking has been cancelled.",
+            "booking_id": booking_id,
+            "read": False,
+        }
+    ).execute()
     return res.data[0]
+
+
+@router.put("/bookings/{booking_id}/payment")
+def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+    client = db()
+    existing = (
+        client.table("bookings")
+        .select("*")
+        .eq("id", booking_id)
+        .eq("customer_phone", customer_phone(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise ApiError(404, "Booking not found")
+    patch = {}
+    if isinstance(body.get("payment_method"), str) and body["payment_method"].strip():
+        patch["payment_method"] = body["payment_method"].strip()
+    if body.get("payment_status") in {"cash", "paid", "pending"}:
+        patch["payment_status"] = body["payment_status"]
+    if not patch:
+        raise ApiError(400, "Nothing to update")
+    res = client.table("bookings").update(patch).eq("id", booking_id).select("*").execute()
+    row = res.data[0]
+    client.table("notifications").insert(
+        {
+            "customer_phone": customer_phone(claims),
+            "type": "payment",
+            "title": "Payment Confirmed",
+            "message": f"Payment of ₹{float(row.get('total_amount') or 0):g} received for your {row.get('service_name')} booking.",
+            "booking_id": booking_id,
+            "read": False,
+        }
+    ).execute()
+    return row
 
 
 @router.get("/favourites")
@@ -334,6 +379,42 @@ def mark_notification_read(notification_id: str, claims: dict = Depends(require_
     )
     if not res.data:
         raise ApiError(404, "Notification not found")
+    return res.data[0]
+
+
+@router.get("/tickets")
+def tickets(claims: dict = Depends(require_customer)):
+    client = db()
+    res = (
+        client.table("support_tickets")
+        .select("*")
+        .eq("customer_phone", customer_phone(claims))
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data or []
+
+
+@router.post("/tickets", status_code=201)
+def create_ticket(body: dict, claims: dict = Depends(require_customer)):
+    message = body.get("message")
+    if not isinstance(message, str) or not message.strip():
+        raise ApiError(400, "message required")
+    client = db()
+    res = (
+        client.table("support_tickets")
+        .insert(
+            {
+                "customer_phone": customer_phone(claims),
+                "message": message.strip(),
+                "status": "open",
+            }
+        )
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(400, "Could not create ticket")
     return res.data[0]
 
 

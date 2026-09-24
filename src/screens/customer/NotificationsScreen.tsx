@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useNotifications } from '@/lib/hooks';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner } from '@/components/ui';
 import type { Notification } from '@/lib/types';
@@ -38,13 +38,13 @@ function timeAgo(iso: string): string {
 }
 
 export const NotificationsScreen = () => {
-  const { navigate, customer } = useApp();
-  const { notifications, loading, reload } = useNotifications(customer?.phone || null);
+  const { navigate } = useApp();
+  const { notifications, loading, reload } = useNotifications(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const open = async (n: Notification) => {
     if (!n.read) {
-      await supabase.from('notifications').update({ read: true }).eq('id', n.id);
+      await api.customer.markNotificationRead(n.id).catch(() => {});
       reload();
     }
     if (n.booking_id) navigate({ name: 'tracking', bookingId: n.booking_id });

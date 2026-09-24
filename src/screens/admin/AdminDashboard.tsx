@@ -1,6 +1,6 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-context';
 import { Card, Spinner, Badge } from '@/components/ui';
 import { inr, formatDate } from '@/lib/format';
@@ -50,14 +50,13 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('bookings').select('*').order('created_at', { ascending: false }),
-      supabase.from('professionals').select('*'),
-    ]).then(([b, p]) => {
-      setBookings((b.data as Booking[]) || []);
-      setPros((p.data as Professional[]) || []);
-      setLoading(false);
-    });
+    Promise.all([api.admin.bookings(), api.admin.professionals()])
+      .then(([b, p]) => {
+        setBookings(b || []);
+        setPros(p || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
@@ -86,7 +85,7 @@ export const AdminDashboard = () => {
     a.download = `luckyseva-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    await supabase.from('audit_logs').insert({ action: 'export', detail: `Exported ${rows.length} bookings to CSV` });
+    await api.admin.addAuditLog('export', `Exported ${rows.length} bookings to CSV`).catch(() => {});
   };
 
   const revenue = bookings.filter((b) => b.status !== 'cancelled' && b.payment_status !== 'pending').reduce((s, b) => s + Number(b.total_amount), 0);
