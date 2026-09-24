@@ -109,6 +109,8 @@ export const api = {
     earnings: () => request<{ total_earnings: number; by_date: Record<string, number>; payouts: Payout[]; available: number }>('provider', '/earnings'),
     dashboard: () => request<{ active: number; completed_jobs: number; today_earnings: number; total_earnings: number }>('provider', '/dashboard'),
     requestPayout: (amount: number) => request<Payout>('provider', '/payouts', 'POST', { amount }),
+    submitKyc: (input: { doc_type: string; doc_number: string }) =>
+      request<Professional>('provider', '/kyc', 'PUT', input),
   },
 
   admin: {
@@ -127,6 +129,8 @@ export const api = {
     updateService: (id: string, patch: Record<string, unknown>) => request<Service>('admin', `/services/${id}`, 'PUT', patch),
     deleteService: (id: string) => request<{ ok: boolean }>('admin', `/services/${id}`, 'DELETE'),
     setSetting: (key: string, value: string) => request<{ key: string; value: string }>('admin', '/settings', 'POST', { key, value }),
+    reviewKyc: (professionalId: string, decision: 'approved' | 'rejected', note?: string) =>
+      request<Professional>('admin', `/kyc/${professionalId}`, 'PUT', { decision, note }),
     addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
   },
 };

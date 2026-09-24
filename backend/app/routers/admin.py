@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 
@@ -146,6 +146,44 @@ def delete_professional(professional_id: str):
         {"action": "provider_delete", "detail": f"Deleted provider {professional_id}"}
     ).execute()
     return {"ok": True}
+
+
+@router.put("/kyc/{professional_id}")
+def review_kyc(professional_id: str, body: dict):
+    decision = body.get("decision")
+    if decision not in {"approved", "rejected"}:
+        raise ApiError(400, "decision must be approved or rejected")
+    client = db()
+    existing = (
+        client.table("professionals")
+        .select("id, name")
+        .eq("id", professional_id)
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise ApiError(404, "Professional not found")
+    note = body.get("note")
+    res = (
+        client.table("professionals")
+        .update(
+            {
+                "kyc_status": decision,
+                "kyc_review_note": note if isinstance(note, str) and note.strip() else None,
+                "kyc_reviewed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        .eq("id", professional_id)
+        .select("*")
+        .execute()
+    )
+    client.table("audit_logs").insert(
+        {
+            "action": "provider_kyc",
+            "detail": f"{decision} KYC for {existing.data['name']}",
+        }
+    ).execute()
+    return res.data[0]
 
 
 @router.get("/categories")

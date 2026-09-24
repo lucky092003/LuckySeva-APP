@@ -3,8 +3,9 @@ import { useApp } from '@/lib/app-context';
 import { useProfessional, useReviews, useIsFavourite, toggleFavourite } from '@/lib/hooks';
 import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Stars, Badge, Button, EmptyState } from '@/components/ui';
+import { Card, Spinner, Stars, Badge, Button, EmptyState, VerifiedBadge } from '@/components/ui';
 import { inr, formatDate } from '@/lib/format';
+import { isVerified } from '@/lib/kyc';
 import type { Service } from '@/lib/types';
 import { useEffect, useState } from 'react';
 
@@ -57,7 +58,7 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-gray-900">{professional.name}</h2>
-                <Icons.BadgeCheck size={18} className="text-emerald-500" />
+                {isVerified(professional) ? <VerifiedBadge /> : null}
               </div>
               <div className="mt-1 flex items-center gap-1.5">
                 <Stars rating={professional.rating} size={14} />

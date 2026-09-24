@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Star } from 'lucide-react';
+import { Star, BadgeCheck } from 'lucide-react';
 import { inr } from '@/lib/format';
 
 export const Spinner = ({ className = '' }: { className?: string }) => (
@@ -77,6 +77,12 @@ export const PriceTag = ({ amount, label = 'Starts at' }: { amount: number; labe
     <span className="text-[11px] font-medium text-gray-400">{label}</span>
     <span className="text-base font-bold text-gray-900">{inr(amount)}</span>
   </div>
+);
+
+export const VerifiedBadge = () => (
+  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+    <BadgeCheck size={11} /> Verified
+  </span>
 );
 
 export const Button = ({

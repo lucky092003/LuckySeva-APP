@@ -5,9 +5,10 @@ import { useProfessionalWithFallback, useReviews } from '@/lib/hooks';
 import { api, setApiToken } from '@/lib/api';
 import { fetchCurrentLocation, areaFrom } from '@/lib/location';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Button, Stars, EmptyState } from '@/components/ui';
-import { inr } from '@/lib/format';
-import type { Service } from '@/lib/types';
+import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge } from '@/components/ui';
+import { inr, formatDate } from '@/lib/format';
+import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/lib/kyc';
+import type { Professional, Service } from '@/lib/types';
 
 export const ProviderProfileScreen = () => {
   const { setProviderId, navigate, providerId } = useApp();
@@ -104,7 +105,7 @@ export const ProviderProfileScreen = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <p className="truncate text-base font-bold text-gray-900">{pro.name}</p>
-              <Icons.BadgeCheck size={16} className="text-emerald-500" />
+              {kycStatus(pro) === 'approved' && <VerifiedBadge />}
             </div>
             <p className="text-xs text-gray-500">{pro.skills.join(', ')}</p>
             <div className="mt-1 flex items-center gap-1.5">
@@ -136,6 +137,9 @@ export const ProviderProfileScreen = () => {
             <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${pro.status === 'available' ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </Card>
+
+        {/* KYC / Verification */}
+        <KycCard pro={pro} onComplete={reload} />
 
         {/* Service area = my location + radius */}
         <Card className="mt-3 p-4">
@@ -320,6 +324,116 @@ export const ProviderProfileScreen = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => void }) => {
+  const status = kycStatus(pro);
+  const statusTone =
+    status === 'approved' ? { text: 'text-emerald-600', bg: 'bg-emerald-50' }
+    : status === 'pending' ? { text: 'text-amber-600', bg: 'bg-amber-50' }
+    : status === 'rejected' ? { text: 'text-red-500', bg: 'bg-red-50' }
+    : { text: 'text-gray-500', bg: 'bg-gray-100' };
+  const [open, setOpen] = useState(false);
+  const [docType, setDocType] = useState('aadhaar');
+  const [docNumber, setDocNumber] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await api.provider.submitKyc({ doc_type: docType, doc_number: docNumber });
+      setOpen(false);
+      onComplete();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not submit verification');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="mt-3 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${statusTone.bg} ${statusTone.text}`}>
+            {status === 'approved' ? <Icons.BadgeCheck size={20} /> : <Icons.ShieldCheck size={20} />}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900">Verification (KYC)</p>
+            <p className="text-[11px] text-gray-500">Build trust and get the Verified badge</p>
+          </div>
+        </div>
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusTone.bg} ${statusTone.text}`}>
+          {KYC_STATUS_LABEL[status]}
+        </span>
+      </div>
+
+      {status === 'approved' && (
+        <div className="mt-3 rounded-xl bg-emerald-50/60 px-3 py-2.5 text-[11px] text-emerald-700">
+          You're a verified provider. Customers see the Verified badge on your profile.
+          {pro.kyc_doc_number ? ` Document on file: ${kycDocLabel(pro)} (${pro.kyc_doc_number}).` : ''}
+        </div>
+      )}
+
+      {status === 'pending' && (
+        <div className="mt-3 rounded-xl bg-amber-50/60 px-3 py-2.5 text-[11px] text-amber-700">
+          Verification under review. Submitted {pro.kyc_submitted_at ? formatDate(pro.kyc_submitted_at) : ''} — {kycDocLabel(pro)}{pro.kyc_doc_number ? ` (${pro.kyc_doc_number})` : ''}.
+        </div>
+      )}
+
+      {status === 'rejected' && (
+        <div className="mt-3 rounded-xl bg-red-50/60 px-3 py-2.5 text-[11px] text-red-600">
+          {pro.kyc_review_note ? `Rejected: ${pro.kyc_review_note}` : 'Verification was rejected.'}
+        </div>
+      )}
+
+      {(status === 'not_submitted' || status === 'rejected' || open) && (
+        <div className="mt-3 space-y-3 border-t border-gray-50 pt-3">
+          {!open ? (
+            <Button variant={status === 'rejected' ? 'secondary' : 'primary'} onClick={() => { setDocNumber(''); setError(''); setOpen(true); }} className="w-full py-2 text-xs">
+              {status === 'rejected' ? 'Re-submit documents' : 'Submit documents for verification'}
+            </Button>
+          ) : (
+            <>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Document type</span>
+                <select
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                >
+                  <option value="aadhaar">Aadhaar Card</option>
+                  <option value="pan">PAN Card</option>
+                  <option value="voter">Voter ID</option>
+                  <option value="driving">Driving Licence</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Document number</span>
+                <input
+                  value={docNumber}
+                  onChange={(e) => setDocNumber(e.target.value.toUpperCase().slice(0, 20))}
+                  placeholder="e.g. XXXX XXXX XXXX"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                />
+              </label>
+              {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setOpen(false)} disabled={saving} className="flex-1 py-2 text-xs">
+                  Cancel
+                </Button>
+                <Button onClick={submit} disabled={saving || docNumber.trim().length < 6} className="flex-1 py-2 text-xs">
+                  {saving ? 'Submitting...' : 'Submit for Review'}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </Card>
   );
 };
 
