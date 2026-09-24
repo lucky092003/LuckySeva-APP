@@ -58,7 +58,7 @@ export const MyBookingsScreen = () => {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onCancel={() => cancel(b)} cancelling={cancellingId === b.id} />
+              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })} onCancel={() => cancel(b)} cancelling={cancellingId === b.id} />
             ))}
           </div>
         )}
@@ -67,7 +67,7 @@ export const MyBookingsScreen = () => {
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview, onCancel, cancelling }: { booking: Booking; onTrack: () => void; onReview: () => void; onCancel: () => void; cancelling: boolean }) => {
+const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean }) => {
   const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info',
     assigned: 'info',
@@ -101,9 +101,14 @@ const BookingCard = ({ booking, onTrack, onReview, onCancel, cancelling }: { boo
       </div>
       <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
         {booking.status === 'completed' ? (
-          <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onReview}>
-            <Icons.Star size={14} /> Rate Service
-          </Button>
+          <>
+            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onReview}>
+              <Icons.Star size={14} /> Rate Service
+            </Button>
+            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onInvoice}>
+              <Icons.Receipt size={14} /> Invoice
+            </Button>
+          </>
         ) : booking.status === 'cancelled' ? null : (
           <>
             <Button
