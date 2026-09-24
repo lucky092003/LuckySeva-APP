@@ -4,8 +4,9 @@ import { useApp } from '@/lib/app-context';
 import { useProfessionalsByCategory } from '@/lib/hooks';
 import { api } from '@/lib/api';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, EmptyState, Stars, Badge } from '@/components/ui';
+import { Card, Spinner, EmptyState, Stars, Badge, VerifiedBadge } from '@/components/ui';
 import { inr } from '@/lib/format';
+import { isVerified } from '@/lib/kyc';
 import type { Professional, Category } from '@/lib/types';
 import { useEffect } from 'react';
 
@@ -129,9 +130,12 @@ export const ProfessionalCard = ({ pro, color, onClick }: { pro: Professional; c
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
           <p className="truncate text-sm font-bold text-gray-900">{pro.name}</p>
-          <Badge tone={pro.status === 'available' ? 'success' : 'warning'}>
-            {pro.status === 'available' ? 'Available' : 'Busy'}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            {isVerified(pro) && <VerifiedBadge />}
+            <Badge tone={pro.status === 'available' ? 'success' : 'warning'}>
+              {pro.status === 'available' ? 'Available' : 'Busy'}
+            </Badge>
+          </div>
         </div>
         <div className="mt-0.5 flex items-center gap-1">
           <Stars rating={pro.rating} />

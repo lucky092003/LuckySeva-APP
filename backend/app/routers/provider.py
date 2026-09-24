@@ -1,4 +1,5 @@
-from datetime import date
+import re
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends
 
@@ -7,6 +8,8 @@ from ..dependencies import require_provider
 from ..exceptions import ApiError
 
 router = APIRouter(dependencies=[Depends(require_provider)])
+
+KYC_DOC_TYPES = {"aadhaar", "pan", "voter", "driving"}
 
 
 def provider_id(claims: dict) -> str:
@@ -57,6 +60,44 @@ def update_me(body: dict, claims: dict = Depends(require_provider)):
     res = client.table("professionals").update(patch).eq("id", provider_id(claims)).select("*").execute()
     if not res.data:
         raise ApiError(404, "Professional not found")
+    return res.data[0]
+
+
+@router.put("/kyc")
+def submit_kyc(body: dict, claims: dict = Depends(require_provider)):
+    client = db()
+    existing = (
+        client.table("professionals")
+        .select("id, kyc_status")
+        .eq("id", provider_id(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise ApiError(404, "Professional not found")
+    doc_type = body.get("doc_type")
+    doc_number = body.get("doc_number")
+    if not isinstance(doc_type, str) or doc_type not in KYC_DOC_TYPES:
+        raise ApiError(400, "doc_type must be one of aadhaar, pan, voter, driving")
+    if not isinstance(doc_number, str) or not re.search(r"[A-Za-z0-9]{6,}", doc_number):
+        raise ApiError(400, "Valid document number required (min 6 characters)")
+    res = (
+        client.table("professionals")
+        .update(
+            {
+                "kyc_status": "pending",
+                "kyc_doc_type": doc_type,
+                "kyc_doc_number": doc_number.strip().upper(),
+                "kyc_review_note": None,
+                "kyc_submitted_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        .eq("id", provider_id(claims))
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(400, "Could not submit KYC")
     return res.data[0]
 
 
