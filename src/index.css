@@ -58,3 +58,26 @@ body {
   overscroll-behavior-y: none;
   touch-action: manipulation;
 }
+
+/* Print: show only the invoice receipt, hide the app chrome */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #invoice-print,
+  #invoice-print * {
+    visibility: visible;
+  }
+  #invoice-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+  }
+  @page {
+    margin: 1cm;
+  }
+}
