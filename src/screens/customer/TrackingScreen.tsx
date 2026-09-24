@@ -141,9 +141,14 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
         </Card>
 
         {isCompleted && (
-          <Button onClick={() => navigate({ name: 'reviews', bookingId })} className="mt-4 w-full">
-            <Icons.Star size={16} /> Rate your experience
-          </Button>
+          <>
+            <Button onClick={() => navigate({ name: 'reviews', bookingId })} className="mt-4 w-full">
+              <Icons.Star size={16} /> Rate your experience
+            </Button>
+            <Button variant="outline" onClick={() => navigate({ name: 'invoice', bookingId })} className="mt-2 w-full">
+              <Icons.Receipt size={16} /> View Invoice / Receipt
+            </Button>
+          </>
         )}
       </div>
     </div>

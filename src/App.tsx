@@ -17,6 +17,7 @@ import { BookingFlowScreen } from '@/screens/customer/BookingFlowScreen';
 import { PaymentScreen } from '@/screens/customer/PaymentScreen';
 import { BookingSuccessScreen } from '@/screens/customer/BookingSuccessScreen';
 import { TrackingScreen } from '@/screens/customer/TrackingScreen';
+import { InvoiceScreen } from '@/screens/InvoiceScreen';
 import { MyBookingsScreen } from '@/screens/customer/MyBookingsScreen';
 import { ReviewScreen } from '@/screens/customer/ReviewScreen';
 import { ProfileScreen } from '@/screens/customer/ProfileScreen';
@@ -89,6 +90,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'payment': return <PaymentScreen bookingId={screen.bookingId} />;
     case 'booking-success': return <BookingSuccessScreen bookingId={screen.bookingId} />;
     case 'tracking': return <TrackingScreen bookingId={screen.bookingId} />;
+    case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     case 'bookings': return <MyBookingsScreen />;
     case 'reviews': return <ReviewScreen bookingId={screen.bookingId} />;
     case 'profile': return <ProfileScreen />;
@@ -107,6 +109,7 @@ function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
     case 'provider-earnings': return <ProviderEarningsScreen />;
     case 'provider-profile': return <ProviderProfileScreen />;
     case 'provider-detail': return <ProviderDetailScreen bookingId={screen.bookingId} />;
+    case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     default: return <ProviderHomeScreen />;
   }
 }
@@ -119,6 +122,7 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
     case 'admin-providers': return <AdminProviders />;
     case 'admin-services': return <AdminServices />;
     case 'admin-bookings': return <AdminBookings />;
+    case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     case 'admin-profile': return <AdminProfile />;
     default: return <AdminDashboard />;
   }
