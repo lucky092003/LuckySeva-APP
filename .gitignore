@@ -28,4 +28,4 @@ __pycache__/
 .venv/
 venv/
 .env/
-api/.env
+backend/.env

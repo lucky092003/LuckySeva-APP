@@ -13,6 +13,6 @@ def require_env(name: str) -> str:
     value = os.getenv(name, "")
     if not value:
         raise EnvironmentError(
-            f"Missing required env var: {name}. Copy api/.env.example to api/.env and fill from Supabase dashboard."
+            f"Missing required env var: {name}. Copy backend/.env.example to backend/.env and fill from Supabase dashboard."
         )
     return value
