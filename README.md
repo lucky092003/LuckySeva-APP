@@ -213,6 +213,23 @@ One repo deployed as **three Vercel projects**, each with its own `VITE_APP_ROLE
 5. Build settings come from [`frontend/vercel.json`](frontend/vercel.json) — no manual config needed.
 6. Every push to `master` auto-deploys all three sites.
 
+<details>
+<summary>Build fails with <code>vite: command not found</code> (exit 127)</summary>
+
+The build toolchain (`vite`, `typescript`, `tailwindcss`, …) lives in
+`devDependencies`. If the install runs in production mode they are skipped, so
+`node_modules/.bin/vite` never exists and the build exits 127.
+
+- `frontend/vercel.json` already pins `installCommand` to
+  `npm install --include=dev`, which forces dev dependencies regardless.
+- Also check the project env vars for **`NODE_ENV=production`** — that is what
+  puts npm into production mode in the first place. Unset it for builds.
+- Leave **Include source files outside the Root Directory in the Build Step**
+  off. This repo has no `package.json` at its root, so enabling it makes the
+  build step look for one in the wrong place and dependencies never install.
+
+</details>
+
 ## 🐍 Backend (FastAPI) — deployment
 
 The API is a plain Python service; deploy it on any host. Recommended: **Render**:
