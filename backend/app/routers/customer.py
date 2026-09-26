@@ -382,6 +382,20 @@ def mark_notification_read(notification_id: str, claims: dict = Depends(require_
     return res.data[0]
 
 
+@router.put("/notifications/read-all")
+def mark_all_notifications_read(claims: dict = Depends(require_customer)):
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("customer_phone", customer_phone(claims))
+        .eq("read", False)
+        .select("id")
+        .execute()
+    )
+    return {"ok": True, "updated": len(res.data or [])}
+
+
 @router.get("/tickets")
 def tickets(claims: dict = Depends(require_customer)):
     client = db()

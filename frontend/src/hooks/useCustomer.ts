@@ -5,6 +5,7 @@ import type { Notification, Professional, SupportTicket } from '@/types';
 export const useNotifications = (_customerPhone: string | null) => {
   const [data, setData] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState(false);
   const load = useCallback(() => {
     setLoading(true);
     api.customer
@@ -14,12 +15,24 @@ export const useNotifications = (_customerPhone: string | null) => {
       .finally(() => setLoading(false));
   }, []);
   useEffect(load, [load]);
-  return { notifications: data, loading, reload: load };
+  const unread = data.filter((n) => !n.read).length;
+  const markAllRead = useCallback(async () => {
+    if (unread === 0) return;
+    setMarking(true);
+    try {
+      await api.customer.markAllNotificationsRead();
+      await load();
+    } catch {
+      /* ignore */
+    } finally {
+      setMarking(false);
+    }
+  }, [unread, load]);
+  return { notifications: data, unread, loading, marking, markAllRead, reload: load };
 };
 
 export const useUnreadNotifications = (customerPhone: string | null) => {
-  const { notifications, loading, reload } = useNotifications(customerPhone);
-  const unread = notifications.filter((n) => !n.read).length;
+  const { unread, loading, reload } = useNotifications(customerPhone);
   return { unread, loading, reload };
 };
 
