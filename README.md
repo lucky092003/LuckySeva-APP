@@ -201,13 +201,17 @@ VITE_APP_ROLE=customer npx cap sync
 One repo deployed as **three Vercel projects**, each with its own `VITE_APP_ROLE`:
 
 1. Create three projects from this repo on [Vercel](https://vercel.com).
-2. Add the same `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` + `VITE_API_URL` to each.
-3. Set the role per project:
+2. Set **Root Directory** to `frontend` on each project
+   (Project Settings → Build and Deployment → Root Directory).
+   This is a dashboard setting — it is **not** a `vercel.json` property, and
+   putting `rootDirectory` in `vercel.json` fails schema validation.
+3. Add the same `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` + `VITE_API_URL` to each.
+4. Set the role per project:
    - Customer site → `VITE_APP_ROLE=customer`
    - Partner site → `VITE_APP_ROLE=provider`
    - Admin site → `VITE_APP_ROLE=admin`
-4. Build settings come from [`vercel.json`](vercel.json) — no manual config needed.
-5. Every push to `master` auto-deploys all three sites.
+5. Build settings come from [`frontend/vercel.json`](frontend/vercel.json) — no manual config needed.
+6. Every push to `master` auto-deploys all three sites.
 
 ## 🐍 Backend (FastAPI) — deployment
 
@@ -359,6 +363,7 @@ npx cap sync
 │   ├── index.html           # HTML entry
 │   ├── capacitor.config.ts  # Capacitor config (role-aware app id/name)
 │   ├── vite.config.ts       # Vite build config (`@` → src alias)
+│   ├── vercel.json           # Vercel build settings (build, output, SPA rewrites)
 │   └── package.json         # Frontend dependencies & scripts
 ├── backend/                 # FastAPI backend (Python) — deployed on Render
 │   ├── app/
@@ -376,7 +381,6 @@ npx cap sync
 ├── android/                 # Capacitor Android native project
 ├── ios/                     # Capacitor iOS native project
 ├── docs/                    # Feature & architecture documentation
-├── vercel.json              # Vercel build settings (root: frontend)
 └── render.yaml              # Render blueprint (one-click API deploy)
 ```
 
