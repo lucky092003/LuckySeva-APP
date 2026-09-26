@@ -241,8 +241,8 @@ The API is a plain Python service; deploy it on any host. Recommended: **Render*
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add the environment variables from `backend/.env.example`
    (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`).
-7. Copy the generated URL (e.g. `https://luckyseva-api.onrender.com`) into
-   `VITE_API_URL` on every Vercel project.
+7. Copy the generated URL (e.g. `https://luckyseva-app-gbjw.onrender.com`) into
+   `VITE_API_URL` on every Vercel project. No trailing slash.
 
 <details>
 <summary>Other hosts</summary>

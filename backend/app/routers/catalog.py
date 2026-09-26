@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 
-from ..db import db
+from ..db import db, one
 from ..exceptions import ApiError
 
 router = APIRouter()
@@ -31,21 +31,21 @@ def categories():
 @router.get("/categories/{slug}")
 def category(slug: str):
     client = db()
-    cat = client.table("categories").select("*").eq("slug", slug).maybe_single().execute()
-    if not cat.data:
+    cat = one(client.table("categories").select("*").eq("slug", slug).maybe_single().execute())
+    if not cat:
         raise ApiError(404, "Category not found")
-    services = client.table("services").select("*").eq("category_id", cat.data["id"]).execute()
-    return {"category": cat.data, "services": services.data or []}
+    services = client.table("services").select("*").eq("category_id", cat["id"]).execute()
+    return {"category": cat, "services": services.data or []}
 
 
 @router.get("/categories/{slug}/services")
 def category_services(slug: str):
     client = db()
-    cat = client.table("categories").select("id").eq("slug", slug).maybe_single().execute()
-    if not cat.data:
+    cat = one(client.table("categories").select("id").eq("slug", slug).maybe_single().execute())
+    if not cat:
         raise ApiError(404, "Category not found")
     services = (
-        client.table("services").select("*").eq("category_id", cat.data["id"]).order("name").execute()
+        client.table("services").select("*").eq("category_id", cat["id"]).order("name").execute()
     )
     return services.data or []
 
@@ -54,13 +54,13 @@ def category_services(slug: str):
 def services(category_slug: str | None = None):
     client = db()
     if category_slug:
-        cat = client.table("categories").select("id").eq("slug", category_slug).maybe_single().execute()
-        if not cat.data:
+        cat = one(client.table("categories").select("id").eq("slug", category_slug).maybe_single().execute())
+        if not cat:
             raise ApiError(404, "Category not found")
         res = (
             client.table("services")
             .select("*")
-            .eq("category_id", cat.data["id"])
+            .eq("category_id", cat["id"])
             .order("name")
             .execute()
         )
@@ -72,14 +72,14 @@ def services(category_slug: str | None = None):
 @router.get("/services/{service_id}")
 def service(service_id: str):
     client = db()
-    svc = (
+    svc = one(
         client.table("services")
         .select("*, category:categories(*)")
         .eq("id", service_id)
         .maybe_single()
         .execute()
     )
-    if not svc.data:
+    if not svc:
         raise ApiError(404, "Service not found")
     providers = (
         client.table("professional_services")
@@ -88,7 +88,7 @@ def service(service_id: str):
         .execute()
     )
     return {
-        "service": svc.data,
+        "service": svc,
         "providers": [row.get("professional") for row in (providers.data or []) if row.get("professional")],
     }
 
@@ -112,10 +112,10 @@ def professionals(
 @router.get("/professionals/{professional_id}")
 def professional(professional_id: str):
     client = db()
-    pro = (
+    pro = one(
         client.table("professionals").select("*").eq("id", professional_id).maybe_single().execute()
     )
-    if not pro.data:
+    if not pro:
         raise ApiError(404, "Professional not found")
     services = (
         client.table("professional_services")
@@ -131,7 +131,7 @@ def professional(professional_id: str):
         .execute()
     )
     return {
-        "professional": pro.data,
+        "professional": pro,
         "services": services.data or [],
         "reviews": reviews.data or [],
     }

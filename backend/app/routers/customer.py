@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from ..db import db
+from ..db import db, one
 from ..dependencies import require_customer
 from ..exceptions import ApiError
 
@@ -14,8 +14,7 @@ def customer_phone(claims: dict) -> str:
 @router.get("/profile")
 def profile(claims: dict = Depends(require_customer)):
     client = db()
-    res = client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute()
-    return res.data
+    return one(client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute())
 
 
 @router.put("/profile")
@@ -93,7 +92,7 @@ def add_address(body: dict, claims: dict = Depends(require_customer)):
 @router.put("/addresses/{address_id}")
 def update_address(address_id: str, body: dict, claims: dict = Depends(require_customer)):
     client = db()
-    existing = (
+    existing = one(
         client.table("addresses")
         .select("*")
         .eq("id", address_id)
@@ -101,7 +100,7 @@ def update_address(address_id: str, body: dict, claims: dict = Depends(require_c
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Address not found")
     patch = {}
     if isinstance(body.get("label"), str) and body["label"].strip():
@@ -118,7 +117,7 @@ def update_address(address_id: str, body: dict, claims: dict = Depends(require_c
 @router.delete("/addresses/{address_id}")
 def delete_address(address_id: str, claims: dict = Depends(require_customer)):
     client = db()
-    existing = (
+    existing = one(
         client.table("addresses")
         .select("is_default")
         .eq("id", address_id)
@@ -126,10 +125,10 @@ def delete_address(address_id: str, claims: dict = Depends(require_customer)):
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Address not found")
     client.table("addresses").delete().eq("id", address_id).execute()
-    if existing.data.get("is_default"):
+    if existing.get("is_default"):
         _ = (
             client.table("addresses")
             .select("id")
@@ -156,7 +155,7 @@ def bookings(claims: dict = Depends(require_customer)):
 @router.get("/bookings/{booking_id}")
 def booking(booking_id: str, claims: dict = Depends(require_customer)):
     client = db()
-    res = (
+    booking = one(
         client.table("bookings")
         .select("*")
         .eq("id", booking_id)
@@ -164,34 +163,34 @@ def booking(booking_id: str, claims: dict = Depends(require_customer)):
         .maybe_single()
         .execute()
     )
-    if not res.data:
+    if not booking:
         raise ApiError(404, "Booking not found")
-    return res.data
+    return booking
 
 
 @router.post("/bookings", status_code=201)
 def create_booking(body: dict, claims: dict = Depends(require_customer)):
     client = db()
-    profile = client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute()
+    profile = one(client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute())
     service_id = body.get("service_id") if isinstance(body.get("service_id"), str) else None
     base = 0.0
     service_name = body.get("service_name", "")
     if service_id:
-        svc = client.table("services").select("*").eq("id", service_id).maybe_single().execute()
-        if svc.data:
-            base = float(svc.data.get("starting_price") or 0)
-            service_name = svc.data.get("name", service_name)
+        svc = one(client.table("services").select("*").eq("id", service_id).maybe_single().execute())
+        if svc:
+            base = float(svc.get("starting_price") or 0)
+            service_name = svc.get("name", service_name)
 
     professional_id = body.get("professional_id") if isinstance(body.get("professional_id"), str) else None
     professional_name = body.get("professional_name")
     if professional_id:
-        pro = client.table("professionals").select("name").eq("id", professional_id).maybe_single().execute()
-        if pro.data and pro.data.get("name"):
-            professional_name = pro.data["name"]
+        pro = one(client.table("professionals").select("name").eq("id", professional_id).maybe_single().execute())
+        if pro and pro.get("name"):
+            professional_name = pro["name"]
 
     visit_fee = float(body.get("visit_fee") or 0)
     total = float(body.get("total_amount") or 0) or base + visit_fee
-    name = profile.data.get("name") if profile.data else customer_phone(claims)
+    name = profile.get("name") if profile else customer_phone(claims)
 
     res = (
         client.table("bookings")
@@ -238,7 +237,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
 @router.put("/bookings/{booking_id}/cancel")
 def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
     client = db()
-    existing = (
+    existing = one(
         client.table("bookings")
         .select("status")
         .eq("id", booking_id)
@@ -246,9 +245,9 @@ def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Booking not found")
-    if existing.data["status"] == "completed":
+    if existing["status"] == "completed":
         raise ApiError(400, "Completed bookings cannot be cancelled")
     res = (
         client.table("bookings")
@@ -273,7 +272,7 @@ def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
 @router.put("/bookings/{booking_id}/payment")
 def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
     client = db()
-    existing = (
+    existing = one(
         client.table("bookings")
         .select("*")
         .eq("id", booking_id)
@@ -281,7 +280,7 @@ def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_cust
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Booking not found")
     patch = {}
     if isinstance(body.get("payment_method"), str) and body["payment_method"].strip():
@@ -323,7 +322,7 @@ def add_favourite(body: dict, claims: dict = Depends(require_customer)):
     if not isinstance(professional_id, str):
         raise ApiError(400, "professional_id required")
     client = db()
-    existing = (
+    existing = one(
         client.table("favourites")
         .select("id")
         .eq("customer_phone", customer_phone(claims))
@@ -331,7 +330,7 @@ def add_favourite(body: dict, claims: dict = Depends(require_customer)):
         .maybe_single()
         .execute()
     )
-    if existing.data:
+    if existing:
         raise ApiError(409, "Already a favourite")
     res = (
         client.table("favourites")
@@ -453,8 +452,8 @@ def add_review(body: dict, claims: dict = Depends(require_customer)):
     rating = int(body.get("rating") or 5)
     rating = max(1, min(5, rating))
     client = db()
-    profile = client.table("profiles").select("name").eq("phone", customer_phone(claims)).maybe_single().execute()
-    name = profile.data.get("name") if profile.data else customer_phone(claims)
+    profile = one(client.table("profiles").select("name").eq("phone", customer_phone(claims)).maybe_single().execute())
+    name = profile.get("name") if profile else customer_phone(claims)
     res = (
         client.table("reviews")
         .insert(
@@ -470,10 +469,10 @@ def add_review(body: dict, claims: dict = Depends(require_customer)):
     )
     if not res.data:
         raise ApiError(400, "Could not create review")
-    pro = client.table("professionals").select("rating, reviews_count").eq("id", professional_id).maybe_single().execute()
-    if pro.data:
-        old_count = int(pro.data.get("reviews_count") or 0)
-        old_rating = float(pro.data.get("rating") or 0)
+    pro = one(client.table("professionals").select("rating, reviews_count").eq("id", professional_id).maybe_single().execute())
+    if pro:
+        old_count = int(pro.get("reviews_count") or 0)
+        old_rating = float(pro.get("rating") or 0)
         new_count = old_count + 1
         new_rating = round(((old_rating * old_count) + rating) / new_count, 1) if new_count else rating
         client.table("professionals").update({"rating": new_rating, "reviews_count": new_count}).eq(
