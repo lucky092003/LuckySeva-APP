@@ -9,7 +9,10 @@ import type {
   SupportTicket,
 } from '@/types';
 
-const BASE = import.meta.env.VITE_API_URL || `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
+const MISSING_BASE =
+  'VITE_API_URL is not set. Set it in the Vercel project environment variables to your Render backend URL.';
 
 const TOKEN_KEY = 'luckyseva_api_token';
 
@@ -25,6 +28,10 @@ async function request<T>(
   method = 'GET',
   body?: unknown
 ): Promise<T> {
+  if (!BASE) {
+    console.error(MISSING_BASE);
+    throw new Error(MISSING_BASE);
+  }
   const token = getApiToken();
   const res = await fetch(`${BASE}/${fn}${path}`, {
     method,

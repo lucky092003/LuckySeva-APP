@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends
 
-from ..db import db
+from ..db import db, one
 from ..dependencies import require_provider
 from ..exceptions import ApiError
 
@@ -21,10 +21,10 @@ def provider_id(claims: dict) -> str:
 @router.get("/me")
 def me(claims: dict = Depends(require_provider)):
     client = db()
-    professional = (
+    professional = one(
         client.table("professionals").select("*").eq("id", provider_id(claims)).maybe_single().execute()
     )
-    if not professional.data:
+    if not professional:
         raise ApiError(404, "Professional profile not found")
     services = (
         client.table("professional_services")
@@ -32,7 +32,7 @@ def me(claims: dict = Depends(require_provider)):
         .eq("professional_id", provider_id(claims))
         .execute()
     )
-    return {"professional": professional.data, "services": services.data or []}
+    return {"professional": professional, "services": services.data or []}
 
 
 @router.put("/me")
@@ -66,14 +66,14 @@ def update_me(body: dict, claims: dict = Depends(require_provider)):
 @router.put("/kyc")
 def submit_kyc(body: dict, claims: dict = Depends(require_provider)):
     client = db()
-    existing = (
+    existing = one(
         client.table("professionals")
         .select("id, kyc_status")
         .eq("id", provider_id(claims))
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Professional not found")
     doc_type = body.get("doc_type")
     doc_number = body.get("doc_number")
@@ -134,35 +134,36 @@ def my_bookings(claims: dict = Depends(require_provider)):
 @router.get("/bookings/{booking_id}")
 def booking(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
-    res = client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute()
-    if not res.data:
+    booking = one(client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute())
+    if not booking:
         raise ApiError(404, "Booking not found")
-    return res.data
+    return booking
 
 
 @router.post("/bookings/{booking_id}/accept")
 def accept(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
-    pro = client.table("professionals").select("name").eq("id", provider_id(claims)).maybe_single().execute()
-    booking_row = (
+    pro = one(client.table("professionals").select("name").eq("id", provider_id(claims)).maybe_single().execute())
+    pro_name = pro.get("name") if pro else None
+    booking_row = one(
         client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute()
     )
-    if not booking_row.data:
+    if not booking_row:
         raise ApiError(404, "Booking not found")
-    row = booking_row.data
+    row = booking_row
     if row.get("status") != "confirmed":
         raise ApiError(400, f"Booking is already {row.get('status')}")
     next_values = {"status": "assigned"}
     if row.get("professional_id") != provider_id(claims):
         next_values["professional_id"] = provider_id(claims)
-        next_values["professional_name"] = pro.data.get("name") if pro.data else "Professional"
+        next_values["professional_name"] = pro_name or "Professional"
     res = client.table("bookings").update(next_values).eq("id", booking_id).select("*").execute()
     client.table("notifications").insert(
         {
             "customer_phone": row.get("customer_phone"),
             "type": "provider",
             "title": "Provider Assigned",
-            "message": f"{pro.data.get('name') if pro.data else 'A professional'} has accepted your {row.get('service_name')} booking.",
+            "message": f"{pro_name or 'A professional'} has accepted your {row.get('service_name')} booking.",
             "booking_id": booking_id,
             "read": False,
         }
@@ -173,12 +174,12 @@ def accept(booking_id: str, claims: dict = Depends(require_provider)):
 @router.post("/bookings/{booking_id}/decline")
 def decline(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
-    booking_row = (
+    booking_row = one(
         client.table("bookings").select("professional_id, status").eq("id", booking_id).maybe_single().execute()
     )
-    if not booking_row.data:
+    if not booking_row:
         raise ApiError(404, "Booking not found")
-    row = booking_row.data
+    row = booking_row
     client.table("booking_declines").insert(
         {"booking_id": booking_id, "professional_id": provider_id(claims)}
     ).execute()
@@ -197,31 +198,31 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
     if status not in VALID:
         raise ApiError(400, f"status must be one of {', '.join(sorted(VALID))}")
     client = db()
-    booking_row = (
+    booking_row = one(
         client.table("bookings")
         .select("professional_id, status, customer_phone, service_name")
         .eq("id", booking_id)
         .maybe_single()
         .execute()
     )
-    if not booking_row.data:
+    if not booking_row:
         raise ApiError(404, "Booking not found")
-    if booking_row.data.get("professional_id") != provider_id(claims):
+    if booking_row.get("professional_id") != provider_id(claims):
         raise ApiError(403, "Not your booking")
     res = client.table("bookings").update({"status": status}).eq("id", booking_id).select("*").execute()
     if status == "completed":
-        pro = (
+        pro = one(
             client.table("professionals")
             .select("completed_jobs")
             .eq("id", provider_id(claims))
             .maybe_single()
             .execute()
         )
-        jobs = int(pro.data.get("completed_jobs") or 0) if pro.data else 0
+        jobs = int(pro.get("completed_jobs") or 0) if pro else 0
         client.table("professionals").update({"completed_jobs": jobs + 1}).eq(
             "id", provider_id(claims)
         ).execute()
-    customer_phone = booking_row.data.get("customer_phone")
+    customer_phone = booking_row.get("customer_phone")
     if status == "on_the_way" and customer_phone:
         client.table("notifications").insert(
             {

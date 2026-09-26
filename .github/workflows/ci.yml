@@ -35,6 +35,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Verify React version alignment
+        run: |
+          npm ls react react-dom --depth=0
+          node -e "const p=require('./package.json');const major=v=>{const m=String(v).match(/\d+/);return m?m[0]:''};if(major(p.dependencies.react)!==major(p.dependencies['react-dom'])){console.error('react ('+p.dependencies.react+') and react-dom ('+p.dependencies['react-dom']+') majors must match');process.exit(1)}"
+
       - name: Lint
         run: npm run lint
 

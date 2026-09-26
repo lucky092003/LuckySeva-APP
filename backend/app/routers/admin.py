@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 
-from ..db import db
+from ..db import db, one
 from ..dependencies import require_admin
 from ..exceptions import ApiError
 
@@ -62,12 +62,12 @@ def professionals():
 @router.get("/professionals/{professional_id}")
 def professional(professional_id: str):
     client = db()
-    res = (
+    pro = one(
         client.table("professionals").select("*").eq("id", professional_id).maybe_single().execute()
     )
-    if not res.data:
+    if not pro:
         raise ApiError(404, "Professional not found")
-    return res.data
+    return pro
 
 
 @router.post("/professionals", status_code=201)
@@ -112,8 +112,8 @@ def create_professional(body: dict):
 @router.put("/professionals/{professional_id}")
 def update_professional(professional_id: str, body: dict):
     client = db()
-    existing = client.table("professionals").select("id").eq("id", professional_id).maybe_single().execute()
-    if not existing.data:
+    existing = one(client.table("professionals").select("id").eq("id", professional_id).maybe_single().execute())
+    if not existing:
         raise ApiError(404, "Professional not found")
     patch = {}
     str_fields = ["name", "category_slug", "avatar_url", "bio", "service_area", "status", "phone", "email"]
@@ -154,14 +154,14 @@ def review_kyc(professional_id: str, body: dict):
     if decision not in {"approved", "rejected"}:
         raise ApiError(400, "decision must be approved or rejected")
     client = db()
-    existing = (
+    existing = one(
         client.table("professionals")
         .select("id, name")
         .eq("id", professional_id)
         .maybe_single()
         .execute()
     )
-    if not existing.data:
+    if not existing:
         raise ApiError(404, "Professional not found")
     note = body.get("note")
     res = (
@@ -180,7 +180,7 @@ def review_kyc(professional_id: str, body: dict):
     client.table("audit_logs").insert(
         {
             "action": "provider_kyc",
-            "detail": f"{decision} KYC for {existing.data['name']}",
+            "detail": f"{decision} KYC for {existing['name']}",
         }
     ).execute()
     return res.data[0]
@@ -231,14 +231,14 @@ def services():
 def create_service(body: dict):
     client = db()
     category_slug = body.get("category_slug", "")
-    cat = client.table("categories").select("id").eq("slug", category_slug).maybe_single().execute()
-    if not cat.data:
+    cat = one(client.table("categories").select("id").eq("slug", category_slug).maybe_single().execute())
+    if not cat:
         raise ApiError(400, "category_slug must reference an existing category")
     res = (
         client.table("services")
         .insert(
             {
-                "category_id": cat.data["id"],
+                "category_id": cat["id"],
                 "name": body.get("name", "New service"),
                 "description": body.get("description", ""),
                 "starting_price": float(body.get("starting_price") or 0),

@@ -2,7 +2,7 @@ import re
 
 from fastapi import APIRouter, Depends
 
-from ..db import db
+from ..db import db, one
 from ..exceptions import ApiError
 from ..security import sign_token
 from ..dependencies import get_claims
@@ -41,9 +41,9 @@ def category_for(profession: str) -> str:
 
 def find_or_create_customer_profile(phone: str, body: dict):
     client = db()
-    existing = client.table("profiles").select("*").eq("phone", phone).maybe_single().execute()
-    if existing.data:
-        return existing.data
+    existing = one(client.table("profiles").select("*").eq("phone", phone).maybe_single().execute())
+    if existing:
+        return existing
     name = body.get("name")
     result = (
         client.table("profiles")
@@ -65,9 +65,9 @@ def find_or_create_customer_profile(phone: str, body: dict):
 
 def find_or_create_provider(phone: str, body: dict) -> dict:
     client = db()
-    existing = client.table("professionals").select("id").eq("phone", phone).maybe_single().execute()
-    if existing.data:
-        return {"id": existing.data["id"]}
+    existing = one(client.table("professionals").select("id").eq("phone", phone).maybe_single().execute())
+    if existing:
+        return {"id": existing["id"]}
 
     profession = body.get("profession")
     profession = profession if isinstance(profession, str) else ""
@@ -111,10 +111,10 @@ def find_or_create_provider(phone: str, body: dict) -> dict:
 
 
 def verify_admin(client, identifier: str, code: str) -> bool:
-    email_row = client.table("admin_settings").select("value").eq("key", "admin_email").maybe_single().execute()
-    pass_row = client.table("admin_settings").select("value").eq("key", "admin_password").maybe_single().execute()
-    admin_email = email_row.data.get("value") if email_row.data else None
-    admin_pass = pass_row.data.get("value") if pass_row.data else None
+    email_row = one(client.table("admin_settings").select("value").eq("key", "admin_email").maybe_single().execute())
+    pass_row = one(client.table("admin_settings").select("value").eq("key", "admin_password").maybe_single().execute())
+    admin_email = email_row.get("value") if email_row else None
+    admin_pass = pass_row.get("value") if pass_row else None
     if admin_email:
         if admin_email.lower() != identifier.lower():
             return False
@@ -172,14 +172,14 @@ def verify_otp(body: dict):
 @router.get("/me")
 def me(claims: dict = Depends(get_claims)):
     client = db()
-    profile = client.table("profiles").select("*").eq("phone", claims["phone"]).maybe_single().execute()
+    profile = one(client.table("profiles").select("*").eq("phone", claims["phone"]).maybe_single().execute())
     if claims.get("role") == "provider" and claims.get("professional_id"):
-        professional = (
+        professional = one(
             client.table("professionals")
             .select("*")
             .eq("id", claims["professional_id"])
             .maybe_single()
             .execute()
         )
-        return {"role": claims["role"], "profile": profile.data, "professional": professional.data}
-    return {"role": claims["role"], "profile": profile.data}
+        return {"role": claims["role"], "profile": profile, "professional": professional}
+    return {"role": claims["role"], "profile": profile}
