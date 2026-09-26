@@ -36,11 +36,13 @@ After deploying, put the API URL into every frontend project as `VITE_API_URL`.
 ## Build for a specific role
 
 Always set `VITE_APP_ROLE` for **both** `npm run build` and `npx cap sync` so the web
-bundle and the native app identity (name + bundle/app id) match.
+bundle and the native app identity (name + bundle/app id) match. Run both from the
+`frontend/` directory.
 
 PowerShell (Windows):
 
 ```powershell
+cd frontend
 $env:VITE_APP_ROLE="customer"   # or "provider" (admin has no native app)
 npm run build
 npx cap sync
@@ -49,6 +51,7 @@ npx cap sync
 macOS/Linux:
 
 ```sh
+cd frontend
 VITE_APP_ROLE=customer npm run build   # or "provider"
 VITE_APP_ROLE=customer npx cap sync
 ```
@@ -66,8 +69,9 @@ environment variable (plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` /
 2. Partner site → `VITE_APP_ROLE=provider`
 3. Admin site → `VITE_APP_ROLE=admin` (web only)
 
-Each project uses the same build settings (`npm run build`, output `dist` — Vercel
-reads them from `vercel.json`). Every push to the connected branch auto-deploys.
+Each project uses the same build settings — Vercel reads them from `vercel.json`,
+which sets **Root Directory: `frontend`**, build `npm run build`, output `dist`.
+Every push to the connected branch auto-deploys.
 
 ## Android (Play Store) — do this on any machine
 
@@ -114,7 +118,7 @@ Repeat for the other role to publish the second app.
 | `render.yaml` | Render blueprint — one-click API deploy |
 | `vercel.json` | Vercel build settings for all three web projects |
 | `capacitor.config.ts` | Sets native app id/name from `VITE_APP_ROLE` |
-| `src/lib/app-context.tsx` | `APP_ROLE` — locks each build to one role |
+| `frontend/src/context/app-context.tsx` | `APP_ROLE` — locks each build to one role |
 | `android/app/src/main/AndroidManifest.xml` | Android permissions & launch config |
 | `ios/App/App/Info.plist` | iOS settings (display name, permissions) |
 | `src/components/PhoneShell.tsx` | Renders full-screen on devices, phone mockup in browser |
