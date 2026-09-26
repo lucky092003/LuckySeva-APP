@@ -407,7 +407,7 @@ npx cap sync
 
 - **React 18** + **TypeScript**
 - **Vite** build tooling
-- **Tailwind CSS 3** styling
+- **Tailwind CSS 4** styling
 - **Capacitor 8** native mobile wrapper
 - **Supabase** — PostgreSQL database (schema in `backend/supabase/migrations/`)
 - **FastAPI** (Python) — backend API (`backend/`) talking to Supabase via `supabase-py`
