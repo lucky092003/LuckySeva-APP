@@ -7,6 +7,7 @@ import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 import { SplashScreen } from '@/screens/customer/SplashScreen';
 import { AuthScreen } from '@/screens/customer/AuthScreen';
 import { HomeScreen } from '@/screens/customer/HomeScreen';
+import { ServicesScreen } from '@/screens/customer/ServicesScreen';
 import { SearchScreen } from '@/screens/customer/SearchScreen';
 import { NotificationsScreen } from '@/screens/customer/NotificationsScreen';
 import { CategoryScreen } from '@/screens/customer/CategoryScreen';
@@ -80,6 +81,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'splash': return <SplashScreen />;
     case 'auth': return <AuthScreen />;
     case 'home': return <HomeScreen />;
+    case 'services': return <ServicesScreen />;
     case 'search': return <SearchScreen />;
     case 'notifications': return <NotificationsScreen />;
     case 'category': return <CategoryScreen slug={screen.slug} />;

@@ -5,7 +5,7 @@ import { useApp } from '@/context/app-context';
 import { useCategories, usePopularServices, useUnreadNotifications } from '@/hooks';
 import { api } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
-import { Card, Spinner, SectionTitle } from '@/components/ui';
+import { Card, Spinner, SectionTitle, CountBadge } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Professional, Booking } from '@/types';
 
@@ -66,11 +66,9 @@ export const HomeScreen = () => {
             </span>
             <ChevronRight size={14} className="shrink-0" />
           </button>
-          <button onClick={() => navigate({ name: 'notifications' })} className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
+          <button onClick={() => navigate({ name: 'notifications' })} aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
             <Bell size={18} />
-            {unread > 0 && (
-              <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-gray-900">{unread > 9 ? '9+' : unread}</span>
-            )}
+            <CountBadge count={unread} />
           </button>
         </div>
         <h1 className="mt-3 text-xl font-bold">

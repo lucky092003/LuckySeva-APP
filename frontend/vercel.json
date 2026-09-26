@@ -1,5 +1,5 @@
 {
-  "rootDirectory": "frontend",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [

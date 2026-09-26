@@ -90,6 +90,7 @@ export const api = {
     removeFavourite: (professionalId: string) => request<{ ok: boolean }>('customer', `/favourites/${professionalId}`, 'DELETE'),
     notifications: () => request<Notification[]>('customer', '/notifications'),
     markNotificationRead: (id: string) => request<Notification>('customer', `/notifications/${id}/read`, 'PUT'),
+    markAllNotificationsRead: () => request<{ ok: boolean; updated: number }>('customer', '/notifications/read-all', 'PUT'),
     reviews: () => request<Review[]>('customer', '/reviews'),
     addReview: (r: { booking_id?: string | null; professional_id: string; rating: number; comment?: string }) =>
       request<Review>('customer', '/reviews', 'POST', r),

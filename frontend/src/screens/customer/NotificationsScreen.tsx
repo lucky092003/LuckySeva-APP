@@ -39,8 +39,7 @@ function timeAgo(iso: string): string {
 
 export const NotificationsScreen = () => {
   const { navigate } = useApp();
-  const { notifications, loading, reload } = useNotifications(null);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const { notifications, unread: unreadCount, loading, marking, markAllRead, reload } = useNotifications(null);
 
   const open = async (n: Notification) => {
     if (!n.read) {
@@ -57,7 +56,14 @@ export const NotificationsScreen = () => {
         title="Notifications"
         right={
           unreadCount > 0 ? (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600">{unreadCount} new</span>
+            <button
+              onClick={markAllRead}
+              disabled={marking}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-600 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+            >
+              {marking ? <Icons.Loader2 size={12} className="animate-spin" /> : <Icons.CheckCheck size={13} />}
+              Mark all read
+            </button>
           ) : undefined
         }
       />

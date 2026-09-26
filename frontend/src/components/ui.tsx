@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Star, BadgeCheck } from 'lucide-react';
+import { Star, BadgeCheck, Search, X } from 'lucide-react';
 import { inr } from '@/utils/format';
 
 export const Spinner = ({ className = '' }: { className?: string }) => (
@@ -51,6 +51,17 @@ export const Stars = ({ rating, size = 12 }: { rating: number; size?: number }) 
     ))}
   </div>
 );
+
+export const CountBadge = ({ count, className = '' }: { count: number; className?: string }) => {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={`pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold leading-none text-gray-900 ${className}`}
+    >
+      {count > 9 ? '9+' : count}
+    </span>
+  );
+};
 
 export const Badge = ({
   children,
@@ -124,6 +135,34 @@ export const Card = ({ children, className = '', onClick }: { children: ReactNod
     className={`rounded-2xl border border-gray-100 bg-white ${onClick ? 'cursor-pointer transition-all hover:shadow-md hover:border-gray-200' : ''} ${className}`}
   >
     {children}
+  </div>
+);
+
+export const SearchBar = ({
+  value,
+  onChange,
+  placeholder = 'Search',
+  autoFocus = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+}) => (
+  <div className="flex items-center gap-2 rounded-xl bg-gray-100 px-3.5 py-2.5">
+    <Search size={18} className="shrink-0 text-gray-400" />
+    <input
+      autoFocus={autoFocus}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+    />
+    {value && (
+      <button onClick={() => onChange('')} aria-label="Clear search" className="shrink-0 text-gray-400">
+        <X size={16} />
+      </button>
+    )}
   </div>
 );
 

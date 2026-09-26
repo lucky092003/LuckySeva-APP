@@ -5,7 +5,7 @@ import { isNative } from '@/utils/native';
 const tabs: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: 'Home', icon: Home, screen: { name: 'home' } },
   { label: 'Bookings', icon: CalendarCheck, screen: { name: 'bookings' } },
-  { label: 'Services', icon: LayoutGrid, screen: { name: 'home' } },
+  { label: 'Services', icon: LayoutGrid, screen: { name: 'services' } },
   { label: 'Profile', icon: User, screen: { name: 'profile' } },
 ];
 
