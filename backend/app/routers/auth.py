@@ -1,7 +1,6 @@
 import re
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
 
 from ..db import db
 from ..exceptions import ApiError
