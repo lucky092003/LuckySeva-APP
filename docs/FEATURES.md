@@ -42,10 +42,8 @@ SUPABASE_SERVICE_ROLE_KEY=...   # service-role key, server only — never expose
 SUPABASE_JWT_SECRET=...         # from Supabase: Settings → API → JWT Secret
 ```
 
-> **Data access — two layers.** The current web/app code still calls the Supabase
-> PostgREST client directly (`src/lib/supabase.ts`); RLS is intentionally open for
-> this single-tenant demo (SELECT/INSERT/UPDATE allowed). New features go through
-> the FastAPI backend (`src/lib/api.ts` → `backend/`), which uses the **service role**
+> **Data access — one layer.** All web/app data access goes through the FastAPI
+> backend (`frontend/src/services/api.ts` → `backend/`), which uses the **service role**
 > key server-side and authorizes requests with a custom JWT. Backend endpooints are
 > grouped by role: `auth`, `catalog` (public), `customer`, `provider`, `admin`.
 
@@ -53,7 +51,7 @@ SUPABASE_JWT_SECRET=...         # from Supabase: Settings → API → JWT Secret
 
 ## 3. Data model
 
-Migrations live in `supabase/migrations/`. Key tables:
+Migrations live in `backend/supabase/migrations/`. Key tables:
 
 ### `services` / `categories`
 Catalog of bookable services organised into categories (seed data included).
@@ -177,7 +175,7 @@ now assigned to that provider.
 
 ---
 
-## 6. Location & geocoding — `src/lib/location.ts`
+## 6. Location & geocoding — `frontend/src/services/location.ts`
 
 | Helper | Purpose |
 |---|---|
@@ -237,13 +235,15 @@ Shared 6-digit OTP component used by customer + provider auth:
 | Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location), Auth |
 | Admin | Dashboard, Customers, Providers, Services, Bookings, Profile, Audit log, Add Provider/Service modals, Export CSV |
 
-Navigation is a simple hand-rolled screen-state machine in `src/lib/app-context.tsx`
+Navigation is a simple hand-rolled screen-state machine in `frontend/src/context/app-context.tsx`
 (`navigate({ name, ...params })`); the shell (`PhoneShell` / `BottomNav` / `WebTopNav`)
 is responsive — phone column on mobile, full width on desktop web.
 
 ---
 
 ## 10. Scripts
+
+Frontend commands run from `frontend/`.
 
 | Command | Description |
 |---|---|
@@ -254,7 +254,15 @@ is responsive — phone column on mobile, full width on desktop web.
 | `npm run typecheck` | TypeScript checks |
 | `npm run test:unit` | Vitest unit tests |
 | `npx cap sync` | Sync web build into native projects |
-| `py -m uvicorn app.main:app --reload` (from `backend/`) | Run the FastAPI backend |
+
+Backend commands run from `backend/`.
+
+| Command | Description |
+|---|---|
+| `py -m uvicorn app.main:app --reload` | Run the FastAPI backend |
+| `ruff check app tests` | Lint the API |
+| `python -m pytest tests -q` | Smoke tests (health, routing, auth guards) |
+| `pip-audit -r requirements.txt` | Audit runtime deps for known CVEs |
 
 See [README.md](../README.md) for setup, [PUBLISHING.md](../PUBLISHING.md) for releases,
 and `backend/` for the backend.
