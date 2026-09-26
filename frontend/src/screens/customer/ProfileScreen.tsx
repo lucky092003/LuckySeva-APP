@@ -143,7 +143,7 @@ export const ProfileScreen = () => {
           <MenuItem icon={<Icons.History size={18} />} label="Booking History" value={`${bookings.length} completed`} onClick={() => navigate({ name: 'bookings' })} />
           <MenuItem icon={<Icons.Heart size={18} />} label="Favourites" value={`${favourites.length} providers`} onClick={() => navigate({ name: 'favourites' })} />
           <MenuItem icon={<Icons.HeadphonesIcon size={18} />} label="Help & Support" value="" onClick={() => navigate({ name: 'help' })} />
-          <MenuItem icon={<Icons.Bell size={18} />} label="Notifications" value={`${unread} new`} onClick={() => navigate({ name: 'notifications' })} />
+          <MenuItem icon={<Icons.Bell size={18} />} label="Notifications" value={unread > 0 ? `${unread > 9 ? '9+' : unread} new` : ''} onClick={() => navigate({ name: 'notifications' })} />
           <MenuItem icon={<Icons.Settings size={18} />} label="Settings" value="" onClick={() => setShowSettings(true)} />
         </div>
 

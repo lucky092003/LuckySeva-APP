@@ -22,6 +22,7 @@ export type Screen =
   | { name: 'splash' }
   | { name: 'auth' }
   | { name: 'home' }
+  | { name: 'services' }
   | { name: 'search' }
   | { name: 'notifications' }
   | { name: 'category'; slug: string }
@@ -179,7 +180,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useCallback((s: Screen) => {
     setStack((prev) => {
       // Bottom-tab roots reset the stack
-      const rootNames = ['home', 'bookings', 'profile', 'provider-home', 'provider-bookings', 'provider-earnings', 'provider-profile', 'admin-dashboard'];
+      const rootNames = ['home', 'services', 'bookings', 'profile', 'provider-home', 'provider-bookings', 'provider-earnings', 'provider-profile', 'admin-dashboard'];
       if (rootNames.includes(s.name)) return [s];
       return [...prev, s];
     });

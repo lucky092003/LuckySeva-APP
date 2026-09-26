@@ -69,9 +69,13 @@ environment variable (plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` /
 2. Partner site → `VITE_APP_ROLE=provider`
 3. Admin site → `VITE_APP_ROLE=admin` (web only)
 
-Each project uses the same build settings — Vercel reads them from `vercel.json`,
-which sets **Root Directory: `frontend`**, build `npm run build`, output `dist`.
-Every push to the connected branch auto-deploys.
+Set **Root Directory: `frontend`** on each project (Project Settings → Build and
+Deployment → Root Directory). Root Directory is a dashboard setting only — adding
+`"rootDirectory"` to `vercel.json` fails Vercel's schema validation.
+
+Each project then reads the same build settings from `frontend/vercel.json` —
+build `npm run build`, output `dist`, plus the SPA rewrite. Every push to the
+connected branch auto-deploys.
 
 ## Android (Play Store) — do this on any machine
 
@@ -116,7 +120,7 @@ Repeat for the other role to publish the second app.
 | `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE`, `VITE_API_URL` |
 | `backend/.env.example` | Backend env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
 | `render.yaml` | Render blueprint — one-click API deploy |
-| `vercel.json` | Vercel build settings for all three web projects |
+| `frontend/vercel.json` | Vercel build settings for all three web projects |
 | `capacitor.config.ts` | Sets native app id/name from `VITE_APP_ROLE` |
 | `frontend/src/context/app-context.tsx` | `APP_ROLE` — locks each build to one role |
 | `android/app/src/main/AndroidManifest.xml` | Android permissions & launch config |
