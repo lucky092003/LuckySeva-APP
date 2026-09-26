@@ -11,7 +11,7 @@ their bookings and earnings; an admin dashboard oversees the platform.
 ```
 ┌─────────────────────────── APP/WEBSITE (Vercel) ───────────────────────────┐
 │  React + Vite + TypeScript + Tailwind   ·   Capacitor (Android & iOS)      │
-│  src/lib/api.ts  →  calls the FastAPI backend (VITE_API_URL)               │
+│  frontend/src/services/api.ts  →  calls the FastAPI backend (VITE_API_URL)  │
 └───────────────┬────────────────────────────────────────────────────────────┘
                 │ HTTPS / JSON + JWT (Bearer token)
 ┌───────────────▼────────────────────────────────────────────────────────────┐
@@ -27,12 +27,13 @@ their bookings and earnings; an admin dashboard oversees the platform.
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Frontend** = this repo (web + mobile), deployed on **Vercel**.
+- **Frontend** = `frontend/` (web + mobile), deployed on **Vercel**.
 - **Backend** = `backend/` FastAPI server (Python), deployed anywhere (Render/Railway/VPS).
 - **Database** = **Supabase** Postgres — the single source of truth for both the app and the API.
 
-> 👉 The frontend can keep working directly against Supabase (legacy `src/lib/supabase.ts`
-> calls) while new features go through `src/lib/api.ts`. All new code should use the API.
+> 👉 All data access goes through the API client at
+> [`frontend/src/services/api.ts`](frontend/src/services/api.ts). The browser never
+> talks to Supabase directly; the backend holds the service-role key.
 
 ---
 
@@ -95,10 +96,10 @@ Create a project on [supabase.com](https://supabase.com), then apply the schema:
 
 ```sh
 npx supabase link          # link your project
-npx supabase db push       # apply supabase/migrations/*
+npx supabase db push       # apply backend/supabase/migrations/*
 ```
 
-Or copy the `.sql` files from `supabase/migrations/` into the Supabase
+Or copy the `.sql` files from `backend/supabase/migrations/` into the Supabase
 **SQL Editor** and run them in order.
 
 ### 2. Backend (FastAPI, Python)
@@ -128,13 +129,25 @@ Interactive API docs: `http://localhost:8000/docs`.
 > **JWT note:** the backend mints and verifies its own JWTs using `SUPABASE_JWT_SECRET`
 > (same secret Supabase uses), so tokens are valid for the API only.
 
+To run the lint/tests locally too (what CI does), add the dev tooling:
+
+```sh
+py -m pip install -r requirements-dev.txt
+ruff check app tests
+python -m pytest tests -q
+```
+
+`requirements-dev.txt` is deliberately kept separate from `requirements.txt` so
+production installs (Render) never pull in test/lint packages.
+
 ### 3. Frontend (React + Vite)
 
 ```sh
+cd frontend
 npm install
 ```
 
-Copy `.env.example` to `.env` and set:
+Copy `frontend/.env.example` to `frontend/.env` and set:
 
 ```sh
 VITE_SUPABASE_ANON_KEY=your-anon-key
@@ -157,10 +170,13 @@ The app renders full-screen like a website on web and full-screen on real device
 ## 🏗️ Building for a specific role
 
 Always set `VITE_APP_ROLE` for **both** `npm run build` and `npx cap sync`.
+Run both from the `frontend/` directory — Capacitor resolves its config and
+`node_modules` relative to the current working directory.
 
 PowerShell (Windows):
 
 ```powershell
+cd frontend
 $env:VITE_APP_ROLE="customer"   # or "provider" (admin has no native app)
 npm run build
 npx cap sync
@@ -169,6 +185,7 @@ npx cap sync
 macOS / Linux:
 
 ```sh
+cd frontend
 VITE_APP_ROLE=customer npm run build   # or "provider"
 VITE_APP_ROLE=customer npx cap sync
 ```
@@ -235,10 +252,10 @@ The backend exposes these endpoint groups (full docs at `/docs` when it's runnin
 | `/provider` | JWT (provider) | Feed, accept/decline, status, earnings, payouts, dashboard |
 | `/admin` | JWT (admin) | Stats, professionals/services CRUD, settings, audit logs |
 
-Frontend calls live in one place: [`src/lib/api.ts`](src/lib/api.ts).
+Frontend calls live in one place: [`frontend/src/services/api.ts`](frontend/src/services/api.ts).
 
 ```ts
-import { api } from '@/lib/api';
+import { api } from '@/services/api';
 const catalog = await api.catalog.home();
 await api.auth.verifyOtp({ phone: '9876543210', code: '123456', role: 'customer' });
 await api.customer.createBooking({ service_id, scheduled_date, scheduled_time });
@@ -247,6 +264,8 @@ await api.customer.createBooking({ service_id, scheduled_date, scheduled_time })
 ---
 
 ## 📦 Available Scripts
+
+All npm scripts run from `frontend/`.
 
 | Command               | Description                                 |
 |-----------------------|---------------------------------------------|
@@ -259,6 +278,40 @@ await api.customer.createBooking({ service_id, scheduled_date, scheduled_time })
 | `npx cap sync`        | Sync web build into native projects         |
 | `cd backend && py -m uvicorn app.main:app --reload` | Run the FastAPI backend      |
 
+Backend checks (run from `backend/`, after `pip install -r requirements.txt -r requirements-dev.txt`):
+
+| Command                        | Description                              |
+|--------------------------------|------------------------------------------|
+| `ruff check app tests`         | Lint the API                            |
+| `python -m pytest tests -q`    | Run the backend smoke tests              |
+| `python -m compileall -q app`  | Byte-compile every module                |
+| `pip-audit -r requirements.txt`| Audit runtime deps for known CVEs       |
+
+---
+
+## 🔁 Continuous integration
+
+`.github/workflows/ci.yml` runs two jobs in parallel on every push/PR to `master`:
+
+| Job | What it checks |
+|-----|----------------|
+| **Frontend** | `npm ci` → ESLint → TypeScript → Vitest → production build → `npm audit` |
+| **Backend** | `pip install` → `compileall` → Ruff → pytest → `pip-audit` |
+
+CodeQL security scanning ([`codeql.yml`](.github/workflows/codeql.yml)) runs separately
+across Python, JavaScript/TypeScript, Java/Kotlin, Swift and Actions.
+
+Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) watches the whole repo:
+
+| Ecosystem | Directory | Covers |
+|---|---|---|
+| `github-actions` | `/` | CI + CodeQL workflow pinning |
+| `npm` | `/frontend` | `package.json` + `package-lock.json` |
+| `pip` | `/backend` | `requirements.txt` **and** `requirements-dev.txt` |
+
+All three run weekly (Friday 23:00 Asia/Kolkata) and group minor/patch bumps into
+single PRs, so you get one reviewable update instead of a stream of them.
+
 ---
 
 ## 📱 Mobile (Capacitor)
@@ -268,6 +321,7 @@ The web code is shared across web, Android, and iOS — no rewrites needed.
 ### Build for native
 
 ```sh
+cd frontend
 npm run build
 npx cap sync
 ```
@@ -292,30 +346,38 @@ npx cap sync
 ## 🗂️ Project Structure
 
 ```
-├── android/                 # Capacitor Android native project
-├── ios/                     # Capacitor iOS native project
-├── public/                  # Static assets (favicon)
-├── src/
-│   ├── components/          # Shared UI (Logo, PhoneShell, BottomNav, ui)
-│   ├── lib/                 # App context (APP_ROLE), Supabase client, API client, types
-│   └── screens/
-│       ├── customer/        # Customer-facing screens
-│       ├── provider/        # Partner-facing screens
-│       └── admin/           # Admin dashboard screens (web only)
-├── backend/                # FastAPI backend (Python)
+├── frontend/                # React + Vite + TypeScript app (deployed on Vercel)
+│   ├── src/
+│   │   ├── components/      # Shared UI (Logo, PhoneShell, BottomNav, ui)
+│   │   ├── context/         # App context — APP_ROLE, navigation stack, session
+│   │   ├── hooks/           # Data hooks (catalog, bookings, customer, provider)
+│   │   ├── screens/         # customer/ · provider/ · admin/
+│   │   ├── services/        # API client + geolocation/geocoding
+│   │   ├── types/           # Shared DTO types
+│   │   └── utils/           # Formatting, invoice, KYC labels, platform checks
+│   ├── public/              # Static assets (favicon)
+│   ├── index.html           # HTML entry
+│   ├── capacitor.config.ts  # Capacitor config (role-aware app id/name)
+│   ├── vite.config.ts       # Vite build config (`@` → src alias)
+│   └── package.json         # Frontend dependencies & scripts
+├── backend/                 # FastAPI backend (Python) — deployed on Render
 │   ├── app/
 │   │   ├── main.py          # FastAPI app + CORS + routers
 │   │   ├── security.py      # JWT sign/verify (PyJWT)
 │   │   ├── dependencies.py  # Role guards (customer/provider/admin)
 │   │   ├── db.py            # Supabase client (supabase-py, service role)
 │   │   └── routers/         # auth, catalog, customer, provider, admin
-│   ├── requirements.txt
+│   ├── tests/               # Smoke tests (health, routing, auth guards)
+│   ├── supabase/migrations/ # SQL schema + seed data
+│   ├── requirements.txt     # Runtime deps (installed on Render)
+│   ├── requirements-dev.txt # Lint + test tooling (CI only)
+│   ├── ruff.toml            # Ruff lint rules
 │   └── .env.example
-├── supabase/migrations/     # Supabase SQL schema + seed data
-├── capacitor.config.ts      # Capacitor config (role-aware app id/name)
-├── vercel.json              # Vercel build settings
-├── render.yaml              # Render blueprint (one-click API deploy)
-└── index.html               # HTML entry
+├── android/                 # Capacitor Android native project
+├── ios/                     # Capacitor iOS native project
+├── docs/                    # Feature & architecture documentation
+├── vercel.json              # Vercel build settings (root: frontend)
+└── render.yaml              # Render blueprint (one-click API deploy)
 ```
 
 ---
@@ -323,10 +385,10 @@ npx cap sync
 ## 🧰 Tech Stack
 
 - **React 18** + **TypeScript**
-- **Vite 5** build tooling
+- **Vite** build tooling
 - **Tailwind CSS 3** styling
 - **Capacitor 8** native mobile wrapper
-- **Supabase** — PostgreSQL database (schema in `supabase/migrations/`)
+- **Supabase** — PostgreSQL database (schema in `backend/supabase/migrations/`)
 - **FastAPI** (Python) — backend API (`backend/`) talking to Supabase via `supabase-py`
 - **Vercel** — frontend hosting (three role-locked sites)
 - **lucide-react** icons
