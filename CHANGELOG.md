@@ -59,6 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   notifications toggles and name/email — all persisted to `admin_settings` and
   logged to `audit_logs`.
 - Shared `Modal` component in `AdminScreens.tsx` for all admin dialogs.
+- **New `physiotherapy` service category** via
+  `20260927000000_add_physiotherapy_category.sql`: category row
+  (lucide `Activity`, purple) plus 5 starter services (home session, back &
+  neck pain relief, sports injury rehab, post-surgery rehabilitation, knee &
+  joint pain therapy). `other` is pushed to the end of the sort order, and
+  existing physios are linked to the new services.
+- Provider signup now maps physio/physiotherapy/rehab/exercise/massage
+  professions to the `physiotherapy` category instead of `other`.
 
 ### Changed
 - Home screen location button navigates to real addresses; bell badge shows real
