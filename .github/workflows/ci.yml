@@ -92,3 +92,109 @@ jobs:
       - name: Dependency audit (warning deta hai, fail nahi karta)
         run: pip-audit -r requirements.txt
         continue-on-error: true
+
+  migrations:
+    name: Migrations (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+
+    # Validates the SQL against a throwaway Postgres. It never touches the real
+    # Supabase project, so it needs no Supabase credentials at all.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: luckyseva
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      # The policies are declared `TO anon, authenticated`; those roles are
+      # created by Supabase itself, so stand them up locally before applying.
+      - name: Create the roles the policies reference
+        run: |
+          export PGPASSWORD=postgres
+          psql -h localhost -U postgres -d luckyseva -v ON_ERROR_STOP=1 -q \
+            -c 'CREATE ROLE anon NOLOGIN;' \
+            -c 'CREATE ROLE authenticated NOLOGIN;'
+
+      - name: List migrations in apply order
+        run: |
+          shopt -s nullglob
+          files=(supabase/migrations/*.sql)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no migration files found under backend/supabase/migrations/"
+            exit 1
+          fi
+          echo "Found ${#files[@]} migration file(s):"
+          printf '  %s\n' "${files[@]}" | sort
+          echo "Latest: $(printf '%s\n' "${files[@]}" | sort | tail -1)"
+
+      - name: Apply migrations
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          export PGPASSWORD=postgres
+          files=(supabase/migrations/*.sql)
+          for f in "${files[@]}"; do
+            echo "::group::apply $(basename "$f")"
+            psql -h localhost -U postgres -d luckyseva -v ON_ERROR_STOP=1 -q -f "$f"
+            echo "::endgroup::"
+          done
+
+      # The README also allows pasting these into the Supabase SQL Editor by
+      # hand, so a migration can legitimately run more than once. Prove that a
+      # second full pass is a no-op instead of discovering it in production.
+      - name: Re-apply migrations (idempotency check)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          export PGPASSWORD=postgres
+          files=(supabase/migrations/*.sql)
+          for f in "${files[@]}"; do
+            echo "::group::re-apply $(basename "$f")"
+            psql -h localhost -U postgres -d luckyseva -v ON_ERROR_STOP=1 -q -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Show resulting schema
+        run: |
+          export PGPASSWORD=postgres
+          psql -h localhost -U postgres -d luckyseva -v ON_ERROR_STOP=1 -q -c '\dt' -c '\di'
+
+      # None of the current migrations drop or truncate anything, so failing
+      # here catches a genuinely destructive change at review time rather than
+      # after it has been applied by hand.
+      - name: Guard against destructive statements
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          found=0
+          files=(supabase/migrations/*.sql)
+          for f in "${files[@]}"; do
+            if grep -nEi '\b(DROP[[:space:]]+TABLE|TRUNCATE|DROP[[:space:]]+SCHEMA)\b|\bDELETE[[:space:]]+FROM\b[[:space:]]+[a-z_]+[[:space:]]*;' "$f"; then
+              echo "::error file=$f::destructive statement found in migration"
+              found=1
+            fi
+          done
+          if [ "$found" -ne 0 ]; then
+            echo "Destructive migration detected. If this is intentional, split it up or add a note explaining the data loss."
+            exit 1
+          fi
+          echo "No destructive statements found."

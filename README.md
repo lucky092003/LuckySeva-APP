@@ -100,7 +100,15 @@ npx supabase db push       # apply backend/supabase/migrations/*
 ```
 
 Or copy the `.sql` files from `backend/supabase/migrations/` into the Supabase
-**SQL Editor** and run them in order.
+**SQL Editor** and run them in order. Applying them by hand is fine — every
+migration is idempotent, so re-running one is a no-op.
+
+**CI does not apply migrations.** The `Migrations (Postgres)` job in
+`.github/workflows/ci.yml` runs every migration against a throwaway Postgres
+container on each push/PR, then re-runs the whole set to prove it is idempotent.
+It also fails on `DROP TABLE` / `TRUNCATE` / unqualified `DELETE FROM`. It needs
+no Supabase credentials and never touches the live project, so applying to
+production stays a deliberate manual step.
 
 ### 2. Backend (FastAPI, Python)
 
