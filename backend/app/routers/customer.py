@@ -129,13 +129,16 @@ def delete_address(address_id: str, claims: dict = Depends(require_customer)):
         raise ApiError(404, "Address not found")
     client.table("addresses").delete().eq("id", address_id).execute()
     if existing.get("is_default"):
-        _ = (
+        remaining = (
             client.table("addresses")
             .select("id")
             .eq("customer_phone", customer_phone(claims))
+            .order("created_at", desc=True)
             .limit(1)
             .execute()
         )
+        if remaining.data:
+            client.table("addresses").update({"is_default": True}).eq("id", remaining.data[0]["id"]).execute()
     return {"ok": True}
 
 
