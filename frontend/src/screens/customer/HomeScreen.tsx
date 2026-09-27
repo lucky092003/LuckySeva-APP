@@ -92,7 +92,7 @@ export const HomeScreen = () => {
         {catLoading ? (
           <Spinner className="py-8" />
         ) : (
-          <div className="grid grid-cols-4 gap-3 md:grid-cols-8 md:gap-5">
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-8 md:gap-5">
             {categories.map((cat) => {
               const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[cat.icon] || Icons.Circle;
               return (
