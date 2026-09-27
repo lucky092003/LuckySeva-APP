@@ -27,6 +27,7 @@ function categoryFor(profession: string): string {
   if (/appliance|wash|fridge|microwave|geyser/.test(p)) return 'appliance-repair';
   if (/beauty|salon|hair|makeup|spa|facial/.test(p)) return 'beauty-salon';
   if (/pest|termite|roach/.test(p)) return 'pest-control';
+  if (/physio|physiotherap|rehab|exercise|massage/.test(p)) return 'physiotherapy';
   return 'other';
 }
 
