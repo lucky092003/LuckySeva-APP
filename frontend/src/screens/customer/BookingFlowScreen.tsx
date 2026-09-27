@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { useService, useProfessional } from '@/hooks';
@@ -39,6 +39,8 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [pincode, setPincode] = useState('');
   const [locCoords, setLocCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [savedAddrs, setSavedAddrs] = useState<AddressRow[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const defaultAppliedRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
   const [notes, setNotes] = useState('');
@@ -49,7 +51,18 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [method, setMethod] = useState<string>('cash');
 
   const address = [house, area, city, state, pincode].filter(Boolean).join(', ').trim();
-  const hasAddress = house || area || city || state || pincode;
+  const hasAddress = Boolean(house || area || city || state || pincode);
+
+  const applySavedAddress = (a: AddressRow) => {
+    const parts = splitAddress(a.full_address);
+    setHouse(parts.houseNo || '');
+    setArea(parts.area || '');
+    setCity(parts.city || '');
+    setState(parts.state || '');
+    setPincode(parts.pincode || '');
+    setLocCoords(a.latitude != null && a.longitude != null ? { latitude: a.latitude, longitude: a.longitude } : null);
+    setSelectedAddressId(a.id);
+  };
 
   const fillFromDetails = (loc: { address: string; details: Record<string, string>; latitude: number; longitude: number }, overwrite = false) => {
     setLocCoords({ latitude: loc.latitude, longitude: loc.longitude });
@@ -64,11 +77,14 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     setCity(parts.city || '');
     setState(parts.state || '');
     setPincode(parts.pincode || '');
+    setSelectedAddressId(null);
   };
 
   useEffect(() => {
     if (step !== 2) {
+      defaultAppliedRef.current = false;
       setSavedAddrs([]);
+      setSelectedAddressId(null);
       return;
     }
     api.customer
@@ -78,18 +94,12 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   }, [step]);
 
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 2 || defaultAppliedRef.current) return;
     const def = savedAddrs.find((a) => a.is_default);
-    if (def && !hasAddress) {
-      const parts = splitAddress(def.full_address);
-      setHouse(parts.houseNo || '');
-      setArea(parts.area || '');
-      setCity(parts.city || '');
-      setState(parts.state || '');
-      setPincode(parts.pincode || '');
-      setLocCoords(def.latitude != null && def.longitude != null ? { latitude: def.latitude, longitude: def.longitude } : null);
-    }
-  }, [step, savedAddrs, hasAddress]);
+    if (!def) return;
+    defaultAppliedRef.current = true;
+    applySavedAddress(def);
+  }, [step, savedAddrs]);
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -286,19 +296,12 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                 <h3 className="mb-2 text-sm font-bold text-gray-900">Saved Addresses</h3>
                 <div className="space-y-2">
                   {savedAddrs.map((a) => {
-                    const selected = address === a.full_address;
+                    const selected = selectedAddressId === a.id;
                     return (
                       <button
                         key={a.id}
-                        onClick={() => {
-                          const parts = splitAddress(a.full_address);
-                          setHouse(parts.houseNo || '');
-                          setArea(parts.area || '');
-                          setCity(parts.city || '');
-                          setState(parts.state || '');
-                          setPincode(parts.pincode || '');
-                          setLocCoords(a.latitude != null && a.longitude != null ? { latitude: a.latitude, longitude: a.longitude } : null);
-                        }}
+                        type="button"
+                        onClick={() => applySavedAddress(a)}
                         className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
                       >
                         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
@@ -325,33 +328,33 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
               <div className="space-y-2.5">
                 <input
                   value={house}
-                  onChange={(e) => setHouse(e.target.value)}
+                  onChange={(e) => { setSelectedAddressId(null); setHouse(e.target.value); }}
                   placeholder="House/Flat No, Street, Road"
                   className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 />
                 <input
                   value={area}
-                  onChange={(e) => setArea(e.target.value)}
+                  onChange={(e) => { setSelectedAddressId(null); setArea(e.target.value); }}
                   placeholder="Area / Locality"
                   className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 />
                 <div className="grid grid-cols-2 gap-2.5">
                   <input
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={(e) => { setSelectedAddressId(null); setCity(e.target.value); }}
                     placeholder="City / District"
                     className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                   />
                   <input
                     value={state}
-                    onChange={(e) => setState(e.target.value)}
+                    onChange={(e) => { setSelectedAddressId(null); setState(e.target.value); }}
                     placeholder="State"
                     className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                   />
                 </div>
                 <input
                   value={pincode}
-                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => { setSelectedAddressId(null); setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); }}
                   placeholder="Pincode"
                   inputMode="numeric"
                   className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
