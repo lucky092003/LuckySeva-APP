@@ -1,3 +1,5 @@
+import type { AddressParts } from '@/services/address';
+
 export interface LocationResult {
   address: string;
   latitude: number;
@@ -50,26 +52,6 @@ export async function fetchCurrentLocation(): Promise<LocationResult> {
   }
 }
 
-export function splitAddress(full: string): { houseNo: string; area: string; city: string; state: string; pincode: string } {
-  const parts = full.split(',').map((s) => s.trim()).filter(Boolean);
-  let pincode = '';
-  if (parts.length && /^\d{4,6}$/.test(parts[parts.length - 1])) pincode = parts.pop() || '';
-  const state = parts.pop() || '';
-  const city = parts.pop() || '';
-  const area = parts.pop() || '';
-  return { houseNo: parts.join(', '), area, city, state, pincode };
-}
-
-export function applyDetails(details: Record<string, string>): { houseNo: string; area: string; city: string; state: string; pincode: string } {
-  return {
-    houseNo: [details.house_number, details.road].filter(Boolean).join(', '),
-    area: details.suburb || details.neighbourhood || '',
-    city: details.city || details.town || details.village || details.city_district || '',
-    state: details.state || '',
-    pincode: details.postcode || '',
-  };
-}
-
 export function areaFrom(details: Record<string, string>): string {
   const parts = [details.suburb, details.neighbourhood, details.city_district, details.city, details.state]
     .filter((x) => !!x)
@@ -88,14 +70,8 @@ export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: numb
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-export async function geocodeAddress(parts: {
-  house: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
-}): Promise<{ latitude: number; longitude: number } | null> {
-  const house = parts.house.trim();
+export async function geocodeAddress(parts: AddressParts): Promise<{ latitude: number; longitude: number } | null> {
+  const house = parts.houseNo.trim();
   const area = parts.area.trim();
   const city = parts.city.trim();
   const state = parts.state.trim();

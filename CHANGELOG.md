@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Shared `AddressForm` component (`frontend/src/components/AddressForm.tsx`) and an
+  address domain module (`frontend/src/services/address.ts`) — composing, parsing and
+  validation now live in one place and are shared by the booking flow and the
+  saved-address screen instead of being duplicated.
+- Address validation: every field required, pincode must be 6 digits, with per-field
+  errors and a "Please complete: …" summary. The booking flow's Continue button now
+  reveals the errors instead of sitting disabled with no explanation.
+- `bookings.address_id` (`20260928000000_booking_address_link.sql`) links a booking to
+  the saved address it used; the id is ownership-checked server side.
+- State field is backed by a datalist of Indian states and union territories, and the
+  add-address form has Home/Work/Other label shortcuts.
 - Initial project documentation: `README.md` (setup guide) and this `CHANGELOG.md`.
 - `.env.example` template for Supabase configuration.
 - Provider create-account page with signup (details + OTP) and login.
@@ -91,6 +102,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin login layout redesigned as a split-card screen with a brand panel.
 
 ### Fixed
+- Saved addresses in the booking address step could not be clicked into a selected
+  state. Selection was derived from comparing the recomposed form string against the
+  stored `full_address`, so the highlight could fail to appear and a click looked like
+  a no-op. Selection is now tracked by address id, and the default address is applied
+  once per visit to the step instead of being skipped whenever the form already had
+  leftover values.
+- `splitAddress` no longer shifts fields into each other for addresses that omit the
+  state or pincode — `"12, Baner, Pune"` used to parse as area `"12"`, city `"Baner"`,
+  state `"Pune"`. Fields are now identified by content, and state abbreviations and
+  older spellings (`MH`, `Orissa`) are recognised.
+- Deleting your default address left you with no default at all: the delete endpoint
+  selected a replacement id into an unused variable and never set `is_default`. It now
+  promotes the newest remaining address.
+- A booking can no longer be linked to another customer's saved address; the
+  `address_id` sent on booking creation is checked against the caller's phone.
 - Admin login landed on an intermediate "Admin signed in" screen instead of the
   dashboard; the "Continue to Dashboard" button also reset navigation. Login now
   navigates straight to the admin dashboard.

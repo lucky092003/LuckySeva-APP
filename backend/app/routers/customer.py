@@ -195,6 +195,21 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     total = float(body.get("total_amount") or 0) or base + visit_fee
     name = profile.get("name") if profile else customer_phone(claims)
 
+    # Only accept an address the customer actually owns, so a booking can never
+    # be linked to somebody else's saved address.
+    address_id = body.get("address_id") if isinstance(body.get("address_id"), str) else None
+    if address_id:
+        owned = one(
+            client.table("addresses")
+            .select("id")
+            .eq("id", address_id)
+            .eq("customer_phone", customer_phone(claims))
+            .maybe_single()
+            .execute()
+        )
+        if not owned:
+            address_id = None
+
     res = (
         client.table("bookings")
         .insert(
@@ -202,6 +217,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
                 "customer_name": name,
                 "customer_phone": customer_phone(claims),
                 "customer_address": body.get("customer_address", ""),
+                "address_id": address_id,
                 "service_id": service_id,
                 "service_name": service_name,
                 "professional_id": professional_id,

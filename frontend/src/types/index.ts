@@ -124,6 +124,7 @@ export type Booking = {
   customer_name: string;
   customer_phone: string;
   customer_address: string;
+  address_id?: string | null;
   service_id: string | null;
   service_name: string;
   professional_id: string | null;

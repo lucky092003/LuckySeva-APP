@@ -85,7 +85,8 @@ Catalog of bookable services organised into categories (seed data included).
 
 ### `addresses`
 Customer saved addresses: `customer_phone`, `label`, `full_address`, `is_default`,
-plus `latitude` / `longitude` (captured from GPS or geocoding).
+plus `latitude` / `longitude` (captured from GPS or geocoding). At most one address
+per customer is `is_default`; deleting the default promotes the newest remaining one.
 
 ### Supporting tables
 `profiles`, `reviews`, `favourites`, `notifications`, `support_tickets`, `payouts`,
@@ -205,14 +206,28 @@ coordinates, so radius matching never silently skips the distance check.
 
 ## 7. Customer address flow
 
-- **Add address** (`AddressesScreen`): Flipkart-style broken form — Label,
-  House/Flat No + Street/Road, Area/Locality, City/District + State, numeric Pincode,
-  plus an optional "Use my current location" prefill. Coordinates are saved when known.
-- **Booking service address** (`BookingFlowScreen`): structured fields + a
-  **saved-address picker** (selectable cards, DEFAULT badge); auto-fills the default
-  address. Location fetching is **click-only** (never automatic).
+`frontend/src/services/address.ts` owns the address domain logic (types, composing,
+parsing, validation) and `frontend/src/components/AddressForm.tsx` is the single
+shared form used by both entry points.
+
+- **Address form** (`AddressForm`): Label, House/Flat No + Street/Road, Area/Locality,
+  City/District + State (with a datalist of Indian states/UTs), numeric Pincode, plus an
+  optional "Use my current location" prefill. Every field is required and the pincode
+  must be 6 digits; errors render per-field plus a "Please complete: …" summary, and
+  they stay hidden until the user actually attempts to submit.
+- **Add address** (`AddressesScreen`): the shared form with Home/Work/Other label
+  shortcuts. Coordinates are saved from GPS when available, otherwise geocoded.
+- **Booking service address** (`BookingFlowScreen`): the same form plus a
+  **saved-address picker**. The default address is applied once per visit to the step;
+  selection is tracked by address id (not by string comparison) and any hand edit
+  deselects the card. Location fetching is **click-only** (never automatic).
+- **Parsing** (`splitAddress`): maps a stored `full_address` back into fields by
+  *content* — pincode by 6-digit shape, state by name/abbreviation (incl. old
+  spellings like `Orissa`), the remainder in composition order. Addresses that omit
+  the state or pincode therefore do not have their fields shifted into each other.
 - The composed address stored on a booking is the combined structured string
-  `"House No, Area, City, State, Pincode"`.
+  `"House No, Area, City, State, Pincode"`. When the booking used a saved address,
+  `bookings.address_id` links back to it (ownership-checked server side).
 
 ---
 

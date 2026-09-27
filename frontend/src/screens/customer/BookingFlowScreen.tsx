@@ -3,8 +3,19 @@ import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { useService, useProfessional } from '@/hooks';
 import { api } from '@/services/api';
-import { fetchCurrentLocation, applyDetails, splitAddress, geocodeAddress } from '@/services/location';
+import { fetchCurrentLocation, geocodeAddress } from '@/services/location';
+import {
+  EMPTY_ADDRESS,
+  applyDetails,
+  composeAddress,
+  isAddressValid,
+  missingAddressFields,
+  splitAddress,
+  validateAddress,
+  type AddressParts,
+} from '@/services/address';
 import { TopBar } from '@/components/PhoneShell';
+import { AddressForm } from '@/components/AddressForm';
 import { Card, Spinner, Button, Stars } from '@/components/ui';
 import { inr } from '@/utils/format';
 import type { Booking, AddressRow } from '@/types';
@@ -32,14 +43,11 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [step, setStep] = useState(1);
   const [date, setDate] = useState(0);
   const [slot, setSlot] = useState('');
-  const [house, setHouse] = useState('');
-  const [area, setArea] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [addr, setAddr] = useState<AddressParts>(EMPTY_ADDRESS);
   const [locCoords, setLocCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [savedAddrs, setSavedAddrs] = useState<AddressRow[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddrErrors, setShowAddrErrors] = useState(false);
   const defaultAppliedRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
@@ -50,34 +58,38 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [couponError, setCouponError] = useState('');
   const [method, setMethod] = useState<string>('cash');
 
-  const address = [house, area, city, state, pincode].filter(Boolean).join(', ').trim();
-  const hasAddress = Boolean(house || area || city || state || pincode);
+  const address = composeAddress(addr);
+  const addrErrors = validateAddress(addr);
+  const addrValid = isAddressValid(addr);
+  const missing = missingAddressFields(addrErrors);
+
+  /** Any hand edit means the form no longer matches the selected saved address. */
+  const updateAddr = (patch: Partial<AddressParts>) => {
+    setSelectedAddressId(null);
+    setAddr((prev) => ({ ...prev, ...patch }));
+  };
 
   const applySavedAddress = (a: AddressRow) => {
-    const parts = splitAddress(a.full_address);
-    setHouse(parts.houseNo || '');
-    setArea(parts.area || '');
-    setCity(parts.city || '');
-    setState(parts.state || '');
-    setPincode(parts.pincode || '');
+    setAddr(splitAddress(a.full_address));
     setLocCoords(a.latitude != null && a.longitude != null ? { latitude: a.latitude, longitude: a.longitude } : null);
     setSelectedAddressId(a.id);
   };
 
-  const fillFromDetails = (loc: { address: string; details: Record<string, string>; latitude: number; longitude: number }, overwrite = false) => {
+  const fillFromDetails = (loc: { address: string; details: Record<string, string>; latitude: number; longitude: number }) => {
     setLocCoords({ latitude: loc.latitude, longitude: loc.longitude });
-    if (!overwrite && hasAddress) return;
+    setSelectedAddressId(null);
     let parts = applyDetails(loc.details);
     if (!parts.houseNo && !parts.area && !parts.city) {
       const fallback = splitAddress(loc.address);
       if (fallback.houseNo || fallback.area || fallback.city) parts = fallback;
     }
-    setHouse(parts.houseNo || '');
-    setArea(parts.area || '');
-    setCity(parts.city || '');
-    setState(parts.state || '');
-    setPincode(parts.pincode || '');
-    setSelectedAddressId(null);
+    setAddr((prev) => ({
+      houseNo: parts.houseNo || prev.houseNo,
+      area: parts.area || prev.area,
+      city: parts.city || prev.city,
+      state: parts.state || prev.state,
+      pincode: parts.pincode || prev.pincode,
+    }));
   };
 
   useEffect(() => {
@@ -152,12 +164,17 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       navigate({ name: 'auth' });
       return;
     }
+    if (!addrValid) {
+      setStep(2);
+      setShowAddrErrors(true);
+      return;
+    }
     setSubmitting(true);
     const bookingDate = dates[date].toISOString().split('T')[0];
     let latitude: number | null = locCoords?.latitude ?? null;
     let longitude: number | null = locCoords?.longitude ?? null;
     if (latitude === null || longitude === null) {
-      const geo = await geocodeAddress({ house, area, city, state, pincode });
+      const geo = await geocodeAddress(addr);
       if (geo) {
         latitude = geo.latitude;
         longitude = geo.longitude;
@@ -169,6 +186,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_address: address,
+        address_id: selectedAddressId,
         latitude,
         longitude,
         service_id: service.id,
@@ -202,7 +220,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     setLocError('');
     try {
       const loc = await fetchCurrentLocation();
-      fillFromDetails(loc, true);
+      fillFromDetails(loc);
     } catch (e) {
       setLocError(e instanceof Error ? e.message : 'Could not fetch your location.');
     } finally {
@@ -210,7 +228,16 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     }
   };
 
-  const canNext = step === 1 ? slot !== '' : step === 2 ? address.trim().length > 5 : true;
+  const goNext = () => {
+    if (step === 2 && !addrValid) {
+      setShowAddrErrors(true);
+      return;
+    }
+    setShowAddrErrors(false);
+    setStep(step + 1);
+  };
+
+  const canNext = step === 1 ? slot !== '' : step === 2 ? addrValid : true;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -290,32 +317,58 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {savedAddrs.length > 0 && (
               <div>
-                <h3 className="mb-2 text-sm font-bold text-gray-900">Saved Addresses</h3>
+                <div className="mb-2 flex items-baseline justify-between">
+                  <h3 className="text-sm font-bold text-gray-900">Saved Addresses</h3>
+                  <span className="text-[11px] text-gray-400">Tap one to use it</span>
+                </div>
                 <div className="space-y-2">
                   {savedAddrs.map((a) => {
                     const selected = selectedAddressId === a.id;
+                    const icon = a.label.toLowerCase().includes('work')
+                      ? Icons.Building2
+                      : a.label.toLowerCase().includes('home')
+                        ? Icons.Home
+                        : Icons.MapPin;
+                    const Icon = icon;
                     return (
                       <button
                         key={a.id}
                         type="button"
                         onClick={() => applySavedAddress(a)}
-                        className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
+                        aria-pressed={selected}
+                        className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition-all ${
+                          selected
+                            ? 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
                       >
-                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                          {a.label.toLowerCase().includes('work') ? <Icons.Building2 size={16} /> : a.label.toLowerCase().includes('home') ? <Icons.Home size={16} /> : <Icons.MapPin size={16} />}
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                            selected ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          <Icon size={16} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-bold text-gray-900">{a.label}</p>
-                            {a.is_default && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600">DEFAULT</span>}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className={`text-xs font-bold ${selected ? 'text-emerald-800' : 'text-gray-900'}`}>{a.label}</p>
+                            {a.is_default && (
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700">
+                                Default
+                              </span>
+                            )}
                           </div>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-gray-600">{a.full_address}</p>
+                          <p className="mt-1 text-[11px] leading-relaxed text-gray-600">{a.full_address}</p>
                         </div>
-                        <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-emerald-500' : 'border-gray-300'}`}>
-                          {selected && <span className="h-3 w-3 rounded-full bg-emerald-500" />}
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                            selected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-300'
+                          }`}
+                        >
+                          {selected && <Icons.Check size={12} strokeWidth={3} />}
                         </span>
                       </button>
                     );
@@ -323,53 +376,30 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                 </div>
               </div>
             )}
+
             <div>
-              <h3 className="mb-2 text-sm font-bold text-gray-900">Service Address</h3>
-              <div className="space-y-2.5">
-                <input
-                  value={house}
-                  onChange={(e) => { setSelectedAddressId(null); setHouse(e.target.value); }}
-                  placeholder="House/Flat No, Street, Road"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                />
-                <input
-                  value={area}
-                  onChange={(e) => { setSelectedAddressId(null); setArea(e.target.value); }}
-                  placeholder="Area / Locality"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                />
-                <div className="grid grid-cols-2 gap-2.5">
-                  <input
-                    value={city}
-                    onChange={(e) => { setSelectedAddressId(null); setCity(e.target.value); }}
-                    placeholder="City / District"
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  />
-                  <input
-                    value={state}
-                    onChange={(e) => { setSelectedAddressId(null); setState(e.target.value); }}
-                    placeholder="State"
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  />
-                </div>
-                <input
-                  value={pincode}
-                  onChange={(e) => { setSelectedAddressId(null); setPincode(e.target.value.replace(/\D/g, '').slice(0, 6)); }}
-                  placeholder="Pincode"
-                  inputMode="numeric"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                />
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-bold text-gray-900">Service Address</h3>
+                {selectedAddressId ? (
+                  <span className="text-[11px] font-medium text-gray-400">Editing deselects the saved address</span>
+                ) : null}
               </div>
-              <button
-                onClick={fetchLocation}
-                disabled={locating}
-                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
-              >
-                <Icons.LocateFixed size={16} />
-                {locating ? 'Fetching your location...' : 'Use my current location'}
-              </button>
-              {locError && <p className="mt-1.5 text-xs text-red-500">{locError}</p>}
+              <AddressForm
+                value={addr}
+                onChange={updateAddr}
+                errors={addrErrors}
+                showErrors={showAddrErrors}
+                onLocate={fetchLocation}
+                locating={locating}
+                locateError={locError}
+              />
+              {showAddrErrors && !addrValid && (
+                <p className="mt-2.5 rounded-xl bg-amber-50 px-3 py-2.5 text-[11px] font-medium text-amber-700">
+                  Please complete: {missing.join(', ')}
+                </p>
+              )}
             </div>
+
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Add Notes / Instructions</h3>
               <textarea
@@ -502,7 +532,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
           <Button variant="outline" onClick={() => setStep(step - 1)}>Back</Button>
         )}
         {step < 3 ? (
-          <Button onClick={() => setStep(step + 1)} disabled={!canNext} className="flex-1">
+          <Button onClick={goNext} disabled={step === 1 && !canNext} className="flex-1">
             Continue
           </Button>
         ) : (
