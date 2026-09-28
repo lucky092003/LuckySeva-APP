@@ -1,11 +1,11 @@
-import { Search, MapPin, Bell, ChevronRight, Star, Calendar } from 'lucide-react';
+import { Search, MapPin, ChevronRight, Star, Calendar } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/app-context';
-import { useCategories, usePopularServices, useUnreadNotifications } from '@/hooks';
+import { useCategories, usePopularServices } from '@/hooks';
 import { api } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
-import { Card, Spinner, SectionTitle, CountBadge } from '@/components/ui';
+import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Professional, Booking } from '@/types';
 
@@ -13,7 +13,6 @@ export const HomeScreen = () => {
   const { navigate, customer, setCustomer } = useApp();
   const { categories, loading: catLoading } = useCategories();
   const { popularServices, loading: svcLoading } = usePopularServices();
-  const { unread } = useUnreadNotifications(customer?.phone || null);
   const [topPros, setTopPros] = useState<Professional[]>([]);
   const [proLoading, setProLoading] = useState(true);
   const [recent, setRecent] = useState<Booking[]>([]);
@@ -66,9 +65,8 @@ export const HomeScreen = () => {
             </span>
             <ChevronRight size={14} className="shrink-0" />
           </button>
-          <button onClick={() => navigate({ name: 'notifications' })} aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
-            <Bell size={18} />
-            <CountBadge count={unread} />
+          <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 md:hidden">
+            <Icons.Bell size={18} />
           </button>
         </div>
         <h1 className="mt-3 text-xl font-bold">

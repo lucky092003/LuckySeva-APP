@@ -3,39 +3,10 @@ import { useApp } from '@/context/app-context';
 import { useNotifications } from '@/hooks';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
+import { TYPE_ICON, TYPE_TONE } from '@/components/notificationTheme';
 import { Card, Spinner } from '@/components/ui';
+import { timeAgo } from '@/utils/format';
 import type { Notification } from '@/types';
-
-const TYPE_ICON: Record<string, React.ComponentType<{ size?: number | string; className?: string }>> = {
-  booking: Icons.CheckCircle2,
-  provider: Icons.Truck,
-  payment: Icons.Wallet,
-  review: Icons.Star,
-  offer: Icons.Percent,
-  alert: Icons.AlertCircle,
-};
-
-const TYPE_TONE: Record<string, string> = {
-  booking: 'bg-emerald-50 text-emerald-600',
-  provider: 'bg-sky-50 text-sky-600',
-  payment: 'bg-violet-50 text-violet-600',
-  review: 'bg-amber-50 text-amber-600',
-  offer: 'bg-pink-50 text-pink-600',
-  alert: 'bg-red-50 text-red-600',
-};
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-  const weeks = Math.floor(days / 7);
-  return `${weeks} wk${weeks === 1 ? '' : 's'} ago`;
-}
 
 export const NotificationsScreen = () => {
   const { navigate } = useApp();
@@ -81,8 +52,8 @@ export const NotificationsScreen = () => {
         ) : (
           <div className="space-y-2">
             {notifications.map((n) => {
-              const Icon = TYPE_ICON[n.type] || Icons.Bell;
-              const toneColor = TYPE_TONE[n.type] || 'bg-emerald-50 text-emerald-600';
+              const Icon = TYPE_ICON[n.type] || TYPE_ICON.bell;
+              const toneColor = TYPE_TONE[n.type] || TYPE_TONE.booking;
               return (
                 <Card key={n.id} onClick={() => open(n)} className={`flex gap-3 p-3.5 ${!n.read ? 'border-emerald-100 bg-emerald-50/30' : ''}`}>
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneColor}`}>
