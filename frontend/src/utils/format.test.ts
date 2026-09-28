@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatRelativeDay, inr, slugToLabel } from './format';
+import { formatDate, formatRelativeDay, inr, slugToLabel, timeAgo } from './format';
+
+const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+const MINUTE = 60000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 describe('inr', () => {
   it('formats numbers as Indian rupees', () => {
@@ -55,5 +60,26 @@ describe('formatRelativeDay', () => {
   it('falls back to a date string for other days', () => {
     expect(formatRelativeDay('2020-01-01')).toMatch(/^1 /);
     expect(formatRelativeDay('2020-01-01')).toContain('2020');
+  });
+});
+
+describe('timeAgo', () => {
+  it('describes recent timestamps in minutes and hours', () => {
+    expect(timeAgo(ago(30 * 1000))).toBe('Just now');
+    expect(timeAgo(ago(1 * MINUTE))).toBe('1 min ago');
+    expect(timeAgo(ago(5 * MINUTE))).toBe('5 mins ago');
+    expect(timeAgo(ago(1 * HOUR))).toBe('1 hr ago');
+    expect(timeAgo(ago(5 * HOUR))).toBe('5 hrs ago');
+  });
+
+  it('switches to days under a week and weeks beyond', () => {
+    expect(timeAgo(ago(1 * DAY))).toBe('1 day ago');
+    expect(timeAgo(ago(3 * DAY))).toBe('3 days ago');
+    expect(timeAgo(ago(7 * DAY))).toBe('1 wk ago');
+    expect(timeAgo(ago(21 * DAY))).toBe('3 wks ago');
+  });
+
+  it('treats future timestamps as just now', () => {
+    expect(timeAgo(new Date(Date.now() + 5 * MINUTE).toISOString())).toBe('Just now');
   });
 });

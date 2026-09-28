@@ -1,6 +1,7 @@
 import { Home, CalendarCheck, LayoutGrid, User } from 'lucide-react';
 import { useApp, Screen, Role } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
+import { NotificationBell } from '@/components/NotificationBell';
 import { isNative } from '@/utils/native';
 
 const customerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
@@ -18,11 +19,12 @@ const providerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
 ];
 
 export const WebTopNav = ({ role }: { role: Role }) => {
-  const { screen, navigate } = useApp();
+  const { screen, navigate, customer } = useApp();
   if (isNative) return null;
   const items = role === 'provider' ? providerItems : role === 'admin' ? [] : customerItems;
   if (!items.length) return null;
   const activeName = screen.name;
+  const showBell = role === 'customer' && !!customer;
 
   return (
     <div className="sticky top-0 z-50">
@@ -49,6 +51,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
               </button>
             );
           })}
+          {showBell && <NotificationBell />}
         </div>
       </nav>
       <div className="hidden h-0.5 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500 md:block" />
