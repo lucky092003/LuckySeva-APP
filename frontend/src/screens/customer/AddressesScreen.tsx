@@ -134,19 +134,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar
-        title="Saved Addresses"
-        right={
-          <button
-            type="button"
-            onClick={() => (adding ? setAdding(false) : openForm())}
-            aria-label={adding ? 'Cancel adding address' : 'Add address'}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-emerald-600 hover:bg-emerald-50"
-          >
-            {adding ? <Icons.X size={20} /> : <Icons.Plus size={20} />}
-          </button>
-        }
-      />
+      <TopBar title="Saved Addresses" />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {!adding && (
           <button
