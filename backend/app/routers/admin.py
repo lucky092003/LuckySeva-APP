@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from ..db import db, one
 from ..dependencies import require_admin
 from ..exceptions import ApiError
+from ..links import link_professional_to_category, relink_professional
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -105,8 +106,10 @@ def create_professional(body: dict):
     )
     if not res.data:
         raise ApiError(400, "Could not create professional")
+    professional = res.data[0]
+    link_professional_to_category(professional["id"], professional.get("category_slug"))
     client.table("audit_logs").insert({"action": "provider_add", "detail": f"Added provider {name}"}).execute()
-    return res.data[0]
+    return professional
 
 
 @router.put("/professionals/{professional_id}")
@@ -135,6 +138,8 @@ def update_professional(professional_id: str, body: dict):
         if isinstance(body.get(k), (int, float)):
             patch[k] = body[k]
     res = client.table("professionals").update(patch).eq("id", professional_id).select("*").execute()
+    if res.data and "category_slug" in patch:
+        relink_professional(professional_id, patch["category_slug"])
     return res.data[0]
 
 

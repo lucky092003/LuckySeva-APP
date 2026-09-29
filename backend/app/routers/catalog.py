@@ -1,9 +1,89 @@
+import math
+
 from fastapi import APIRouter, Query
 
 from ..db import db, one
 from ..exceptions import ApiError
 
 router = APIRouter()
+
+EARTH_RADIUS_KM = 6371.0
+DEFAULT_NEARBY_RADIUS_KM = 30.0
+DEFAULT_NEARBY_LIMIT = 5
+NEARBY_SCAN_LIMIT = 200
+
+
+def _haversine_km(a_lat: float, a_lng: float, b_lat: float, b_lng: float) -> float:
+    to_rad = math.radians
+    d_lat = to_rad(b_lat - a_lat)
+    d_lng = to_rad(b_lng - a_lng)
+    a = math.sin(d_lat / 2) ** 2 + math.cos(to_rad(a_lat)) * math.cos(to_rad(b_lat)) * math.sin(d_lng / 2) ** 2
+    return EARTH_RADIUS_KM * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
+
+
+def _as_float(value) -> float | None:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rating_of(pro: dict) -> float:
+    return _as_float(pro.get("rating")) or 0.0
+
+
+def _with_distance(pros: list[dict], latitude: float, longitude: float) -> list[dict]:
+    """Override the stored `distance_km` with the real great-circle distance."""
+    out: list[dict] = []
+    for pro in pros:
+        pro_lat = _as_float(pro.get("latitude"))
+        pro_lng = _as_float(pro.get("longitude"))
+        if pro_lat is None or pro_lng is None:
+            out.append({**pro, "distance_km": _as_float(pro.get("distance_km")) or 0.0})
+        else:
+            out.append({**pro, "distance_km": round(_haversine_km(latitude, longitude, pro_lat, pro_lng), 1)})
+    return out
+
+
+def _nearby_professionals(
+    category_slug: str | None,
+    latitude: float | None,
+    longitude: float | None,
+    radius_km: float,
+    limit: int,
+) -> list[dict]:
+    """Best `limit` professionals of a category, closest first when coords are known."""
+    if not category_slug:
+        return []
+    client = db()
+    res = (
+        client.table("professionals")
+        .select("*")
+        .eq("category_slug", category_slug)
+        .order("rating", desc=True)
+        .limit(NEARBY_SCAN_LIMIT)
+        .execute()
+    )
+    rows = res.data or []
+
+    if latitude is None or longitude is None:
+        return [{**r, "distance_km": _as_float(r.get("distance_km")) or 0.0} for r in rows[:limit]]
+
+    nearby: list[dict] = []
+    for row in rows:
+        pro_lat = _as_float(row.get("latitude"))
+        pro_lng = _as_float(row.get("longitude"))
+        if pro_lat is None or pro_lng is None:
+            continue
+        km = _haversine_km(latitude, longitude, pro_lat, pro_lng)
+        if km > radius_km:
+            continue
+        nearby.append({**row, "distance_km": round(km, 1)})
+
+    nearby.sort(key=lambda r: (r["distance_km"], -_rating_of(r)))
+    return nearby[:limit]
 
 
 @router.get("")
@@ -70,7 +150,13 @@ def services(category_slug: str | None = None):
 
 
 @router.get("/services/{service_id}")
-def service(service_id: str):
+def service(
+    service_id: str,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    radius_km: float = Query(default=DEFAULT_NEARBY_RADIUS_KM, gt=0, le=500),
+    limit: int = Query(default=DEFAULT_NEARBY_LIMIT, ge=1, le=20),
+):
     client = db()
     svc = one(
         client.table("services")
@@ -87,9 +173,30 @@ def service(service_id: str):
         .eq("service_id", service_id)
         .execute()
     )
+    category = svc.get("category") or {}
+    category_slug = category.get("slug")
+    if not category_slug:
+        cat_row = one(
+            client.table("categories").select("slug").eq("id", svc["category_id"]).maybe_single().execute()
+        )
+        category_slug = (cat_row or {}).get("slug")
+    has_coords = latitude is not None and longitude is not None
+    nearby = _nearby_professionals(
+        category_slug,
+        latitude if has_coords else None,
+        longitude if has_coords else None,
+        radius_km,
+        limit,
+    )
+    linked = [row.get("professional") for row in (providers.data or []) if row.get("professional")]
+    if has_coords:
+        linked = _with_distance(linked, latitude, longitude)
     return {
         "service": svc,
-        "providers": [row.get("professional") for row in (providers.data or []) if row.get("professional")],
+        "providers": linked,
+        "nearby": nearby,
+        "nearby_radius_km": radius_km,
+        "nearby_category_slug": category_slug,
     }
 
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from ..db import db, one
 from ..exceptions import ApiError
+from ..links import link_professional_to_category
 from ..security import sign_token
 from ..dependencies import get_claims
 
@@ -107,7 +108,9 @@ def find_or_create_provider(phone: str, body: dict) -> dict:
     )
     if not result.data:
         raise ApiError(400, "Could not create provider")
-    return {"id": result.data[0]["id"]}
+    professional_id = result.data[0]["id"]
+    link_professional_to_category(professional_id, category_slug)
+    return {"id": professional_id}
 
 
 def verify_admin(client, identifier: str, code: str) -> bool:

@@ -1,6 +1,59 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api } from '@/services/api';
+import { api, getApiToken } from '@/services/api';
 import type { Notification, Professional, SupportTicket } from '@/types';
+
+const COORDS_KEY = 'luckyseva.coords';
+
+export type Coords = { latitude: number; longitude: number };
+
+function readCachedCoords(): Coords | null {
+  try {
+    const raw = localStorage.getItem(COORDS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Coords;
+    if (typeof parsed?.latitude === 'number' && typeof parsed?.longitude === 'number') return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function cacheCoords(coords: Coords | null) {
+  try {
+    if (coords) localStorage.setItem(COORDS_KEY, JSON.stringify(coords));
+    else localStorage.removeItem(COORDS_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export const useCustomerCoords = () => {
+  const [coords, setCoords] = useState<Coords | null>(readCachedCoords);
+
+  useEffect(() => {
+    if (coords) return;
+    if (!getApiToken()) return;
+    let active = true;
+    api.customer
+      .addresses()
+      .then((list) => {
+        if (!active) return;
+        const hit =
+          list.find((a) => a.is_default && a.latitude != null && a.longitude != null) ??
+          list.find((a) => a.latitude != null && a.longitude != null);
+        if (!hit) return;
+        const next: Coords = { latitude: hit.latitude as number, longitude: hit.longitude as number };
+        cacheCoords(next);
+        setCoords(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [coords]);
+
+  return coords;
+};
 
 export const useNotifications = (_customerPhone: string | null) => {
   const [data, setData] = useState<Notification[]>([]);

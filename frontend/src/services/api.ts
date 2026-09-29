@@ -59,7 +59,17 @@ export const api = {
     category: (slug: string) => request<{ category: Category; services: Service[] }>(`catalog`, `/categories/${slug}`),
     services: (categorySlug?: string) =>
       request<Service[]>(`catalog`, `/services${categorySlug ? `?category_slug=${encodeURIComponent(categorySlug)}` : ''}`),
-    service: (id: string) => request<{ service: Service; providers: Professional[] }>('catalog', `/services/${id}`),
+    service: (id: string, opts?: ServiceNearbyOpts) => {
+      const q = new URLSearchParams();
+      if (opts?.latitude != null && opts?.longitude != null) {
+        q.set('latitude', String(opts.latitude));
+        q.set('longitude', String(opts.longitude));
+      }
+      if (opts?.radius_km != null) q.set('radius_km', String(opts.radius_km));
+      if (opts?.limit != null) q.set('limit', String(opts.limit));
+      const qs = q.toString();
+      return request<ServiceDetailResponse>('catalog', `/services/${id}${qs ? `?${qs}` : ''}`);
+    },
     professionals: (opts?: { category_slug?: string; query?: string; limit?: number }) => {
       const q = new URLSearchParams();
       if (opts?.category_slug) q.set('category_slug', opts.category_slug);
@@ -151,6 +161,21 @@ type Address = {
   is_default: boolean;
   latitude: number | null;
   longitude: number | null;
+};
+
+export type ServiceNearbyOpts = {
+  latitude?: number | null;
+  longitude?: number | null;
+  radius_km?: number;
+  limit?: number;
+};
+
+export type ServiceDetailResponse = {
+  service: Service;
+  providers: Professional[];
+  nearby: Professional[];
+  nearby_radius_km: number;
+  nearby_category_slug: string | null;
 };
 
 type Favourite = { id: string; customer_phone: string; professional_id: string };
