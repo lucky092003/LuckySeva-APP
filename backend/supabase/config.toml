@@ -1,0 +1,7 @@
+# `project_id` is filled in by `npx supabase link` — it must match your real
+# project ref, so it is deliberately not set here.
+
+[functions.pr-review-bot]
+# GitHub signs the webhook body, so the function verifies HMAC itself. The
+# platform's JWT gate would reject GitHub's requests before that check runs.
+verify_jwt = false

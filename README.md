@@ -316,16 +316,28 @@ Backend checks (run from `backend/`, after `pip install -r requirements.txt -r r
 | `python -m compileall -q app`  | Byte-compile every module                |
 | `pip-audit -r requirements.txt`| Audit runtime deps for known CVEs       |
 
+Edge function checks (run from `backend/supabase/functions/`, needs [Deno](https://deno.com) 2):
+
+| Command                    | Description                                       |
+|----------------------------|---------------------------------------------------|
+| `deno task test`           | Run the rule-engine, changelog and crypto tests   |
+| `deno task lint`           | Lint                                              |
+| `deno task check`          | Type-check the function entry points              |
+| `deno fmt --check`         | Check formatting                                  |
+| `deno task review <ref>`   | Dry-run the rules against a diff, no deploy needed |
+
 ---
 
 ## 🔁 Continuous integration
 
-`.github/workflows/ci.yml` runs two jobs in parallel on every push/PR to `master`:
+`.github/workflows/ci.yml` runs four jobs in parallel on every push/PR to `master`:
 
 | Job | What it checks |
 |-----|----------------|
 | **Frontend** | `npm ci` → ESLint → TypeScript → Vitest → production build → `npm audit` |
 | **Backend** | `pip install` → `compileall` → Ruff → pytest → `pip-audit` |
+| **Migrations** | Applies every migration to a throwaway Postgres, twice, and greps for destructive SQL |
+| **Edge functions** | `deno fmt` → `deno lint` → `deno check` → 80 tests → `deno audit` |
 
 CodeQL security scanning ([`codeql.yml`](.github/workflows/codeql.yml)) runs separately
 across Python, JavaScript/TypeScript, Java/Kotlin, Swift and Actions.
@@ -340,6 +352,185 @@ Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) watches the whol
 
 All three run weekly (Friday 23:00 Asia/Kolkata) and group minor/patch bumps into
 single PRs, so you get one reviewable update instead of a stream of them.
+
+---
+
+## 🤖 Pull request review bot
+
+`backend/supabase/functions/pr-review-bot/` is a Supabase Edge Function that
+reviews pull requests. It runs a fixed set of static rules over the diff and posts
+a single comment per PR. No LLM, no API key, no per-PR cost — every rule is a pure
+function over the patch, so the same PR always gets the same review.
+
+The rules are specific to this repo, not generic style advice:
+
+| Severity | Rule | Why it exists here |
+|---|---|---|
+| blocker | `secret` | Supabase service-role key, JWT, private key, GitHub/model/AWS token literals |
+| blocker | `hardcoded-admin-credentials` | The admin login has a literal fallback (see `docs/brain.md` §7.7) |
+| blocker | `destructive-sql` | Mirrors the CI grep, so it lands before `master` |
+| blocker | `ownership-filter-removed` | RLS is `USING (true)` and the backend uses the service role, so handler-level `.eq("customer_phone", ...)` **is** the access boundary |
+| blocker | `auth-guard-removed` | Same reasoning for `require_admin` / `require_customer` |
+| warning | `edited-migration` | Migrations are append-only; editing an applied one desyncs environments |
+| warning | `migration-naming` | CI applies migrations in filename order, so the timestamp is the sequence |
+| warning | `rls-missing` | Every table in this schema enables RLS |
+| warning | `router-convention` | `test_maybe_single.py` greps all five routers for `from ..db import db, one` |
+| warning | `cors-widened` | `allow_origins=["*"]` is a live wildcard in `main.py` already |
+| warning | `unpinned-dependency` | `pip-audit` runs against `requirements.txt` in CI |
+| info | `foreign-key-without-index` | Every other migration pairs a `REFERENCES` column with an index |
+| info | `route-order-risk` | FastAPI matches in declaration order (`docs/brain.md` §1.6) |
+
+The function edits its own comment on each new push, so a PR never accumulates more
+than one. Drafts are skipped, and a `(repo, pr, head_sha)` unique index makes a
+replayed `synchronize` webhook a no-op.
+
+It also maintains `CHANGELOG.md` — see [Date-wise changelog](#date-wise-changelog)
+below.
+
+### Setup
+
+Apply the migrations, then set the secrets and deploy:
+
+```sh
+cd backend
+npx supabase db push                          # pr_review_settings, pr_reviews, changelog_entries
+npx supabase secrets set \
+  GITHUB_WEBHOOK_SECRET="$(openssl rand -hex 32)" \
+  GITHUB_APP_ID="<app id>" \
+  GITHUB_APP_PRIVATE_KEY="$(cat private-key.pem)"
+npx supabase functions deploy pr-review-bot
+```
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected into functions
+automatically — do not set them by hand.
+
+Then in the GitHub App's settings, add a **Repository webhook**:
+
+| Field | Value |
+|---|---|
+| Payload URL | `https://<project-ref>.supabase.co/functions/v1/pr-review-bot` |
+| Content type | `application/json` |
+| Secret | the same `GITHUB_WEBHOOK_SECRET` |
+| Events | **Pull request** (individual) |
+
+The App needs read access to Pull requests and contents, plus write access to pull
+requests (to post the comment, and to open the changelog PR). If you use a personal
+access token instead of an App, set `GITHUB_TOKEN` and give it `repo` scope; the
+function falls back to it when the payload carries no `installation`.
+
+### Per-repo settings
+
+One row in `pr_review_settings` per repository, created automatically on the first
+review or when the App is installed:
+
+| Column | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Set `false` to mute the bot for a repo |
+| `min_severity` | `warning` | Lowest severity that gets reported (`info` shows everything) |
+| `comment_mode` | `sticky` | `sticky` edits one comment, `new` posts a new one each push, `dry_run` posts nothing |
+| `rules` | `{}` | Empty means all rules. Otherwise an allowlist of rule ids |
+| `block_on_blocker` | `false` | `true` also files a `REQUEST_CHANGES` review, which blocks the merge until a human responds |
+| `changelog_enabled` | `true` | `false` leaves `CHANGELOG.md` alone entirely |
+| `changelog_branch` | `luckyseva/changelog` | Branch the bot commits to and opens its PR from |
+| `changelog_file` | `CHANGELOG.md` | File it rewrites |
+
+Run history lands in `pr_reviews` (service-role only, no anon policies) — one row
+per webhook, with the findings as JSON plus `changelog_status` and
+`changelog_pr_url`.
+
+```sql
+update pr_review_settings set min_severity = 'info' where repo_full_name = 'lucky092003/LuckySeva-APP';
+```
+
+### Date-wise changelog
+
+When a pull request is **opened**, the bot records it in `changelog_entries`,
+regenerates a dated block at the top of `CHANGELOG.md`, and opens (or updates) a
+single PR for it. The block is grouped newest-date-first, and within each date split
+into `Added` / `Changed` / `Fixed` from the conventional-commit prefix on the PR
+title:
+
+| Title prefix | Bucket |
+|---|---|
+| `feat:`, `feature:`, `feat!:`, `feat(scope):` | Added |
+| `fix:`, `bugfix:`, `hotfix:` | Fixed |
+| everything else, including no prefix | Changed |
+
+The prefix is stripped from the rendered line, since the bucket already says it, and
+the result is capitalised:
+
+```markdown
+## 2026-09-30
+
+### Added
+
+- [#34](https://github.com/lucky092003/LuckySeva-App/pull/34) Share the AddressForm between booking and saved addresses — @lucky092003
+
+### Fixed
+
+- [#35](https://github.com/lucky092003/LuckySeva-App/pull/35) Deleting your default address left you with none — @lucky092003
+```
+
+**Only the block between the two markers is machine-written.** The bot never touches
+your prose, so your existing `## [Unreleased]` section is safe:
+
+```markdown
+<!-- luckyseva-changelog:start -->
+...generated...
+<!-- luckyseva-changelog:end -->
+```
+
+How the loop stays safe to re-run:
+
+- Entries live in `changelog_entries`, so the file is rebuilt from the table each
+  time rather than patched. A branch you edited by hand is corrected, not compounded.
+- `UNIQUE (repo_full_name, pr_number)` means a replayed `opened` webhook — or a PR
+  that was drafted and then marked ready — produces one entry.
+- The date comes from the PR's `created_at` in **UTC**, so a webhook replayed
+  tomorrow still lands under the day the PR was opened.
+- If the regenerated block matches what is already on the branch, the bot writes
+  nothing and does not open a second PR.
+- The bot PR is reused: it looks for an open PR from `changelog_branch` and pushes to
+  it rather than filing a new one per merged PR.
+
+The trade-off: entries are written on **opened**, not on merge, so a PR you later
+close without merging will still be listed. That is deliberate — it keeps the entry
+visible while the work is in flight. Set `changelog_enabled = false` if you would
+rather not have it at all.
+
+Because the entry text is the PR title, a good title pays off. `fix: deleting your
+default address left you with none` reads better in a changelog than
+`fix more working`.
+
+### Trying rules locally
+
+The rules are pure, so you can point them at any diff in this repo without deploying
+anything:
+
+```sh
+cd backend/supabase/functions
+deno task review HEAD          # review uncommitted work
+deno task review main...mybranch
+```
+
+The changelog renderer is pure too, so you can preview a block without deploying:
+
+```ts
+import { applyBlock, classifyTitle, renderBlock } from "./pr-review-bot/changelog.ts";
+
+const block = renderBlock([{
+  pr_number: 34,
+  pr_title: "feat(ui): share the AddressForm",
+  pr_author: "lucky092003",
+  pr_url: "https://github.com/lucky092003/LuckySeva-App/pull/34",
+  kind: classifyTitle("feat(ui): share the AddressForm"),
+  entry_date: "2026-09-30",
+}]);
+console.log(applyBlock(await Deno.readTextFile("CHANGELOG.md"), block));
+```
+
+Each rule is one entry in the `RULES` array in `checks.ts`; add a `Rule` and a test
+in `checks_test.ts` and CI will hold it to the same standard as the rest.
 
 ---
 
@@ -398,7 +589,16 @@ npx cap sync
 │   │   ├── db.py            # Supabase client (supabase-py, service role)
 │   │   └── routers/         # auth, catalog, customer, provider, admin
 │   ├── tests/               # Smoke tests (health, routing, auth guards)
-│   ├── supabase/migrations/ # SQL schema + seed data
+│   ├── supabase/
+│   │   ├── config.toml      # Edge function config (JWT gate off for the webhook)
+│   │   ├── functions/pr-review-bot/
+│   │   │   ├── index.ts         # webhook handler: review, then changelog
+│   │   │   ├── checks.ts        # the rules + comment formatter
+│   │   │   ├── changelog.ts     # date-wise CHANGELOG block generation
+│   │   │   ├── changelog_writer.ts  # DB + branch + bot-PR orchestration
+│   │   │   ├── github.ts        # REST client, App/PAT auth
+│   │   │   └── review_local.ts  # `deno task review <ref>` dry run
+│   │   └── migrations/      # SQL schema + seed data
 │   ├── requirements.txt     # Runtime deps (installed on Render)
 │   ├── requirements-dev.txt # Lint + test tooling (CI only)
 │   ├── ruff.toml            # Ruff lint rules
