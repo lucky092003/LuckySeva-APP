@@ -1,28 +1,38 @@
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
-import { useService, useProfessionalsByService } from '@/hooks';
+import { useServiceDetail, useCustomerCoords, NEARBY_LIMIT } from '@/hooks';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars, Badge } from '@/components/ui';
 import { inr } from '@/utils/format';
 
 export const ServiceDetailScreen = ({ id }: { id: string }) => {
   const { navigate } = useApp();
-  const { service, loading } = useService(id);
-  const { professionals, loading: proLoading } = useProfessionalsByService(id);
+  const coords = useCustomerCoords();
+  const { service, providers, nearby, radiusKm, loading, located } = useServiceDetail(id, coords);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Service" /><Spinner className="py-20" /></div>;
   if (!service) return <div className="flex flex-1 flex-col"><TopBar title="Service" /></div>;
 
-  const pros = professionals.filter((p) => p.reviews_count > 0);
+  const pros = providers.filter((p) => p.reviews_count > 0);
   const totalReviews = pros.reduce((s, p) => s + p.reviews_count, 0);
   const avgRating = pros.length
     ? (pros.reduce((s, p) => s + Number(p.rating) * p.reviews_count, 0) / totalReviews)
     : 0;
   const roundedAvg = Math.round(avgRating * 10) / 10;
 
-  const cat = (service as unknown as { category: { color: string; icon: string; name: string } }).category;
+  const cat = (service as unknown as { category: { color: string; icon: string; name: string; slug: string } }).category;
   const color = cat?.color || '#10b981';
   const Icon = cat ? (Icons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[cat.icon] || Icons.Circle : Icons.Circle;
+
+  const trade = (cat?.name || 'Professional').toLowerCase();
+  const trades = trade.endsWith('s') ? trade : `${trade}s`;
+
+  // With customer coordinates only the geo-ranked list is honest: a professional
+  // 600 km away must not appear under "Near You". Without them the backend falls
+  // back to top-rated, and `providers` is the last resort for older backends
+  // that do not return `nearby` at all.
+  const shown = (located ? nearby : nearby.length ? nearby : providers).slice(0, NEARBY_LIMIT);
+  const geoSorted = nearby.length > 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -69,16 +79,27 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
         {/* Available professionals */}
         <div className="px-5 pt-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Available Professionals</h3>
-            <button onClick={() => navigate({ name: 'professionals', slug: (service as unknown as { category: { slug: string } }).category?.slug || '' })} className="text-xs font-semibold text-emerald-600">See all</button>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-gray-900">
+                {located ? `Top ${cat?.name || 'Professionals'} Near You` : 'Available Professionals'}
+              </h3>
+              {geoSorted && (
+                <p className="mt-0.5 text-[11px] text-gray-500">Closest {trades} within {radiusKm} km</p>
+              )}
+            </div>
+            <button onClick={() => navigate({ name: 'professionals', slug: cat?.slug || '' })} className="shrink-0 text-xs font-semibold text-emerald-600">See all</button>
           </div>
-          {proLoading ? (
+          {loading ? (
             <Spinner className="py-6" />
-          ) : professionals.length === 0 ? (
-            <Card className="p-4 text-center text-sm text-gray-500">No professionals available for this service yet.</Card>
+          ) : shown.length === 0 ? (
+            <Card className="p-4 text-center text-sm text-gray-500">
+              {located
+                ? `No ${trades} found within ${radiusKm} km. Add or update your address to widen the search.`
+                : 'No professionals available for this service yet.'}
+            </Card>
           ) : (
             <div className="space-y-3">
-              {professionals.slice(0, 3).map((pro) => (
+              {shown.map((pro) => (
                 <Card key={pro.id} onClick={() => navigate({ name: 'professional', id: pro.id })} className="flex items-center gap-3 p-3">
                   <img src={pro.avatar_url} alt={pro.name} className="h-12 w-12 rounded-full bg-gray-100 object-cover" />
                   <div className="min-w-0 flex-1">
@@ -87,7 +108,10 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
                       <Stars rating={pro.rating} />
                       <span className="text-[11px] text-gray-500">{pro.rating} · {pro.completed_jobs} jobs</span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-gray-400">{pro.experience_years} yrs exp · {pro.distance_km} km away</p>
+                    <p className="mt-0.5 text-[11px] text-gray-400">
+                      {pro.experience_years} yrs exp
+                      {geoSorted ? ` · ${pro.distance_km} km away` : ''}
+                    </p>
                   </div>
                   <Badge tone={pro.status === 'available' ? 'success' : 'warning'}>
                     {pro.status === 'available' ? 'Available' : 'Busy'}

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
-import { useProfessionalsByCategory } from '@/hooks';
+import { useProfessionalsByCategory, useCustomerCoords } from '@/hooks';
 import { api } from '@/services/api';
+import { haversineKm } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Stars, Badge, VerifiedBadge } from '@/components/ui';
 import { inr } from '@/utils/format';
@@ -12,6 +13,9 @@ import { useEffect } from 'react';
 
 type SortKey = 'rating' | 'price' | 'distance';
 
+const DEFAULT_MAX_DIST = 30;
+const MAX_DIST_RANGE = 50;
+
 export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
   const { navigate } = useApp();
   const [category, setCategory] = useState<Category | null>(null);
@@ -19,18 +23,33 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
     api.catalog.category(slug).then((res) => setCategory(res.category)).catch(() => setCategory(null));
   }, [slug]);
   const { professionals, loading } = useProfessionalsByCategory(slug);
+  const coords = useCustomerCoords();
 
   const [sort, setSort] = useState<SortKey>('rating');
+  const [sortTouched, setSortTouched] = useState(false);
   const [availOnly, setAvailOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [maxPrice, setMaxPrice] = useState(10000);
   const [minExp, setMinExp] = useState(0);
-  const [maxDist, setMaxDist] = useState(25);
-  const hasFilters = minRating > 0 || maxPrice < 10000 || minExp > 0 || maxDist < 25;
+  const [maxDist, setMaxDist] = useState(DEFAULT_MAX_DIST);
+  const hasFilters = minRating > 0 || maxPrice < 10000 || minExp > 0 || maxDist < DEFAULT_MAX_DIST;
+
+  useEffect(() => {
+    if (coords && !sortTouched) setSort('distance');
+  }, [coords, sortTouched]);
+
+  const withDistance = useMemo(() => {
+    if (!coords) return professionals;
+    return professionals.map((p) => {
+      if (p.latitude == null || p.longitude == null) return p;
+      const km = Math.round(haversineKm(coords.latitude, coords.longitude, p.latitude, p.longitude) * 10) / 10;
+      return { ...p, distance_km: km };
+    });
+  }, [professionals, coords]);
 
   const filtered = useMemo(() => {
-    let list = [...professionals];
+    let list = [...withDistance];
     if (availOnly) list = list.filter((p) => p.status === 'available');
     if (minRating > 0) list = list.filter((p) => p.rating >= minRating);
     if (minExp > 0) list = list.filter((p) => p.experience_years >= minExp);
@@ -42,13 +61,18 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
       return a.distance_km - b.distance_km;
     });
     return list;
-  }, [professionals, sort, availOnly, minRating, minExp, maxPrice, maxDist]);
+  }, [withDistance, sort, availOnly, minRating, minExp, maxPrice, maxDist]);
+
+  const pickSort = (k: SortKey) => {
+    setSortTouched(true);
+    setSort(k);
+  };
 
   const resetFilters = () => {
     setMinRating(0);
     setMaxPrice(10000);
     setMinExp(0);
-    setMaxDist(25);
+    setMaxDist(DEFAULT_MAX_DIST);
   };
 
   const color = category?.color || '#10b981';
@@ -66,7 +90,7 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
         {(['rating', 'price', 'distance'] as SortKey[]).map((k) => (
           <button
             key={k}
-            onClick={() => setSort(k)}
+            onClick={() => pickSort(k)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition-all ${sort === k ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'}`}
           >
             {k === 'distance' ? 'Nearest' : k === 'price' ? 'Lowest price' : 'Top rated'}
@@ -92,7 +116,7 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
             <input type="range" min={0} max={15} step={1} value={minExp} onChange={(e) => setMinExp(Number(e.target.value))} className="w-full accent-emerald-500" />
           </FilterRow>
           <FilterRow label={`Within · ${maxDist} km`}>
-            <input type="range" min={1} max={25} step={1} value={maxDist} onChange={(e) => setMaxDist(Number(e.target.value))} className="w-full accent-emerald-500" />
+            <input type="range" min={1} max={MAX_DIST_RANGE} step={1} value={maxDist} onChange={(e) => setMaxDist(Number(e.target.value))} className="w-full accent-emerald-500" />
           </FilterRow>
           {hasFilters && (
             <button onClick={resetFilters} className="text-xs font-semibold text-emerald-600">

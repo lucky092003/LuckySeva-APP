@@ -15,6 +15,7 @@ import {
 import { TopBar } from '@/components/PhoneShell';
 import { AddressForm } from '@/components/AddressForm';
 import { Card, Button, Spinner } from '@/components/ui';
+import { cacheCoords } from '@/hooks';
 import type { AddressRow } from '@/types';
 
 const LABEL_SUGGESTIONS = ['Home', 'Work', 'Other'];
@@ -90,8 +91,13 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
     api.customer
       .addresses()
       .then((data) => {
-        setAddresses(data || []);
+        const list = data || [];
+        setAddresses(list);
         setLoading(false);
+        const hit =
+          list.find((a) => a.is_default && a.latitude != null && a.longitude != null) ??
+          list.find((a) => a.latitude != null && a.longitude != null);
+        if (hit) cacheCoords({ latitude: hit.latitude as number, longitude: hit.longitude as number });
       })
       .catch(() => {
         setAddresses([]);
@@ -117,6 +123,7 @@ export const AddressesScreen = ({ detected }: { detected?: string }) => {
       }
     }
     await api.customer.addAddress({ label: label.trim(), full_address: fullAddress, latitude, longitude }).catch(() => {});
+    if (latitude !== null && longitude !== null) cacheCoords({ latitude, longitude });
     resetForm();
     setAdding(false);
     load();

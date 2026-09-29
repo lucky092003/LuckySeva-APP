@@ -1,0 +1,144 @@
+# Path-based labels for actions/labeler, consumed by .github/workflows/label.yml.
+#
+# Keep this in v4 syntax: `label` plus one of `files-or-glob`, `files-ignore`,
+# `any-glob-to-any-file` or `all-glob-to-all-files`. The v5 `changed-files` /
+# `globs` / `exclude` form is not understood by v4.
+#
+# Three v4 gotchas, all of which fail quietly rather than erroring:
+#
+#  1. A rule with a `label` and NO glob never applies. There is no "always" form,
+#     so every rule below carries its own matcher, even the area-wide ones.
+#     Written as `- label: 'backend'` on its own, it looks right and labels
+#     nothing.
+#  2. Every option above matches CHANGED FILE PATHS. v4 has no branch-name or
+#     PR-title matching, so a rule like `any-glob-to-any-file: feat/*` can never
+#     fire: no changed file is named that. Type labels from a branch prefix need
+#     a separate `pull_request_target` step, not this file.
+#  3. In a `|` block scalar the lines are raw text, so quote characters would
+#     become part of the glob and stop it matching. Quote only on single-line
+#     (flow) values, where YAML strips them itself.
+#
+# actions/labeler does NOT create labels. It calls the addLabels API, which
+# returns 422 when a label below does not exist, and the step fails. Create them
+# once with `gh label create <name> --color <hex> --description <text>`; see
+# the list at the bottom of this file.
+
+# --- Backend ----------------------------------------------------------------
+
+backend:
+  - label: 'backend'
+    files-or-glob: |
+      backend/app/**
+      backend/tests/**
+      backend/supabase/**
+      backend/*.py
+      backend/*.txt
+      backend/*.toml
+  - label: 'api'
+    files-or-glob: |
+      backend/app/routers/**
+      backend/app/main.py
+      backend/app/db.py
+      backend/app/dependencies.py
+      backend/app/security.py
+
+edge-functions:
+  - label: 'edge-functions'
+    files-or-glob: 'backend/supabase/functions/**'
+
+# Migrations are applied to the real Supabase project by hand, so a PR that adds
+# one needs a human to run it: CI only validates the SQL against a throwaway
+# Postgres and never touches the live database.
+database:
+  - label: 'database'
+    files-or-glob: 'backend/supabase/migrations/**'
+  - label: 'needs-migration'
+    files-or-glob: 'backend/supabase/migrations/**'
+
+# --- Frontend ---------------------------------------------------------------
+
+frontend:
+  - label: 'frontend'
+    files-or-glob: |
+      frontend/src/**
+      frontend/*.json
+      frontend/*.ts
+      frontend/*.html
+  - label: 'customer-ui'
+    files-or-glob: 'frontend/src/screens/customer/**'
+  - label: 'provider-ui'
+    files-or-glob: 'frontend/src/screens/provider/**'
+  - label: 'admin-ui'
+    files-or-glob: 'frontend/src/screens/admin/**'
+
+# --- Tests ------------------------------------------------------------------
+
+tests:
+  - label: 'tests'
+    files-or-glob: |
+      backend/tests/**
+      **/*.test.ts
+      **/*.test.tsx
+  - label: 'unit-tests'
+    files-or-glob: |
+      backend/tests/**
+      **/*.test.ts
+      **/*.test.tsx
+
+# --- Docs, CI, deps ---------------------------------------------------------
+
+documentation:
+  - label: 'documentation'
+    files-or-glob: |
+      docs/**
+      README.md
+      **/*.md
+      !CHANGELOG.md
+
+github-actions:
+  - label: 'github-actions'
+    files-or-glob: |
+      .github/**
+      vercel.json
+      nginx.conf
+
+dependencies:
+  - label: 'dependencies'
+    files-or-glob: |
+      frontend/package.json
+      frontend/package-lock.json
+      backend/requirements.txt
+      backend/requirements-dev.txt
+
+# --- Native shells ----------------------------------------------------------
+
+android:
+  - label: 'android'
+    files-or-glob: 'android/**'
+
+ios:
+  - label: 'ios'
+    files-or-glob: 'ios/**'
+
+capacitor:
+  - label: 'capacitor'
+    files-or-glob: 'capacitor.config.ts'
+
+# --- Deploy -----------------------------------------------------------------
+
+deploy:
+  - label: 'deploy'
+    files-or-glob: |
+      Dockerfile
+      **/Dockerfile
+      docker-compose.yml
+      render.yaml
+      vercel.json
+      nginx.conf
+
+# --- Labels that must exist in the repository --------------------------------
+#
+#   backend api edge-functions database needs-migration
+#   frontend customer-ui provider-ui admin-ui
+#   tests unit-tests documentation github-actions dependencies
+#   android ios capacitor deploy

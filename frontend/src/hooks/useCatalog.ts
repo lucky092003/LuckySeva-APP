@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/services/api';
+import type { Coords } from './useCustomer';
 import type { Category, Service, Professional, Review } from '@/types';
 
 export const useCategories = () => {
@@ -83,6 +84,55 @@ export const useProfessionalsByService = (serviceId: string | null) => {
       .finally(() => setLoading(false));
   }, [serviceId]);
   return { professionals: data, loading };
+};
+
+export const NEARBY_RADIUS_KM = 30;
+export const NEARBY_LIMIT = 5;
+
+export const useServiceDetail = (id: string | null, coords: Coords | null) => {
+  const [service, setService] = useState<Service | null>(null);
+  const [providers, setProviders] = useState<Professional[]>([]);
+  const [nearby, setNearby] = useState<Professional[]>([]);
+  const [radiusKm, setRadiusKm] = useState(NEARBY_RADIUS_KM);
+  const [loading, setLoading] = useState(true);
+
+  const lat = coords?.latitude ?? null;
+  const lng = coords?.longitude ?? null;
+
+  useEffect(() => {
+    if (!id) {
+      setService(null);
+      setProviders([]);
+      setNearby([]);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    api.catalog
+      .service(id, { latitude: lat, longitude: lng, radius_km: NEARBY_RADIUS_KM, limit: NEARBY_LIMIT })
+      .then((d) => {
+        if (!active) return;
+        setService(d.service);
+        setProviders(d.providers ?? []);
+        setNearby(d.nearby ?? []);
+        setRadiusKm(d.nearby_radius_km ?? NEARBY_RADIUS_KM);
+      })
+      .catch(() => {
+        if (!active) return;
+        setService(null);
+        setProviders([]);
+        setNearby([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, lat, lng]);
+
+  return { service, providers, nearby, radiusKm, loading, located: lat != null && lng != null };
 };
 
 export const useProfessional = (id: string | null) => {
