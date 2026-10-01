@@ -10,6 +10,57 @@ import { inr, formatDate, slugToLabel } from '@/utils/format';
 import { isVerified } from '@/utils/kyc';
 import type { Professional, Review, Service } from '@/types';
 
+/** Reviews shown before the customer expands the section. */
+const REVIEW_PREVIEW = 2;
+/** A comment longer than this is clamped behind a Read more toggle. */
+const COMMENT_CLAMP_CHARS = 140;
+
+const ReviewCard = ({ review }: { review: Review }) => {
+  const [expanded, setExpanded] = useState(false);
+  const text = (review.comment || '').trim();
+  const isLong = text.length > COMMENT_CLAMP_CHARS;
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+            {review.customer_name.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-gray-900">{review.customer_name}</p>
+            <p className="text-[10px] text-gray-400">{formatDate(review.created_at)}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Icons.Star size={12} className="fill-amber-400 text-amber-400" />
+          <span className="text-xs font-semibold text-gray-700">{review.rating}</span>
+        </div>
+      </div>
+
+      {text && (
+        <>
+          <p
+            className={`mt-2 text-xs leading-relaxed text-gray-600 ${
+              isLong && !expanded ? 'line-clamp-3' : ''
+            }`}
+          >
+            {text}
+          </p>
+          {isLong && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1 text-[11px] font-semibold text-emerald-600"
+            >
+              {expanded ? 'Show less' : 'Read more'}
+            </button>
+          )}
+        </>
+      )}
+    </Card>
+  );
+};
+
 export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
   const { navigate, customer } = useApp();
   const { isFav } = useIsFavourite(customer?.phone || null, id);
@@ -21,6 +72,7 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [fav, setFav] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     setFav(isFav);
@@ -319,29 +371,28 @@ export const ProfessionalProfileScreen = ({ id }: { id: string }) => {
               </Card>
 
               <div className="mt-3 space-y-3">
-                {reviews.map((rev) => (
-                  <Card key={rev.id} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
-                          {rev.customer_name.charAt(0).toUpperCase()}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-gray-900">{rev.customer_name}</p>
-                          <p className="text-[10px] text-gray-400">{formatDate(rev.created_at)}</p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <Icons.Star size={12} className="fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-semibold text-gray-700">{rev.rating}</span>
-                      </div>
-                    </div>
-                    {rev.comment && (
-                      <p className="mt-2 text-xs leading-relaxed text-gray-600">{rev.comment}</p>
-                    )}
-                  </Card>
+                {(showAllReviews ? reviews : reviews.slice(0, REVIEW_PREVIEW)).map((rev) => (
+                  <ReviewCard key={rev.id} review={rev} />
                 ))}
               </div>
+
+              {reviews.length > REVIEW_PREVIEW && (
+                <button
+                  onClick={() => setShowAllReviews((v) => !v)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 active:bg-gray-100/70"
+                >
+                  {showAllReviews ? (
+                    <>
+                      <Icons.ChevronUp size={14} /> Show fewer reviews
+                    </>
+                  ) : (
+                    <>
+                      Show all {reviews.length} reviews
+                      <Icons.ChevronDown size={14} />
+                    </>
+                  )}
+                </button>
+              )}
             </>
           )}
         </div>
