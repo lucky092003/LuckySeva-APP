@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck, PhoneCall, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { DevOtpHint } from '@/components/DevOtpHint';
 
 export const OtpSection = ({
   phone,
   onVerify,
   onBack,
+  onResend,
+  debugCode = null,
 }: {
   phone: string;
   onVerify: (code: string) => void;
   onBack: () => void;
+  onResend?: () => void | Promise<void>;
+  debugCode?: string | null;
 }) => {
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
+  const [resending, setResending] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -46,6 +52,25 @@ export const OtpSection = ({
   const complete = digits.every((d) => d !== '');
   const formattedPhone = phone.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1 $2 $3');
 
+  const resend = async () => {
+    if (!onResend || resending) return;
+    setResending(true);
+    try {
+      await onResend();
+      setTimer(60);
+      setDigits(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const fillDebugCode = () => {
+    if (!debugCode) return;
+    setDigits(debugCode.split(''));
+    inputs.current[debugCode.length - 1]?.focus();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-center">
@@ -57,6 +82,8 @@ export const OtpSection = ({
           <span className="font-semibold text-gray-900">+91 {formattedPhone || phone}</span>
         </p>
       </div>
+
+      <DevOtpHint code={debugCode} onFill={fillDebugCode} />
 
       <div className="grid w-full grid-cols-6 gap-2">
         {digits.map((d, i) => (
@@ -89,14 +116,11 @@ export const OtpSection = ({
           </p>
         ) : (
           <button
-            onClick={() => {
-              setTimer(60);
-              setDigits(['', '', '', '', '', '']);
-              inputs.current[0]?.focus();
-            }}
-            className="font-semibold text-emerald-600 hover:text-emerald-700"
+            onClick={resend}
+            disabled={!onResend || resending}
+            className="font-semibold text-emerald-600 hover:text-emerald-700 disabled:cursor-default disabled:opacity-60"
           >
-            Resend OTP
+            {resending ? 'Sending...' : 'Resend OTP'}
           </button>
         )}
       </div>
