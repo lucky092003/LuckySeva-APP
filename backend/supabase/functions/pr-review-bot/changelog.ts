@@ -163,9 +163,10 @@ export function hasChanged(current: string, block: string): boolean {
 }
 
 export function newestEntryDate(entries: ChangelogEntry[]): string | null {
-  return entries.length === 0
-    ? null
-    : entries.reduce((newest, e) => (e.entry_date > newest ? e.entry_date : newest), entries[0].entry_date);
+  return entries.length === 0 ? null : entries.reduce(
+    (newest, e) => (e.entry_date > newest ? e.entry_date : newest),
+    entries[0].entry_date,
+  );
 }
 
 // Rewrites the header line in place, or inserts it directly under the title.

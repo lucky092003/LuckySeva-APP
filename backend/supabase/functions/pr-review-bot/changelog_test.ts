@@ -284,5 +284,8 @@ Deno.test("applyLastUpdated is idempotent", () => {
 });
 
 Deno.test("applyLastUpdated still works on a file that has no title", () => {
-  assertStringIncludes(applyLastUpdated("no title here", "2026-10-01"), "**Last updated:** 2026-10-01");
+  assertStringIncludes(
+    applyLastUpdated("no title here", "2026-10-01"),
+    "**Last updated:** 2026-10-01",
+  );
 });
