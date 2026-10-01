@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
-import { useService, useProfessional } from '@/hooks';
+import { useServiceDetail, useCustomerCoords, NEARBY_LIMIT } from '@/hooks';
 import { api } from '@/services/api';
 import { fetchCurrentLocation, geocodeAddress } from '@/services/location';
 import {
@@ -16,9 +16,10 @@ import {
 } from '@/services/address';
 import { TopBar } from '@/components/PhoneShell';
 import { AddressForm } from '@/components/AddressForm';
-import { Card, Spinner, Button, Stars, Avatar } from '@/components/ui';
+import { Card, Spinner, Button, Stars, Avatar, VerifiedBadge } from '@/components/ui';
 import { inr } from '@/utils/format';
-import type { Booking, AddressRow } from '@/types';
+import { isVerified } from '@/utils/kyc';
+import type { Booking, AddressRow, Service } from '@/types';
 
 const TIME_SLOTS = ['08:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '04:00 PM', '06:00 PM'];
 
@@ -27,6 +28,16 @@ const COUPONS: Record<string, { discount: number; label: string; desc: string }>
   SEVA50: { discount: 50, label: '₹50 OFF', desc: 'Flat ₹50 off on any service' },
   CLEAN100: { discount: 100, label: '₹100 OFF', desc: '₹100 off on cleaning services' },
 };
+
+/** Flat fee added on top of whichever professional the customer picks. */
+const VISIT_FEE = 49;
+
+/** Steps: pick professional, date & time, address, review. */
+const PRO_STEP = 1;
+const WHEN_STEP = 2;
+const ADDR_STEP = 3;
+const REVIEW_STEP = 4;
+const STEPS = ['Professional', 'Date & Time', 'Address', 'Review'];
 
 const PAYMENT_METHODS = [
   { key: 'cash', label: 'Pay with Cash', icon: 'Banknote', desc: 'Pay the professional after service' },
@@ -37,10 +48,12 @@ const PAYMENT_METHODS = [
 
 export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: string; professionalId?: string }) => {
   const { navigate, customer } = useApp();
-  const { service, loading } = useService(serviceId);
-  const { professional } = useProfessional(professionalId || null);
+  const coords = useCustomerCoords();
+  const { service, providers, nearby, loading, located } = useServiceDetail(serviceId, coords);
 
   const [step, setStep] = useState(1);
+  /** Which professional the customer picked in step 1, if any. */
+  const [pickedId, setPickedId] = useState<string | null>(professionalId || null);
   const [date, setDate] = useState(0);
   const [slot, setSlot] = useState('');
   const [addr, setAddr] = useState<AddressParts>(EMPTY_ADDRESS);
@@ -93,7 +106,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   };
 
   useEffect(() => {
-    if (step !== 2) {
+    if (step !== ADDR_STEP) {
       defaultAppliedRef.current = false;
       setSavedAddrs([]);
       setSelectedAddressId(null);
@@ -106,7 +119,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   }, [step]);
 
   useEffect(() => {
-    if (step !== 2 || defaultAppliedRef.current) return;
+    if (step !== ADDR_STEP || defaultAppliedRef.current) return;
     const def = savedAddrs.find((a) => a.is_default);
     if (!def) return;
     defaultAppliedRef.current = true;
@@ -120,11 +133,71 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   });
   const dateLabel = dates[date].toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 
+  // Same honesty rule as the service screen: only rank by distance when the
+  // customer actually has coordinates, otherwise fall back to top rated.
+  const candidates = useMemo(() => {
+    const list = located ? nearby : nearby.length ? nearby : providers;
+    return list.slice(0, NEARBY_LIMIT);
+  }, [located, nearby, providers]);
+
+  // A professionalId handed in from the profile screen may sit outside the top
+  // 5, so resolve it from the wider list too. Falling back to null would let the
+  // customer reach the review step with nobody assigned.
+  const picked = useMemo(() => {
+    if (!pickedId) return null;
+    return (
+      candidates.find((p) => p.id === pickedId) ||
+      nearby.find((p) => p.id === pickedId) ||
+      providers.find((p) => p.id === pickedId) ||
+      null
+    );
+  }, [candidates, nearby, providers, pickedId]);
+
+  /**
+   * A professional's `starting_price` is one flat floor for everything they
+   * offer, so charging it for every service overcharges most jobs. Read the
+   * real price for THIS service out of the professional_services join instead,
+   * and only fall back to the floor when the join has no row for it.
+   */
+  const [proServices, setProServices] = useState<Record<string, Service[]>>({});
+
+  useEffect(() => {
+    const targets = candidates.filter((p) => !proServices[p.id]);
+    if (targets.length === 0) return;
+    let active = true;
+    Promise.all(
+      targets.map((p) =>
+        api.catalog
+          .professional(p.id)
+          .then((res) => [p.id, (res.services || []).map((r) => r.service).filter(Boolean)] as const)
+          .catch(() => [p.id, [] as Service[]] as const)
+      )
+    ).then((pairs) => {
+      if (!active) return;
+      setProServices((prev) => {
+        const next = { ...prev };
+        for (const [pid, svcs] of pairs) next[pid] = svcs;
+        return next;
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [candidates, proServices]);
+
+  /** What this professional actually charges for the selected service. */
+  const priceFor = (proId: string, floor: number) => {
+    const match = proServices[proId]?.find((s) => s.id === serviceId);
+    return match ? Number(match.starting_price) || floor : floor;
+  };
+
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /><Spinner className="py-20" /></div>;
   if (!service) return <div className="flex flex-1 flex-col"><TopBar title="Book Service" /></div>;
 
-  const base = professional ? (Number(professional.starting_price) || service.starting_price) : service.starting_price;
-  const visitFee = 49;
+  const base = picked
+    ? priceFor(picked.id, Number(picked.starting_price) || service.starting_price)
+    : service.starting_price;
+  const visitFee = VISIT_FEE;
   let discountAmount = 0;
   if (appliedCoupon) {
     if (appliedCoupon.discount < 1) {
@@ -165,7 +238,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       return;
     }
     if (!addrValid) {
-      setStep(2);
+      setStep(ADDR_STEP);
       setShowAddrErrors(true);
       return;
     }
@@ -191,8 +264,8 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         longitude,
         service_id: service.id,
         service_name: service.name,
-        professional_id: professional?.id || null,
-        professional_name: professional?.name || 'Auto-assign',
+        professional_id: picked?.id || null,
+        professional_name: picked?.name || 'Auto-assign',
         scheduled_date: bookingDate,
         scheduled_time: slot,
         notes,
@@ -229,7 +302,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   };
 
   const goNext = () => {
-    if (step === 2 && !addrValid) {
+    if (step === ADDR_STEP && !addrValid) {
       setShowAddrErrors(true);
       return;
     }
@@ -237,51 +310,153 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     setStep(step + 1);
   };
 
-  const canNext = step === 1 ? slot !== '' : step === 2 ? addrValid : true;
+  const canNext =
+    // With nobody to choose from the flow falls through to auto-assign, so the
+    // picker must not be able to block the customer on an empty list.
+    step === PRO_STEP ? !picked || !!candidates.find((p) => p.id === pickedId)
+      : step === WHEN_STEP ? slot !== ''
+      : step === ADDR_STEP ? addrValid
+      : true;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="Book Service" />
       {/* Stepper */}
       <div className="flex shrink-0 items-center justify-center gap-2 border-b border-gray-100 bg-white px-5 py-3">
-        {['Date & Time', 'Address', 'Review'].map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
-            <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${step > i + 1 ? 'bg-emerald-500 text-white' : step === i + 1 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'}`}>
-              {step > i + 1 ? <Icons.Check size={12} /> : i + 1}
+        {STEPS.map((label, i) => {
+          const n = i + 1;
+          return (
+            <div key={label} className="flex items-center gap-2">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${step > n ? 'bg-emerald-500 text-white' : step === n ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                {step > n ? <Icons.Check size={12} /> : n}
+              </div>
+              <span className={`text-[11px] font-semibold ${step >= n ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+              {i < STEPS.length - 1 && <div className="h-px w-4 bg-gray-200" />}
             </div>
-            <span className={`text-[11px] font-semibold ${step >= i + 1 ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
-            {i < 2 && <div className="h-px w-4 bg-gray-200" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Service summary */}
         <Card className="mb-4 flex items-center gap-3 p-3">
-          {professional && (
+          {picked && (
             <Avatar
-              src={professional.avatar_url}
-              name={professional.name}
+              src={picked.avatar_url}
+              name={picked.name}
               className="h-11 w-11 rounded-xl text-xs"
             />
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-gray-900">{service.name}</p>
-            {professional ? (
-              <p className="text-[11px] text-gray-500">{professional.name} · {inr(professional.starting_price)}</p>
+            {picked ? (
+              <p className="text-[11px] text-gray-500">
+                {picked.name} · {inr(base)} + {inr(VISIT_FEE)} visit fee
+              </p>
             ) : (
-              <p className="text-[11px] text-gray-500">{inr(service.starting_price)} onwards</p>
+              <p className="text-[11px] text-gray-500">
+                {inr(service.starting_price)} onwards · pick a professional
+              </p>
             )}
           </div>
-          {professional && (
-            <div className="flex items-center gap-1">
-              <Stars rating={professional.rating} size={11} />
-              <span className="text-[11px] font-semibold">{professional.rating}</span>
+          {picked && (
+            <div className="flex shrink-0 items-center gap-1">
+              <Stars rating={picked.rating} size={11} />
+              <span className="text-[11px] font-semibold">{picked.rating}</span>
             </div>
           )}
         </Card>
 
-        {step === 1 && (
+        {step === PRO_STEP && (
+          <div>
+            <div className="mb-2 flex items-baseline justify-between">
+              <h3 className="text-sm font-bold text-gray-900">Choose a Professional</h3>
+              <span className="text-[11px] text-gray-400">
+                {located ? `Top ${candidates.length} within range` : `Top ${candidates.length} rated`}
+              </span>
+            </div>
+
+            {candidates.length === 0 ? (
+              <Card className="p-4 text-center text-sm text-gray-500">
+                No professionals are offering this service right now. Continue and we
+                will assign the nearest available one.
+              </Card>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                {candidates.map((pro, i) => {
+                  const selected = pro.id === pickedId;
+                  const proPrice = priceFor(pro.id, Number(pro.starting_price) || service.starting_price);
+                  return (
+                    <button
+                      key={pro.id}
+                      onClick={() => setPickedId(pro.id)}
+                      aria-pressed={selected}
+                      className={`flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors ${
+                        i > 0 ? 'border-t border-gray-100' : ''
+                      } ${selected ? 'bg-emerald-50/60' : 'hover:bg-gray-50 active:bg-gray-100/70'}`}
+                    >
+                      <Avatar
+                        src={pro.avatar_url}
+                        name={pro.name}
+                        className="h-11 w-11 rounded-full text-xs"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-bold text-gray-900">{pro.name}</p>
+                          {isVerified(pro) && <VerifiedBadge />}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <Stars rating={pro.rating} size={11} />
+                          <span className="text-[11px] font-semibold text-gray-700">{pro.rating}</span>
+                          <span className="text-[11px] text-gray-400">
+                            ({pro.reviews_count} {pro.reviews_count === 1 ? 'review' : 'reviews'})
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-gray-400">
+                          {[
+                            `${pro.experience_years} yrs exp`,
+                            `${pro.completed_jobs} ${pro.completed_jobs === 1 ? 'job' : 'jobs'}`,
+                            located ? `${pro.distance_km} km away` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <span className="block text-[10px] leading-none text-gray-400">
+                          {inr(VISIT_FEE)} visit fee
+                        </span>
+                        <span className="mt-1 block text-sm font-bold leading-none text-emerald-600">
+                          {inr(proPrice)}
+                        </span>
+                        <span className="mt-1 block text-[10px] leading-none text-gray-400">
+                          = {inr(proPrice + VISIT_FEE)}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                          selected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-300'
+                        }`}
+                      >
+                        {selected && <Icons.Check size={12} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="mt-2 text-[11px] text-gray-400">
+              Every booking adds a {inr(VISIT_FEE)} visitation fee for travel and tools.
+              You can change your choice on the review step.
+            </p>
+          </div>
+        )}
+
+        {step === WHEN_STEP && (
           <div className="space-y-4">
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Select Date</h3>
@@ -320,7 +495,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
           </div>
         )}
 
-        {step === 2 && (
+        {step === ADDR_STEP && (
           <div className="space-y-5">
             {savedAddrs.length > 0 && (
               <div>
@@ -417,7 +592,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
           </div>
         )}
 
-        {step === 3 && (
+        {step === REVIEW_STEP && (
           <div className="space-y-4">
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Choose Payment Method</h3>
@@ -451,7 +626,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
               <h3 className="mb-2 text-sm font-bold text-gray-900">Booking Summary</h3>
               <Card className="space-y-3 p-4">
                 <Row label="Service" value={service.name} />
-                <Row label="Professional" value={professional?.name || 'Auto-assigned'} />
+                <Row label="Professional" value={picked?.name || 'Auto-assigned'} />
                 <Row label="Date" value={dateLabel} />
                 <Row label="Time" value={slot} />
                 <Row label="Address" value={address} />
@@ -509,8 +684,14 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
             <div>
               <h3 className="mb-2 text-sm font-bold text-gray-900">Price Breakdown</h3>
               <Card className="space-y-2.5 p-4">
-                <Row label="Service price" value={inr(base)} />
-                <Row label="Visitation fee" value={inr(visitFee)} />
+                <Row
+                  label={`${service.name}${picked ? '' : ' (from'}`}
+                  value={`${inr(base)}${picked ? '' : ')'}`}
+                />
+                <Row
+                  label="Visitation fee"
+                  value={`${inr(visitFee)}${picked ? '' : ' (added at checkout)'}`}
+                />
                 {discountAmount > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-600">Discount ({appliedCoupon?.code})</span>
@@ -532,11 +713,11 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
 
       {/* Footer */}
       <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
-        {step > 1 && (
+        {step > PRO_STEP && (
           <Button variant="outline" onClick={() => setStep(step - 1)}>Back</Button>
         )}
-        {step < 3 ? (
-          <Button onClick={goNext} disabled={step === 1 && !canNext} className="flex-1">
+        {step < REVIEW_STEP ? (
+          <Button onClick={goNext} disabled={!canNext} className="flex-1">
             Continue
           </Button>
         ) : (
