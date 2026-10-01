@@ -134,6 +134,7 @@ export type Booking = {
   notes: string;
   base_price: number;
   visit_fee: number;
+  priority_fee?: number;
   total_amount: number;
   payment_method: string;
   payment_status: string;
