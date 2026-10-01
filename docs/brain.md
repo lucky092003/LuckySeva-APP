@@ -842,9 +842,9 @@ appends a dated entry to `CHANGELOG.md` via its own PR. The choices were deliber
 - **Entries are written on `opened`, not on merge.** This means a PR you later close
   unmerged still appears. Accepted knowingly: you see the entry while the work is in
   flight, and `changelog_enabled = false` turns the whole thing off.
-- **The PR title is the entry text.** Nothing smarter was attempted — the existing
-  `## [Unreleased]` prose is hand-written and far richer than anything derivable from
-  a title. Bucket = conventional-commit prefix (`feat` => Added, `fix` => Fixed, else
+- **The PR title is the entry text.** Nothing smarter was attempted — the hand-written
+  dated sections are far richer than anything derivable from a title. Bucket =
+  conventional-commit prefix (`feat` => Added, `fix` => Fixed, else
   Changed); the prefix is stripped from the line because the bucket already says it.
 
 Four invariants make re-running safe, and all four are load-bearing:
@@ -861,6 +861,17 @@ Four invariants make re-running safe, and all four are load-bearing:
    exactly one blank line, so it is idempotent. `normalizeBlock` re-adds the markers if
    they are ever missing — without that, a marker-less block would be inserted again on
    every run and the file would grow without bound.
+
+**The file format is dated, and the bot owns the header.** Sections are `## YYYY-MM-DD`,
+newest first — never `## [Unreleased]` — and the line directly under `# Changelog` is
+`**Last updated:** <newest entry date>`, written by `applyLastUpdated` from
+`newestEntryDate(entries)`. It is idempotent and rewrites in place rather than
+appending, so a hand-written date can be corrected. Because the header is machine-written,
+`recordChangelog` treats a run as `unchanged` only when **both** the block and the header
+match, otherwise the header could go stale behind a `hasChanged: false` short-circuit.
+`emptyChangelog()` — used only when the file is missing entirely — seeds the same header
+with `no entries yet`. Hand-written sections below the block follow the same dated
+convention; keep them dated when you add to them.
 
 The bot PR is **reused**, not recreated: it looks for an open PR whose head is
 `changelog_branch` and pushes to it, so you get one PR per batch of PRs rather than

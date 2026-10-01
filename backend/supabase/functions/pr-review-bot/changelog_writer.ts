@@ -1,10 +1,12 @@
 import {
   applyBlock,
+  applyLastUpdated,
   type ChangelogEntry,
   classifyTitle,
   emptyChangelog,
   entryDateFrom,
   hasChanged,
+  newestEntryDate,
   renderBlock,
 } from "./changelog.ts";
 import { ensureBranch, findOpenPrForBranch, openPr, readFile, writeFile } from "./github.ts";
@@ -74,7 +76,13 @@ export async function recordChangelog(
   const path = settings.changelogFile;
 
   const existing = await readFile(repo, path, settings.changelogBranch, token);
-  if (existing !== null && !hasChanged(existing.content, block)) {
+  const current = existing?.content ?? emptyChangelog();
+  let updated = applyBlock(current, block);
+  const newest = newestEntryDate(entries);
+  if (newest !== null) updated = applyLastUpdated(updated, newest);
+
+  // Unchanged means both the generated block and the header date already match.
+  if (existing !== null && !hasChanged(existing.content, block) && updated === existing.content) {
     return {
       status: "unchanged",
       prUrl: (await findOpenPrForBranch(repo, settings.changelogBranch, token))?.html_url ?? null,
@@ -82,8 +90,6 @@ export async function recordChangelog(
     };
   }
 
-  const current = existing?.content ?? emptyChangelog();
-  const updated = applyBlock(current, block);
   const fromSha = pr.base?.sha ?? "";
   if (fromSha !== "") {
     await ensureBranch(repo, settings.changelogBranch, fromSha, token);

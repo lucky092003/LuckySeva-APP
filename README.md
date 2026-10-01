@@ -444,6 +444,11 @@ update pr_review_settings set min_severity = 'info' where repo_full_name = 'luck
 
 ### Date-wise changelog
 
+`CHANGELOG.md` is dated, newest section first, with a `**Last updated:** <date>` line
+directly under the title. **Write your own entries the same way**: `## YYYY-MM-DD`, then
+`### Added` / `### Changed` / `### Fixed`. The bot keeps the header date in step with the
+newest entry, so a hand-written section never has to touch it.
+
 When a pull request is **opened**, the bot records it in `changelog_entries`,
 regenerates a dated block at the top of `CHANGELOG.md`, and opens (or updates) a
 single PR for it. The block is grouped newest-date-first, and within each date split
@@ -471,8 +476,10 @@ the result is capitalised:
 - [#35](https://github.com/lucky092003/LuckySeva-App/pull/35) Deleting your default address left you with none — @lucky092003
 ```
 
-**Only the block between the two markers is machine-written.** The bot never touches
-your prose, so your existing `## [Unreleased]` section is safe:
+**Only the block between the two markers is machine-written**, apart from one line: the
+bot also rewrites the `**Last updated:** <date>` line directly under `# Changelog` so it
+always matches the newest entry. Everything else is yours, so your own dated sections
+(`## YYYY-MM-DD`, newest first) are safe:
 
 ```markdown
 <!-- luckyseva-changelog:start -->
