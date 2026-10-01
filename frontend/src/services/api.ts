@@ -46,8 +46,23 @@ async function request<T>(
   return data as T;
 }
 
+const STALE_BACKEND_HINT =
+  'This backend is too old to send OTPs. Run the backend from backend/ (python -m uvicorn app.main:app --port 8001) or redeploy it.';
+
+export const otpErrorMessage = (e: unknown, fallback: string): string => {
+  if (!(e instanceof Error)) return fallback;
+  return /API 404/.test(e.message) ? STALE_BACKEND_HINT : e.message;
+};
+
 export const api = {
   auth: {
+    requestOtp: (input: { phone: string; role?: 'customer' | 'provider' }) =>
+      request<{ sent: boolean; role: string; expires_in: number; resend_after: number; debug_code?: string }>(
+        'auth',
+        '/request-otp',
+        'POST',
+        input
+      ),
     verifyOtp: (input: { phone: string; code: string; role?: 'customer' | 'provider' | 'admin'; name?: string; email?: string; location?: string; profession?: string; category_slug?: string; serviceArea?: string; experience?: number | string; latitude?: number | null; longitude?: number | null; service_radius_km?: number | string }) =>
       request<{ access_token: string; role: string; professional_id?: string; profile?: Profile | null }>('auth', '/verify-otp', 'POST', input),
     me: () => request<{ role: string; profile: Profile | null; professional?: Professional }>('auth', '/me'),

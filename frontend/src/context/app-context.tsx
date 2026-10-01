@@ -109,7 +109,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (APP_ROLE === 'admin') {
       return [{ name: initialAdminAuthed ? 'admin-dashboard' : 'admin-auth' }];
     }
-    return [{ name: 'splash' }];
+    return [{ name: 'auth' }];
   });
   const [customer, setCustomerState] = useState<Customer>(initialCustomer);
   const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);

@@ -1,12 +1,12 @@
 import logoImg from '@/assets/logo.png';
 
-export const Logo = ({ size = 40 }: { size?: number }) => (
+export const Logo = ({ size = 40, className = 'rounded-xl' }: { size?: number; className?: string }) => (
   <img
     src={logoImg}
     alt="LuckySeva logo"
     width={size}
     height={size}
-    className="rounded-xl object-cover"
+    className={`${className} object-cover`}
     style={{ width: size, height: size }}
   />
 );

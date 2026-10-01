@@ -19,6 +19,7 @@ const providerTabs: { label: string; icon: typeof Home; screen: Screen }[] = [
 export const BottomNav = () => {
   const { screen, navigate, role } = useApp();
   if (role === 'admin') return null;
+  if (screen.name === 'auth' || screen.name === 'provider-auth') return null;
 
   const items = role === 'provider' ? providerTabs : tabs;
   const activeName = screen.name;

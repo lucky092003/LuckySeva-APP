@@ -21,6 +21,7 @@ const providerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
 export const WebTopNav = ({ role }: { role: Role }) => {
   const { screen, navigate, customer } = useApp();
   if (isNative) return null;
+  if (screen.name === 'auth' || screen.name === 'provider-auth') return null;
   const items = role === 'provider' ? providerItems : role === 'admin' ? [] : customerItems;
   if (!items.length) return null;
   const activeName = screen.name;
