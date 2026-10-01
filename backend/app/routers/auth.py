@@ -162,11 +162,9 @@ def verify_otp(body: dict):
         role = "customer"
     code = body.get("code")
 
-    client = db()
-
     if role == "admin":
         identifier = raw if isinstance(raw, str) else ""
-        if not identifier or not isinstance(code, str) or not verify_admin(client, identifier, code):
+        if not identifier or not isinstance(code, str) or not verify_admin(db(), identifier, code):
             raise ApiError(403, "Invalid admin credentials")
         token = sign_token(identifier, "admin")
         return {"access_token": token, "role": "admin"}
@@ -176,6 +174,9 @@ def verify_otp(body: dict):
         raise ApiError(400, "Invalid phone number (10 digits required)")
 
     consume_code(phone, role, code)
+
+    # Only reached once the OTP is proven, so a rejected code never needs Supabase.
+    client = db()
 
     if role == "provider":
         professional = find_or_create_provider(phone, body)
