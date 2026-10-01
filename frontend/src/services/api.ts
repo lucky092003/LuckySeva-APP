@@ -22,6 +22,19 @@ export const setApiToken = (token: string | null) => {
   else localStorage.removeItem(TOKEN_KEY);
 };
 
+/** Keeps the HTTP status and the backend's stable error code so callers can branch on them. */
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function request<T>(
   fn: string,
   path: string,
@@ -30,7 +43,7 @@ async function request<T>(
 ): Promise<T> {
   if (!BASE) {
     console.error(MISSING_BASE);
-    throw new Error(MISSING_BASE);
+    throw new ApiError(MISSING_BASE, 0);
   }
   const token = getApiToken();
   const res = await fetch(`${BASE}/${fn}${path}`, {
@@ -41,8 +54,8 @@ async function request<T>(
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const data = (await res.json().catch(() => null)) as T & { error?: string } | null;
-  if (!res.ok) throw new Error(data?.error || `API ${res.status}`);
+  const data = (await res.json().catch(() => null)) as (T & { error?: string; code?: string }) | null;
+  if (!res.ok) throw new ApiError(data?.error || `API ${res.status}`, res.status, data?.code);
   return data as T;
 }
 
@@ -54,16 +67,20 @@ export const otpErrorMessage = (e: unknown, fallback: string): string => {
   return /API 404/.test(e.message) ? STALE_BACKEND_HINT : e.message;
 };
 
+/** True when the backend refuses a login because the number is not on file yet. */
+export const isSignupRequired = (e: unknown): boolean =>
+  e instanceof ApiError && e.code === 'signup_required';
+
 export const api = {
   auth: {
-    requestOtp: (input: { phone: string; role?: 'customer' | 'provider' }) =>
+    requestOtp: (input: { phone: string; role?: 'customer' | 'provider'; mode?: 'login' | 'signup' }) =>
       request<{ sent: boolean; role: string; expires_in: number; resend_after: number; debug_code?: string }>(
         'auth',
         '/request-otp',
         'POST',
         input
       ),
-    verifyOtp: (input: { phone: string; code: string; role?: 'customer' | 'provider' | 'admin'; name?: string; email?: string; location?: string; profession?: string; category_slug?: string; serviceArea?: string; experience?: number | string; latitude?: number | null; longitude?: number | null; service_radius_km?: number | string }) =>
+    verifyOtp: (input: { phone: string; code: string; role?: 'customer' | 'provider' | 'admin'; mode?: 'login' | 'signup'; name?: string; email?: string; location?: string; profession?: string; category_slug?: string; serviceArea?: string; experience?: number | string; latitude?: number | null; longitude?: number | null; service_radius_km?: number | string }) =>
       request<{ access_token: string; role: string; professional_id?: string; profile?: Profile | null }>('auth', '/verify-otp', 'POST', input),
     me: () => request<{ role: string; profile: Profile | null; professional?: Professional }>('auth', '/me'),
   },

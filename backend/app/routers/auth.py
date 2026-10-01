@@ -14,6 +14,36 @@ router = APIRouter()
 
 VALID_ROLES = {"customer", "provider", "admin"}
 OTP_ROLES = {"customer", "provider"}
+MODES = {"login", "signup"}
+
+# Only a number that is already on file may log in. When it is not, the client is
+# told to sign up instead of being quietly registered as a brand new account.
+SIGNUP_REQUIRED = "This number is not registered yet. Please sign up first."
+
+
+def read_mode(body: dict) -> str:
+    """Signup stays the default so clients that predate the login gate still work."""
+    mode = body.get("mode", "signup")
+    return mode if mode in MODES else "signup"
+
+
+def signup_required_error() -> ApiError:
+    return ApiError(404, SIGNUP_REQUIRED, code="signup_required")
+
+
+def find_customer_profile(client, phone: str):
+    return one(client.table("profiles").select("*").eq("phone", phone).maybe_single().execute())
+
+
+def find_professional(client, phone: str):
+    return one(client.table("professionals").select("id").eq("phone", phone).maybe_single().execute())
+
+
+def is_registered(client, phone: str, role: str) -> bool:
+    """Is this number already on file for ``role``?"""
+    if role == "provider":
+        return bool(find_professional(client, phone))
+    return bool(find_customer_profile(client, phone))
 
 
 def clean_phone(raw) -> str | None:
@@ -45,7 +75,7 @@ def category_for(profession: str) -> str:
 
 def find_or_create_customer_profile(phone: str, body: dict):
     client = db()
-    existing = one(client.table("profiles").select("*").eq("phone", phone).maybe_single().execute())
+    existing = find_customer_profile(client, phone)
     if existing:
         return existing
     name = body.get("name")
@@ -69,7 +99,7 @@ def find_or_create_customer_profile(phone: str, body: dict):
 
 def find_or_create_provider(phone: str, body: dict) -> dict:
     client = db()
-    existing = one(client.table("professionals").select("id").eq("phone", phone).maybe_single().execute())
+    existing = find_professional(client, phone)
     if existing:
         return {"id": existing["id"]}
 
@@ -141,6 +171,11 @@ def request_otp(body: dict):
     if not phone:
         raise ApiError(400, "Invalid phone number (10 digits required)")
 
+    # A login only makes sense for a number that already exists, so check before
+    # spending a code on it and send the client to the signup form instead.
+    if read_mode(body) == "login" and not is_registered(db(), phone, role):
+        raise signup_required_error()
+
     code = issue_code(phone, role)
     response = {
         "sent": True,
@@ -177,23 +212,32 @@ def verify_otp(body: dict):
 
     # Only reached once the OTP is proven, so a rejected code never needs Supabase.
     client = db()
+    mode = read_mode(body)
 
     if role == "provider":
-        professional = find_or_create_provider(phone, body)
-        client.table("profiles").upsert(
-            {
-                "phone": phone,
-                "name": body.get("name") or "",
-                "email": body.get("email") or "",
-                "location": body.get("serviceArea") or "",
-                "role": "provider",
-            },
-            on_conflict="phone",
-        ).execute()
+        professional = find_professional(client, phone)
+        if not professional:
+            if mode == "login":
+                raise signup_required_error()
+            professional = find_or_create_provider(phone, body)
+            client.table("profiles").upsert(
+                {
+                    "phone": phone,
+                    "name": body.get("name") or "",
+                    "email": body.get("email") or "",
+                    "location": body.get("serviceArea") or "",
+                    "role": "provider",
+                },
+                on_conflict="phone",
+            ).execute()
         token = sign_token(phone, "provider", professional["id"])
         return {"access_token": token, "role": "provider", "professional_id": professional["id"]}
 
-    profile = find_or_create_customer_profile(phone, body)
+    profile = find_customer_profile(client, phone)
+    if not profile:
+        if mode == "login":
+            raise signup_required_error()
+        profile = find_or_create_customer_profile(phone, body)
     token = sign_token(phone, "customer")
     return {"access_token": token, "role": "customer", "profile": profile}
 

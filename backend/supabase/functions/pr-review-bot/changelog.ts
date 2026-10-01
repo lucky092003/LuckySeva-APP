@@ -1,6 +1,11 @@
 export const START_MARKER = "<!-- luckyseva-changelog:start -->";
 export const END_MARKER = "<!-- luckyseva-changelog:end -->";
 
+// The file header carries the newest entry date, so a reader can see how fresh the
+// changelog is without scrolling to the first dated section.
+const TITLE = "# Changelog";
+const LAST_UPDATED_LINE = /^\*\*Last updated:\*\*.*$/m;
+
 export type ChangelogKind = "added" | "changed" | "fixed";
 
 export interface ChangelogEntry {
@@ -157,9 +162,29 @@ export function hasChanged(current: string, block: string): boolean {
   return current.slice(start, end + END_MARKER.length) !== normalizeBlock(block);
 }
 
+export function newestEntryDate(entries: ChangelogEntry[]): string | null {
+  return entries.length === 0 ? null : entries.reduce(
+    (newest, e) => (e.entry_date > newest ? e.entry_date : newest),
+    entries[0].entry_date,
+  );
+}
+
+// Rewrites the header line in place, or inserts it directly under the title.
+// Idempotent: running it over its own output changes nothing.
+export function applyLastUpdated(content: string, date: string): string {
+  const line = `**Last updated:** ${date}`;
+  if (LAST_UPDATED_LINE.test(content)) return content.replace(LAST_UPDATED_LINE, line);
+  const title = content.indexOf(TITLE);
+  if (title === -1) return `${line}\n\n${content}`;
+  const afterTitle = title + TITLE.length;
+  return `${content.slice(0, afterTitle)}\n\n${line}${content.slice(afterTitle)}`;
+}
+
 export function emptyChangelog(): string {
   return [
-    "# Changelog",
+    TITLE,
+    "",
+    "**Last updated:** no entries yet",
     "",
     "All notable changes to **LuckySeva** are documented in this file.",
     "",

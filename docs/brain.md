@@ -575,7 +575,7 @@ is the single shared form used by `AddressesScreen` and `BookingFlowScreen`.
 
 ## 8. Migrations
 
-9 files, **filename-ordered** (`20260830093336` ... `20260929000000`), all applied by one `psql`
+11 files, **filename-ordered** (`20260830093336` ... `20260930000000`), all applied by one `psql`
 loop in the CI `migrations` job.
 
 | File | What it does |
@@ -589,6 +589,7 @@ loop in the CI `migrations` job.
 | `20260927000000_add_physiotherapy_category.sql` | 11th category + 5 services |
 | `20260928000000_booking_address_link.sql` | `bookings.address_id` + index |
 | `20260929000000_pr_review_bot.sql` | `pr_review_settings` + `pr_reviews` for the review bot (see §12) |
+| `20260930000000_backfill_professional_services.sql` | re-links every professional to every service of their `category_slug` at the starting price, and deletes links that point outside it. The `DELETE` is intentional here but slips past the CI guard below, which only matches an unaliased `DELETE FROM <table>;` |
 | `20260930000000_changelog_entries.sql` | `changelog_entries` + the `changelog_*` settings and `pr_reviews` outcome columns (see §12.1) |
 
 Rules you must follow:
@@ -597,7 +598,10 @@ Rules you must follow:
   `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`,
   `DROP POLICY IF EXISTS` before `CREATE POLICY`, and `ON CONFLICT ... DO NOTHING` for seeds.
 - **CI fails the build** on any `DROP TABLE`, `TRUNCATE`, `DROP SCHEMA`, or `DELETE FROM <table>;`.
-  If a change is genuinely destructive, split it and explain it.
+  If a change is genuinely destructive, split it and explain it. The guard is a grep for
+  `DELETE FROM <table>;` with a `;` straight after the name, so an aliased delete with a
+  `WHERE` clause — as in `20260930000000_backfill_professional_services.sql` — passes
+  unflagged. Do not rely on it to catch you.
 - RLS policies are declared `TO anon, authenticated`. Those roles only exist on Supabase, so the
   CI job creates them in a throwaway `postgres:15` first. If you add a new table, add the four
   `anon_select_*` / `anon_insert_*` / `anon_update_*` / `anon_delete_*` policies, or CI will pass
@@ -842,9 +846,9 @@ appends a dated entry to `CHANGELOG.md` via its own PR. The choices were deliber
 - **Entries are written on `opened`, not on merge.** This means a PR you later close
   unmerged still appears. Accepted knowingly: you see the entry while the work is in
   flight, and `changelog_enabled = false` turns the whole thing off.
-- **The PR title is the entry text.** Nothing smarter was attempted — the existing
-  `## [Unreleased]` prose is hand-written and far richer than anything derivable from
-  a title. Bucket = conventional-commit prefix (`feat` => Added, `fix` => Fixed, else
+- **The PR title is the entry text.** Nothing smarter was attempted — the hand-written
+  dated sections are far richer than anything derivable from a title. Bucket =
+  conventional-commit prefix (`feat` => Added, `fix` => Fixed, else
   Changed); the prefix is stripped from the line because the bucket already says it.
 
 Four invariants make re-running safe, and all four are load-bearing:
@@ -861,6 +865,17 @@ Four invariants make re-running safe, and all four are load-bearing:
    exactly one blank line, so it is idempotent. `normalizeBlock` re-adds the markers if
    they are ever missing — without that, a marker-less block would be inserted again on
    every run and the file would grow without bound.
+
+**The file format is dated, and the bot owns the header.** Sections are `## YYYY-MM-DD`,
+newest first — never `## [Unreleased]` — and the line directly under `# Changelog` is
+`**Last updated:** <newest entry date>`, written by `applyLastUpdated` from
+`newestEntryDate(entries)`. It is idempotent and rewrites in place rather than
+appending, so a hand-written date can be corrected. Because the header is machine-written,
+`recordChangelog` treats a run as `unchanged` only when **both** the block and the header
+match, otherwise the header could go stale behind a `hasChanged: false` short-circuit.
+`emptyChangelog()` — used only when the file is missing entirely — seeds the same header
+with `no entries yet`. Hand-written sections below the block follow the same dated
+convention; keep them dated when you add to them.
 
 The bot PR is **reused**, not recreated: it looks for an open PR whose head is
 `changelog_branch` and pushes to it, so you get one PR per batch of PRs rather than

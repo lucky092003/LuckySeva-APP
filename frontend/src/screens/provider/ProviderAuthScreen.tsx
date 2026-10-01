@@ -13,8 +13,11 @@ import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
 import { OtpSection } from '@/components/OtpInput';
 import { useApp } from '@/context/app-context';
-import { api, otpErrorMessage, setApiToken } from '@/services/api';
+import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
+
+// Shown only if a backend answers with the signup_required code but no message.
+const UNREGISTERED_FALLBACK = 'This number is not registered yet. Please sign up first.';
 
 function categoryFor(profession: string): string {
   const p = profession.toLowerCase();
@@ -33,7 +36,7 @@ function categoryFor(profession: string): string {
 
 export const ProviderAuthScreen = () => {
   const { setProviderId, navigate } = useApp();
-  const [mode, setMode] = useState<'login' | 'signup'>('signup');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -65,20 +68,26 @@ export const ProviderAuthScreen = () => {
     }
   };
 
+  // A login only needs the number: the database already knows who they are.
   const canSubmit =
-    form.name.trim() &&
     form.phone.length >= 10 &&
-    (mode === 'login' ? true : form.email.trim() && form.profession.trim());
+    (mode === 'login' ? true : form.name.trim() && form.email.trim() && form.profession.trim());
 
   const handleDetails = async () => {
     setError('');
     if (!canSubmit) return;
     setSending(true);
     try {
-      const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider' });
+      const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider', mode });
       setDebugCode(res.debug_code || null);
       setStep('otp');
     } catch (e) {
+      if (mode === 'login' && isSignupRequired(e)) {
+        // This number has never been signed up as a provider - show the form.
+        setMode('signup');
+        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        return;
+      }
       setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
     } finally {
       setSending(false);
@@ -91,37 +100,48 @@ export const ProviderAuthScreen = () => {
       setError('Please enter the 6-digit OTP.');
       return;
     }
-    if (!form.name.trim()) {
+    const isSignup = mode === 'signup';
+    if (isSignup && !form.name.trim()) {
       setError('Please enter your name.');
       return;
     }
-    const name = form.name.trim();
-    const phone = form.phone;
-    if (!form.profession.trim()) {
+    if (isSignup && !form.profession.trim()) {
       setError('Please enter your profession.');
       return;
     }
     try {
       const profession = form.profession.trim();
       const res = await api.auth.verifyOtp({
-        phone,
+        phone: form.phone,
         code,
         role: 'provider',
-        name,
-        email: mode === 'signup' ? form.email.trim() : undefined,
-        profession,
-        experience: Number(form.experience) || 1,
-        serviceArea: form.serviceArea,
-        service_radius_km: 60,
-        latitude: form.latitude,
-        longitude: form.longitude,
-        category_slug: categoryFor(profession),
+        mode,
+        name: isSignup ? form.name.trim() : undefined,
+        email: isSignup ? form.email.trim() : undefined,
+        profession: isSignup ? profession : undefined,
+        experience: isSignup ? Number(form.experience) || 1 : undefined,
+        serviceArea: isSignup ? form.serviceArea : undefined,
+        service_radius_km: isSignup ? 60 : undefined,
+        latitude: isSignup ? form.latitude : undefined,
+        longitude: isSignup ? form.longitude : undefined,
+        category_slug: isSignup ? categoryFor(profession) : undefined,
       });
       setApiToken(res.access_token);
       setProviderId(res.professional_id || null);
       navigate({ name: 'provider-home' });
     } catch (e) {
-      setError(otpErrorMessage(e, 'Could not create your account. Please try again.'));
+      if (!isSignup && isSignupRequired(e)) {
+        setStep('details');
+        setMode('signup');
+        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        return;
+      }
+      setError(
+        otpErrorMessage(
+          e,
+          isSignup ? 'Could not create your account. Please try again.' : 'Could not sign you in. Please try again.'
+        )
+      );
     }
   };
 
@@ -146,12 +166,14 @@ export const ProviderAuthScreen = () => {
       {step === 'details' ? (
         <div className="space-y-4">
           {error && <p className="text-center text-sm text-red-500">{error}</p>}
-          <Field
-            icon={<User size={18} />}
-            placeholder="Full name"
-            value={form.name}
-            onChange={(v) => setForm({ ...form, name: v })}
-          />
+          {mode === 'signup' && (
+            <Field
+              icon={<User size={18} />}
+              placeholder="Full name"
+              value={form.name}
+              onChange={(v) => setForm({ ...form, name: v })}
+            />
+          )}
           <Field
             icon={<Phone size={18} />}
             placeholder="Mobile number"
@@ -205,7 +227,10 @@ export const ProviderAuthScreen = () => {
           </Button>
 
           <button
-            onClick={() => setMode(mode === 'signup' ? 'login' : 'signup')}
+            onClick={() => {
+              setMode(mode === 'signup' ? 'login' : 'signup');
+              setError('');
+            }}
             className="w-full text-center text-sm text-gray-500"
           >
             {mode === 'signup' ? 'Already a provider? ' : "Don't have an account? "}
@@ -222,7 +247,7 @@ export const ProviderAuthScreen = () => {
             onVerify={(code) => verifyOtp(code)}
             onResend={async () => {
               try {
-                const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider' });
+                const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider', mode });
                 setDebugCode(res.debug_code || null);
               } catch (e) {
                 setError(otpErrorMessage(e, 'Could not resend the OTP.'));

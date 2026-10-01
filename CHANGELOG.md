@@ -1,11 +1,17 @@
 # Changelog
 
+**Last updated:** 2026-10-01
+
 All notable changes to **LuckySeva** are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
+`Last updated` line above is maintained automatically by the PR review bot and always
+matches the newest dated section.
+
+## 2026-10-01
 
 ### Added
 - Shared `AddressForm` component (`frontend/src/components/AddressForm.tsx`) and an
@@ -80,6 +86,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   professions to the `physiotherapy` category instead of `other`.
 
 ### Changed
+- **Only a registered number can log in.** `POST /auth/request-otp` and
+  `POST /auth/verify-otp` now take a `mode` (`login` / `signup`, default `signup`).
+  In `login` mode an unregistered number is refused with `404` +
+  `code: "signup_required"` before any OTP is sent, and `verify-otp` no longer
+  creates a profile row behind the caller's back. The app catches that code and
+  switches the user to the signup form, phone number carried over — instead of the
+  old behaviour where any number silently became a new account at verify time.
+- Provider sign-in is now the default on the provider auth screen and asks for the
+  phone number only; name, email and profession are collected on the signup form.
+- Home and signup steps now render API error messages, which were previously
+  computed and then silently dropped.
 - Home screen location button navigates to real addresses; bell badge shows real
   unread count; coupon copy via clipboard; recent bookings filtered by the
   logged-in customer's phone.
@@ -102,6 +119,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin login layout redesigned as a split-card screen with a brand panel.
 
 ### Fixed
+- A failed OTP check raised `OSError: Missing required env var: SUPABASE_URL` instead
+  of the intended 400, because `verify_otp` built the Supabase client before validating
+  the code. The client is now created only after the OTP is proven, so a wrong or expired
+  code needs no database or environment configuration.
+- `ApiError` responses can now carry a stable `code` alongside the human-readable
+  `error`, and the web app's fetch wrapper keeps that code and the HTTP status instead
+  of flattening every failure into a bare message.
 - Saved addresses in the booking address step could not be clicked into a selected
   state. Selection was derived from comparing the recomposed form string against the
   stored `full_address`, so the highlight could fail to appear and a click looked like

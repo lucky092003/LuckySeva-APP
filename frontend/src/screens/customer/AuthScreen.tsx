@@ -16,13 +16,15 @@ import {
 import { Logo } from '@/components/Logo';
 import { DevOtpHint } from '@/components/DevOtpHint';
 import { useApp } from '@/context/app-context';
-import { api, otpErrorMessage, setApiToken } from '@/services/api';
+import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
 
 const ORANGE = '#FF6B00';
 const ORANGE_SOFT = 'rgba(255, 107, 0, 0.10)';
 const phoneRegex = /^[6-9]\d{9}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Shown only if a backend answers with the signup_required code but no message.
+const UNREGISTERED_FALLBACK = 'This number is not registered yet. Please sign up first.';
 
 const OrangeButton = ({
   children,
@@ -133,6 +135,15 @@ const BackBtn = ({ onClick }: { onClick: () => void }) => (
   </button>
 );
 
+const ErrorNote = ({ children }: { children: React.ReactNode }) => (
+  <p
+    role="alert"
+    className="mt-4 rounded-[14px] border border-red-200 bg-red-50 px-4 py-2.5 text-center text-[13px] font-medium leading-snug text-red-600"
+  >
+    {children}
+  </p>
+);
+
 export const AuthScreen = () => {
   const { navigate, setCustomer } = useApp();
   const [step, setStep] = useState<'phone' | 'signup' | 'otp' | 'signup-otp'>('phone');
@@ -169,12 +180,22 @@ export const AuthScreen = () => {
     setError('');
     setSending(true);
     try {
-      const res = await api.auth.requestOtp({ phone, role: 'customer' });
+      const res = await api.auth.requestOtp({
+        phone,
+        role: 'customer',
+        mode: isSignup ? 'signup' : 'login',
+      });
       setDebugCode(res.debug_code || null);
       setDigits(Array(6).fill(''));
       setTimer(res.resend_after || 30);
       setStep(isSignup ? 'signup-otp' : 'otp');
     } catch (e) {
+      if (!isSignup && isSignupRequired(e)) {
+        // Nobody signed up with this number yet - take them to the signup form.
+        setStep('signup');
+        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        return;
+      }
       setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
     } finally {
       setSending(false);
@@ -212,12 +233,13 @@ export const AuthScreen = () => {
     if (code.length !== 6 || verifying) return;
     setError('');
     setVerifying(true);
+    const isSignup = step === 'signup-otp';
     try {
-      const isSignup = step === 'signup-otp';
       const res = await api.auth.verifyOtp({
         phone,
         code,
         role: 'customer',
+        mode: isSignup ? 'signup' : 'login',
         name: isSignup ? name.trim() : undefined,
         email: isSignup ? email.trim() || undefined : undefined,
         location: isSignup ? location || undefined : undefined,
@@ -232,6 +254,12 @@ export const AuthScreen = () => {
       });
       navigate({ name: 'home' });
     } catch (e) {
+      if (!isSignup && isSignupRequired(e)) {
+        // The number vanished from the database between the OTP and this verify.
+        setStep('signup');
+        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        return;
+      }
       setError(otpErrorMessage(e, 'Incorrect OTP. Please try again.'));
       setDigits(Array(6).fill(''));
       inputs.current[0]?.focus();
@@ -406,6 +434,8 @@ export const AuthScreen = () => {
             />
           </Field>
 
+          {error && <ErrorNote>{error}</ErrorNote>}
+
           <div className="mt-6">
             <OrangeButton onClick={() => sendOtp(false)} disabled={!validPhone} loading={sending}>
               Continue
@@ -416,7 +446,10 @@ export const AuthScreen = () => {
             Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => setStep('signup')}
+              onClick={() => {
+                setStep('signup');
+                setError('');
+              }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
               style={{ color: ORANGE }}
             >
@@ -572,6 +605,8 @@ export const AuthScreen = () => {
               />
             </Field>
           </div>
+
+          {error && <ErrorNote>{error}</ErrorNote>}
 
           <div className="relative mt-5">
             <OrangeButton

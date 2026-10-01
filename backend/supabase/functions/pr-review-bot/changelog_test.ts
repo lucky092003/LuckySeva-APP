@@ -2,12 +2,14 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
 import {
   applyBlock,
+  applyLastUpdated,
   type ChangelogEntry,
   classifyTitle,
   emptyChangelog,
   END_MARKER,
   entryDateFrom,
   hasChanged,
+  newestEntryDate,
   renderBlock,
   START_MARKER,
   stripPrefix,
@@ -249,4 +251,41 @@ Deno.test("emptyChangelog is a valid file the first run can extend", () => {
   const updated = applyBlock(emptyChangelog(), "BLOCK");
   assertStringIncludes(updated, "BLOCK");
   assertStringIncludes(updated, "## [Unreleased]");
+});
+
+Deno.test("newestEntryDate picks the latest day, or null when there are none", () => {
+  assertEquals(newestEntryDate([]), null);
+  assertEquals(newestEntryDate([entry({ entry_date: "2026-09-30" })]), "2026-09-30");
+  assertEquals(
+    newestEntryDate([
+      entry({ entry_date: "2026-09-28" }),
+      entry({ entry_date: "2026-10-01" }),
+      entry({ entry_date: "2026-09-30" }),
+    ]),
+    "2026-10-01",
+  );
+});
+
+Deno.test("applyLastUpdated inserts the line directly under the title", () => {
+  const updated = applyLastUpdated(EXISTING, "2026-10-01");
+  assertEquals(updated.split("\n")[2], "**Last updated:** 2026-10-01");
+});
+
+Deno.test("applyLastUpdated rewrites an existing date in place", () => {
+  const once = applyLastUpdated(EXISTING, "2026-10-01");
+  const twice = applyLastUpdated(once, "2026-10-02");
+  assertStringIncludes(twice, "**Last updated:** 2026-10-02");
+  assertEquals(twice.split("**Last updated:**").length - 1, 1, "the line is never duplicated");
+});
+
+Deno.test("applyLastUpdated is idempotent", () => {
+  const once = applyLastUpdated(EXISTING, "2026-10-01");
+  assertEquals(applyLastUpdated(once, "2026-10-01"), once);
+});
+
+Deno.test("applyLastUpdated still works on a file that has no title", () => {
+  assertStringIncludes(
+    applyLastUpdated("no title here", "2026-10-01"),
+    "**Last updated:** 2026-10-01",
+  );
 });

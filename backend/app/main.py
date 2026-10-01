@@ -22,7 +22,10 @@ app.add_middleware(
 
 @app.exception_handler(ApiError)
 async def api_error_handler(_, exc: ApiError):
-    return JSONResponse({"error": exc.message}, status_code=exc.status)
+    body = {"error": exc.message}
+    if exc.code:
+        body["code"] = exc.code
+    return JSONResponse(body, status_code=exc.status)
 
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
