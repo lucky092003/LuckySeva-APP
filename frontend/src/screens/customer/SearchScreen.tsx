@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
-import { Card, Spinner, EmptyState, Stars, Badge } from '@/components/ui';
+import { Card, Spinner, EmptyState, Stars, Badge, Avatar } from '@/components/ui';
 import { inr } from '@/utils/format';
 import type { Service, Professional, Category } from '@/types';
 
@@ -141,7 +141,7 @@ export const SearchScreen = () => {
                 <div className="space-y-2">
                   {matchedPros.map((pro) => (
                     <Card key={pro.id} onClick={() => navigate({ name: 'professional', id: pro.id })} className="flex items-center gap-3 p-3.5">
-                      <img src={pro.avatar_url} alt="" className="h-11 w-11 rounded-xl bg-gray-100 object-cover" />
+                      <Avatar src={pro.avatar_url} name={pro.name} className="h-11 w-11 rounded-xl text-xs" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-gray-900">{pro.name}</p>
                         <div className="flex items-center gap-1">

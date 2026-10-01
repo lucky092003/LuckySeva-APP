@@ -3,7 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { api, setApiToken } from '@/services/api';
 import { useApp, ADMIN_CREDENTIALS } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
-import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge } from '@/components/ui';
+import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge, Avatar } from '@/components/ui';
 import { inr, formatDate, slugToLabel } from '@/utils/format';
 import { isVerified, kycStatus, KYC_STATUS_LABEL, kycDocLabel } from '@/utils/kyc';
 import type { Booking, Professional, Category, Service } from '@/types';
@@ -199,7 +199,7 @@ export const AdminProviders = () => {
           {pros.map((p) => (
             <Card key={p.id} className="p-4">
               <div className="flex items-center gap-3">
-                <img src={p.avatar_url} alt="" className="h-12 w-12 rounded-xl bg-gray-100 object-cover" />
+                <Avatar src={p.avatar_url} name={p.name} className="h-12 w-12 rounded-xl text-sm" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-bold text-gray-900">{p.name}</p>

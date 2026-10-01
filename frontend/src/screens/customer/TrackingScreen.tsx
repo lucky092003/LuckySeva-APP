@@ -3,7 +3,7 @@ import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Button } from '@/components/ui';
+import { Card, Spinner, Button, Avatar } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
@@ -70,7 +70,11 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
         {professional && (
           <Card className="mb-4 p-4">
             <div className="flex items-center gap-3">
-              <img src={professional.avatar_url} alt="" className="h-14 w-14 rounded-2xl bg-gray-100 object-cover" />
+              <Avatar
+                src={professional.avatar_url}
+                name={professional.name}
+                className="h-14 w-14 rounded-2xl text-base"
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-gray-900">{professional.name}</p>
                 <p className="text-[11px] text-gray-500">{professional.skills.join(', ')}</p>

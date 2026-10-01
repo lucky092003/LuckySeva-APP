@@ -16,7 +16,7 @@ import {
 } from '@/services/address';
 import { TopBar } from '@/components/PhoneShell';
 import { AddressForm } from '@/components/AddressForm';
-import { Card, Spinner, Button, Stars } from '@/components/ui';
+import { Card, Spinner, Button, Stars, Avatar } from '@/components/ui';
 import { inr } from '@/utils/format';
 import type { Booking, AddressRow } from '@/types';
 
@@ -259,7 +259,11 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         {/* Service summary */}
         <Card className="mb-4 flex items-center gap-3 p-3">
           {professional && (
-            <img src={professional.avatar_url} alt="" className="h-11 w-11 rounded-xl bg-gray-100 object-cover" />
+            <Avatar
+              src={professional.avatar_url}
+              name={professional.name}
+              className="h-11 w-11 rounded-xl text-xs"
+            />
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-gray-900">{service.name}</p>

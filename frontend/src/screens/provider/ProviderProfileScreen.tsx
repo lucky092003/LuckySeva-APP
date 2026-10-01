@@ -5,7 +5,7 @@ import { useProfessionalWithFallback, useReviews } from '@/hooks';
 import { api, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge } from '@/components/ui';
+import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge, Avatar } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
 import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/utils/kyc';
 import type { Professional, Service } from '@/types';
@@ -101,7 +101,7 @@ export const ProviderProfileScreen = () => {
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Profile header */}
         <Card className="flex items-center gap-4 p-4">
-          <img src={pro.avatar_url} alt={pro.name} className="h-16 w-16 rounded-2xl bg-gray-100 object-cover" />
+          <Avatar src={pro.avatar_url} name={pro.name} className="h-16 w-16 rounded-2xl text-lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <p className="truncate text-base font-bold text-gray-900">{pro.name}</p>

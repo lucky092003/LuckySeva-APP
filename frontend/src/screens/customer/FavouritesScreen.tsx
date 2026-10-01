@@ -3,7 +3,7 @@ import { useApp } from '@/context/app-context';
 import { useFavourites, useProfessional } from '@/hooks';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Button } from '@/components/ui';
+import { Card, Spinner, Button, Avatar } from '@/components/ui';
 import { inr } from '@/utils/format';
 import type { Professional } from '@/types';
 
@@ -53,7 +53,7 @@ const FavCard = ({ pro, onOpen, onRemove }: { pro: Professional; onOpen: () => v
   const current = professional || pro;
   return (
     <Card className="flex items-center gap-3 p-3">
-      <img src={current.avatar_url} alt={current.name} className="h-12 w-12 rounded-full bg-gray-100 object-cover" />
+      <Avatar src={current.avatar_url} name={current.name} className="h-12 w-12 rounded-full text-sm" />
       <div className="min-w-0 flex-1 cursor-pointer" onClick={onOpen}>
         <p className="truncate text-sm font-bold text-gray-900">{current.name}</p>
         <p className="text-[11px] text-gray-500">{current.skills.join(', ')}</p>

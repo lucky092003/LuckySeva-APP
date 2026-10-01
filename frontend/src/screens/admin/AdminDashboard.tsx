@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '@/services/api';
 import { useApp } from '@/context/app-context';
-import { Card, Spinner, Badge } from '@/components/ui';
+import { Card, Spinner, Badge, Avatar } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
@@ -299,7 +299,7 @@ export const AdminDashboard = () => {
               {[...pros].sort((a, b) => b.rating - a.rating).slice(0, 5).map((p, i) => (
                 <div key={p.id} className="flex items-center gap-3 px-5 py-3.5">
                   <span className="w-4 text-center text-xs font-bold text-gray-300">{i + 1}</span>
-                  <img src={p.avatar_url} alt="" className="h-9 w-9 rounded-lg bg-gray-100 object-cover" />
+                  <Avatar src={p.avatar_url} name={p.name} className="h-9 w-9 rounded-lg text-[11px]" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-gray-900">{p.name}</p>
                     <p className="text-[10px] text-gray-400 capitalize">{p.category_slug.replace('-', ' ')}</p>
