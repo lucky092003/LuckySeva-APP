@@ -6,19 +6,21 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import config, links, otp
+from app.exceptions import ApiError
 from app.routers import auth as auth_router
 
 PHONE = "9876543210"
 
 
 class FakeQuery:
-    """Minimal stand-in: selects resolve to nothing, writes are captured."""
+    """Minimal stand-in: selects resolve to seeded rows, writes are captured."""
 
     def __init__(self, db, table):
         self.db = db
         self.table = table
         self.mode = "select"
         self.payload: dict | None = None
+        self.filters: dict = {}
 
     def select(self, *_a, **_k):
         self.mode = "select"
@@ -34,7 +36,8 @@ class FakeQuery:
         self.payload = row
         return self
 
-    def eq(self, *_a, **_k):
+    def eq(self, column, value):
+        self.filters[column] = value
         return self
 
     def maybe_single(self):
@@ -53,13 +56,20 @@ class FakeQuery:
         if self.mode == "upsert":
             self.db.upserted.append((self.table, self.payload))
             return type("R", (), {"data": [self.payload]})()
-        return type("R", (), {"data": None})()
+        rows = self.db.rows.get(self.table)
+        if rows is None:
+            return type("R", (), {"data": None})()
+        matched = [r for r in rows if all(r.get(c) == v for c, v in self.filters.items())]
+        # maybe_single().execute() hands back the row itself, and None when there
+        # is no match -- never a list.
+        return type("R", (), {"data": matched[0] if matched else None})()
 
 
 class FakeDb:
-    def __init__(self):
+    def __init__(self, rows: dict | None = None):
         self.written: list = []
         self.upserted: list = []
+        self.rows = rows or {}
 
     def table(self, name):
         return FakeQuery(self, name)
@@ -74,8 +84,8 @@ def clean_store(monkeypatch: pytest.MonkeyPatch) -> None:
     otp.reset()
 
 
-def install(monkeypatch: pytest.MonkeyPatch) -> FakeDb:
-    fake = FakeDb()
+def install(monkeypatch: pytest.MonkeyPatch, rows: dict | None = None) -> FakeDb:
+    fake = FakeDb(rows)
     monkeypatch.setattr(auth_router, "db", lambda: fake)
     monkeypatch.setattr(links, "db", lambda: FakeDb())
     return fake
@@ -137,3 +147,98 @@ def test_provider_verify_upserts_a_profile_row_without_nulls(monkeypatch: pytest
     assert row["email"] == ""
     assert row["location"] == ""
     assert row["name"] == "Ravi"
+
+
+# --- login is only for numbers that are already registered --------------------
+
+STORED_CUSTOMER = {
+    "phone": PHONE,
+    "name": "Asha",
+    "email": "asha@example.com",
+    "location": "Pune",
+    "role": "customer",
+}
+
+
+def test_customer_login_refuses_an_unregistered_number(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = install(monkeypatch)
+    code = otp.issue_code(PHONE, "customer")
+
+    with pytest.raises(ApiError) as excinfo:
+        auth_router.verify_otp({"phone": PHONE, "code": code, "role": "customer", "mode": "login"})
+
+    assert excinfo.value.status == 404
+    assert excinfo.value.code == "signup_required"
+    assert fake.written == []
+
+
+def test_customer_login_reuses_the_stored_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = install(monkeypatch, {"profiles": [STORED_CUSTOMER]})
+    code = otp.issue_code(PHONE, "customer")
+
+    result = auth_router.verify_otp(
+        {"phone": PHONE, "code": code, "role": "customer", "mode": "login", "name": "Someone Else"}
+    )
+
+    assert result["profile"]["name"] == "Asha"
+    assert fake.written == [] and fake.upserted == []
+
+
+def test_provider_login_refuses_an_unregistered_number(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = install(monkeypatch)
+    code = otp.issue_code(PHONE, "provider")
+
+    with pytest.raises(ApiError) as excinfo:
+        auth_router.verify_otp({"phone": PHONE, "code": code, "role": "provider", "mode": "login"})
+
+    assert excinfo.value.code == "signup_required"
+    assert fake.written == [] and fake.upserted == []
+
+
+def test_provider_login_reuses_the_stored_professional(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = install(monkeypatch, {"professionals": [{"id": "pro-7", "phone": PHONE}]})
+    code = otp.issue_code(PHONE, "provider")
+
+    result = auth_router.verify_otp({"phone": PHONE, "code": code, "role": "provider", "mode": "login"})
+
+    assert result["professional_id"] == "pro-7"
+    assert fake.written == [] and fake.upserted == []
+
+
+def test_signup_still_creates_the_account(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = install(monkeypatch)
+    code = otp.issue_code(PHONE, "customer")
+
+    result = auth_router.verify_otp(
+        {"phone": PHONE, "code": code, "role": "customer", "mode": "signup", "name": "Asha"}
+    )
+
+    assert result["role"] == "customer"
+    assert fake.written[0][0] == "profiles"
+
+
+def test_request_otp_sends_a_login_to_sign_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    install(monkeypatch)
+
+    with pytest.raises(ApiError) as excinfo:
+        auth_router.request_otp({"phone": PHONE, "mode": "login"})
+
+    assert excinfo.value.status == 404
+    assert excinfo.value.code == "signup_required"
+    assert (PHONE, "customer") not in otp._codes
+
+
+def test_request_otp_serves_a_login_for_a_known_number(monkeypatch: pytest.MonkeyPatch) -> None:
+    install(monkeypatch, {"profiles": [STORED_CUSTOMER]})
+
+    assert auth_router.request_otp({"phone": PHONE, "mode": "login"})["sent"] is True
+    assert (PHONE, "customer") in otp._codes
+
+
+def test_request_otp_serves_a_signup_without_asking_the_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install(monkeypatch)
+
+    assert auth_router.request_otp({"phone": PHONE, "mode": "signup"})["sent"] is True
+    assert (PHONE, "customer") in otp._codes
