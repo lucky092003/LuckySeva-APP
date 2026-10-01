@@ -575,7 +575,7 @@ is the single shared form used by `AddressesScreen` and `BookingFlowScreen`.
 
 ## 8. Migrations
 
-9 files, **filename-ordered** (`20260830093336` ... `20260929000000`), all applied by one `psql`
+11 files, **filename-ordered** (`20260830093336` ... `20260930000000`), all applied by one `psql`
 loop in the CI `migrations` job.
 
 | File | What it does |
@@ -589,6 +589,7 @@ loop in the CI `migrations` job.
 | `20260927000000_add_physiotherapy_category.sql` | 11th category + 5 services |
 | `20260928000000_booking_address_link.sql` | `bookings.address_id` + index |
 | `20260929000000_pr_review_bot.sql` | `pr_review_settings` + `pr_reviews` for the review bot (see §12) |
+| `20260930000000_backfill_professional_services.sql` | re-links every professional to every service of their `category_slug` at the starting price, and deletes links that point outside it. The `DELETE` is intentional here but slips past the CI guard below, which only matches an unaliased `DELETE FROM <table>;` |
 | `20260930000000_changelog_entries.sql` | `changelog_entries` + the `changelog_*` settings and `pr_reviews` outcome columns (see §12.1) |
 
 Rules you must follow:
@@ -597,7 +598,10 @@ Rules you must follow:
   `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`,
   `DROP POLICY IF EXISTS` before `CREATE POLICY`, and `ON CONFLICT ... DO NOTHING` for seeds.
 - **CI fails the build** on any `DROP TABLE`, `TRUNCATE`, `DROP SCHEMA`, or `DELETE FROM <table>;`.
-  If a change is genuinely destructive, split it and explain it.
+  If a change is genuinely destructive, split it and explain it. The guard is a grep for
+  `DELETE FROM <table>;` with a `;` straight after the name, so an aliased delete with a
+  `WHERE` clause — as in `20260930000000_backfill_professional_services.sql` — passes
+  unflagged. Do not rely on it to catch you.
 - RLS policies are declared `TO anon, authenticated`. Those roles only exist on Supabase, so the
   CI job creates them in a throwaway `postgres:15` first. If you add a new table, add the four
   `anon_select_*` / `anon_insert_*` / `anon_update_*` / `anon_delete_*` policies, or CI will pass
