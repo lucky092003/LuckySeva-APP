@@ -2,8 +2,9 @@ import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { useServiceDetail, useCustomerCoords, NEARBY_LIMIT } from '@/hooks';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, Button, Stars, Badge } from '@/components/ui';
+import { Card, Spinner, Button, Stars, VerifiedBadge, Avatar } from '@/components/ui';
 import { inr } from '@/utils/format';
+import { isVerified } from '@/utils/kyc';
 
 export const ServiceDetailScreen = ({ id }: { id: string }) => {
   const { navigate } = useApp();
@@ -78,46 +79,92 @@ export const ServiceDetailScreen = ({ id }: { id: string }) => {
 
         {/* Available professionals */}
         <div className="px-5 pt-5">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-gray-900">
-                {located ? `Top ${cat?.name || 'Professionals'} Near You` : 'Available Professionals'}
+                {located ? `Top ${cat?.name || 'Professionals'} Near You` : `Recommended ${trades}`}
               </h3>
-              {geoSorted && (
-                <p className="mt-0.5 text-[11px] text-gray-500">Closest {trades} within {radiusKm} km</p>
-              )}
+              <p className="mt-0.5 text-[11px] text-gray-500">
+                {geoSorted
+                  ? `Closest ${trades} within ${radiusKm} km`
+                  : `Top rated ${trades} for this service`}
+              </p>
             </div>
-            <button onClick={() => navigate({ name: 'professionals', slug: cat?.slug || '' })} className="shrink-0 text-xs font-semibold text-emerald-600">See all</button>
+            {cat?.slug && (
+              <button
+                onClick={() => navigate({ name: 'professionals', slug: cat.slug })}
+                className="shrink-0 text-xs font-semibold text-emerald-600"
+              >
+                See all
+              </button>
+            )}
           </div>
+
           {loading ? (
             <Spinner className="py-6" />
           ) : shown.length === 0 ? (
             <Card className="p-4 text-center text-sm text-gray-500">
               {located
                 ? `No ${trades} found within ${radiusKm} km. Add or update your address to widen the search.`
-                : 'No professionals available for this service yet.'}
+                : `No ${trades} listed for this service yet.`}
             </Card>
           ) : (
-            <div className="space-y-3">
-              {shown.map((pro) => (
-                <Card key={pro.id} onClick={() => navigate({ name: 'professional', id: pro.id })} className="flex items-center gap-3 p-3">
-                  <img src={pro.avatar_url} alt={pro.name} className="h-12 w-12 rounded-full bg-gray-100 object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-gray-900">{pro.name}</p>
-                    <div className="flex items-center gap-1.5">
-                      <Stars rating={pro.rating} />
-                      <span className="text-[11px] text-gray-500">{pro.rating} · {pro.completed_jobs} jobs</span>
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              {shown.map((pro, i) => {
+                const isAvailable = pro.status === 'available';
+                return (
+                  <button
+                    key={pro.id}
+                    onClick={() => navigate({ name: 'professional', id: pro.id })}
+                    className={`flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-gray-50 active:bg-gray-100/70 ${
+                      i > 0 ? 'border-t border-gray-100' : ''
+                    }`}
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar
+                        src={pro.avatar_url}
+                        name={pro.name}
+                        className="h-11 w-11 rounded-full text-sm"
+                      />
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${
+                          isAvailable ? 'bg-emerald-500' : 'bg-amber-400'
+                        }`}
+                      />
                     </div>
-                    <p className="mt-0.5 text-[11px] text-gray-400">
-                      {pro.experience_years} yrs exp
-                      {geoSorted ? ` · ${pro.distance_km} km away` : ''}
-                    </p>
-                  </div>
-                  <Badge tone={pro.status === 'available' ? 'success' : 'warning'}>
-                    {pro.status === 'available' ? 'Available' : 'Busy'}
-                  </Badge>
-                </Card>
-              ))}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-bold text-gray-900">{pro.name}</p>
+                        {isVerified(pro) && <VerifiedBadge />}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <Stars rating={pro.rating} />
+                        <span className="text-[11px] font-semibold text-gray-700">{pro.rating}</span>
+                        <span className="text-[11px] text-gray-400">
+                          {pro.reviews_count > 0 ? `(${pro.reviews_count})` : '· no reviews yet'}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[11px] text-gray-400">
+                        {[
+                          `${pro.experience_years} yrs exp`,
+                          `${pro.completed_jobs} ${pro.completed_jobs === 1 ? 'job' : 'jobs'}`,
+                          geoSorted ? `${pro.distance_km} km away` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                      <span className="block text-[10px] leading-none text-gray-400">from</span>
+                      <span className="mt-1 block text-sm font-bold leading-none" style={{ color }}>
+                        {inr(pro.starting_price)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Star, BadgeCheck, Search, X } from 'lucide-react';
 import { inr } from '@/utils/format';
 
@@ -66,9 +66,11 @@ export const CountBadge = ({ count, className = '' }: { count: number; className
 export const Badge = ({
   children,
   tone = 'neutral',
+  className = '',
 }: {
   children: ReactNode;
   tone?: 'neutral' | 'success' | 'warning' | 'info';
+  className?: string;
 }) => {
   const tones: Record<string, string> = {
     neutral: 'bg-gray-100 text-gray-600',
@@ -77,7 +79,7 @@ export const Badge = ({
     info: 'bg-sky-50 text-sky-700',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}>
       {children}
     </span>
   );
@@ -129,14 +131,20 @@ export const Button = ({
   );
 };
 
-export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => (
-  <div
-    onClick={onClick}
-    className={`rounded-2xl border border-gray-100 bg-white ${onClick ? 'cursor-pointer transition-all hover:shadow-md hover:border-gray-200' : ''} ${className}`}
-  >
-    {children}
-  </div>
-);
+export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => {
+  if (!onClick) {
+    return <div className={`rounded-2xl border border-gray-100 bg-white ${className}`}>{children}</div>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`block w-full cursor-pointer rounded-2xl border border-gray-100 bg-white text-left transition-all hover:border-gray-200 hover:shadow-md active:scale-[0.995] ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
 
 export const SearchBar = ({
   value,
@@ -165,6 +173,70 @@ export const SearchBar = ({
     )}
   </div>
 );
+
+const AVATAR_TONES = [
+  'bg-emerald-100 text-emerald-700',
+  'bg-sky-100 text-sky-700',
+  'bg-amber-100 text-amber-700',
+  'bg-violet-100 text-violet-700',
+  'bg-rose-100 text-rose-700',
+  'bg-teal-100 text-teal-700',
+];
+
+const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0))
+    .join('')
+    .toUpperCase() || '?';
+
+const toneFor = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
+};
+
+/**
+ * `avatar_url` is NOT NULL DEFAULT '' in the schema, so an empty src renders a
+ * broken-image glyph. Fall back to coloured initials, and also handle the case
+ * where a stored URL fails to load.
+ */
+export const Avatar = ({
+  src,
+  name,
+  className = '',
+  textClassName = '',
+}: {
+  src?: string | null;
+  name: string;
+  className?: string;
+  textClassName?: string;
+}) => {
+  const [broken, setBroken] = useState(false);
+  const usable = !!src && src.trim() !== '' && !broken;
+
+  if (!usable) {
+    return (
+      <span
+        aria-hidden
+        className={`flex shrink-0 items-center justify-center font-bold ${toneFor(name)} ${className}`}
+      >
+        <span className={textClassName}>{initials(name)}</span>
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={src as string}
+      alt={name}
+      onError={() => setBroken(true)}
+      className={`shrink-0 bg-gray-100 object-cover ${className}`}
+    />
+  );
+};
 
 export const SectionTitle = ({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) => (
   <div className="mb-3 flex items-center justify-between">
