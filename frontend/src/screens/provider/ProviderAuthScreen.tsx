@@ -13,7 +13,7 @@ import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui';
 import { OtpSection } from '@/components/OtpInput';
 import { useApp } from '@/context/app-context';
-import { api, setApiToken } from '@/services/api';
+import { api, otpErrorMessage, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 
 function categoryFor(profession: string): string {
@@ -36,6 +36,8 @@ export const ProviderAuthScreen = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [debugCode, setDebugCode] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -68,10 +70,19 @@ export const ProviderAuthScreen = () => {
     form.phone.length >= 10 &&
     (mode === 'login' ? true : form.email.trim() && form.profession.trim());
 
-  const handleDetails = () => {
+  const handleDetails = async () => {
     setError('');
     if (!canSubmit) return;
-    setStep('otp');
+    setSending(true);
+    try {
+      const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider' });
+      setDebugCode(res.debug_code || null);
+      setStep('otp');
+    } catch (e) {
+      setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
+    } finally {
+      setSending(false);
+    }
   };
 
   const verifyOtp = async (code?: string) => {
@@ -109,8 +120,8 @@ export const ProviderAuthScreen = () => {
       setApiToken(res.access_token);
       setProviderId(res.professional_id || null);
       navigate({ name: 'provider-home' });
-    } catch {
-      setError('Could not create your account. Please try again.');
+    } catch (e) {
+      setError(otpErrorMessage(e, 'Could not create your account. Please try again.'));
     }
   };
 
@@ -134,6 +145,7 @@ export const ProviderAuthScreen = () => {
 
       {step === 'details' ? (
         <div className="space-y-4">
+          {error && <p className="text-center text-sm text-red-500">{error}</p>}
           <Field
             icon={<User size={18} />}
             placeholder="Full name"
@@ -187,8 +199,9 @@ export const ProviderAuthScreen = () => {
             </>
           )}
 
-          <Button onClick={handleDetails} disabled={!canSubmit} className="w-full">
-            {mode === 'signup' ? 'Create account' : 'Login'} <ArrowRight size={18} />
+          <Button onClick={handleDetails} disabled={!canSubmit || sending} className="w-full">
+            {sending ? 'Sending OTP...' : mode === 'signup' ? 'Create account' : 'Login'}{' '}
+            <ArrowRight size={18} />
           </Button>
 
           <button
@@ -205,8 +218,21 @@ export const ProviderAuthScreen = () => {
         <div className="space-y-4">
           <OtpSection
             phone={form.phone}
+            debugCode={debugCode}
             onVerify={(code) => verifyOtp(code)}
-            onBack={() => setStep('details')}
+            onResend={async () => {
+              try {
+                const res = await api.auth.requestOtp({ phone: form.phone, role: 'provider' });
+                setDebugCode(res.debug_code || null);
+              } catch (e) {
+                setError(otpErrorMessage(e, 'Could not resend the OTP.'));
+              }
+            }}
+            onBack={() => {
+              setStep('details');
+              setError('');
+              setDebugCode(null);
+            }}
           />
           {error && <p className="text-center text-sm text-red-500">{error}</p>}
         </div>

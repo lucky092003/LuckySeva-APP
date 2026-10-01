@@ -14,8 +14,9 @@ import {
   Pencil,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { DevOtpHint } from '@/components/DevOtpHint';
 import { useApp } from '@/context/app-context';
-import { api, setApiToken } from '@/services/api';
+import { api, otpErrorMessage, setApiToken } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
 
 const ORANGE = '#FF6B00';
@@ -146,6 +147,7 @@ export const AuthScreen = () => {
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [debugCode, setDebugCode] = useState<string | null>(null);
   const [nameTouched, setNameTouched] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -167,13 +169,23 @@ export const AuthScreen = () => {
     setError('');
     setSending(true);
     try {
-      await api.auth.verifyOtp({ phone, code: '000000', role: 'customer' }).catch(() => null);
+      const res = await api.auth.requestOtp({ phone, role: 'customer' });
+      setDebugCode(res.debug_code || null);
+      setDigits(Array(6).fill(''));
+      setTimer(res.resend_after || 30);
+      setStep(isSignup ? 'signup-otp' : 'otp');
+    } catch (e) {
+      setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
     } finally {
       setSending(false);
-      setDigits(Array(6).fill(''));
-      setTimer(30);
-      setStep(isSignup ? 'signup-otp' : 'otp');
     }
+  };
+
+  const leaveOtpStep = () => {
+    setStep(step === 'signup-otp' ? 'signup' : 'phone');
+    setError('');
+    setDebugCode(null);
+    setDigits(Array(6).fill(''));
   };
 
   const setDigit = (i: number, v: string) => {
@@ -219,8 +231,8 @@ export const AuthScreen = () => {
         location: profile?.location || location || '',
       });
       navigate({ name: 'home' });
-    } catch {
-      setError('Incorrect OTP. Please try again.');
+    } catch (e) {
+      setError(otpErrorMessage(e, 'Incorrect OTP. Please try again.'));
       setDigits(Array(6).fill(''));
       inputs.current[0]?.focus();
     } finally {
@@ -578,6 +590,7 @@ export const AuthScreen = () => {
               onClick={() => {
                 setStep('phone');
                 setError('');
+                setDebugCode(null);
                 setNameTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
@@ -599,8 +612,7 @@ export const AuthScreen = () => {
         <div className="relative flex flex-1 flex-col animate-[slideUp_0.4s_ease-out]">
           <BackBtn
             onClick={() => {
-              setStep(step === 'signup-otp' ? 'signup' : 'phone');
-              setError('');
+              leaveOtpStep();
             }}
           />
 
@@ -613,6 +625,15 @@ export const AuthScreen = () => {
               <span className="whitespace-nowrap font-bold text-gray-900">+91 {prettyPhone}</span>
             </p>
           </div>
+
+          <DevOtpHint
+            code={debugCode}
+            onFill={() => {
+              if (!debugCode) return;
+              setDigits(debugCode.split(''));
+              inputs.current[debugCode.length - 1]?.focus();
+            }}
+          />
 
           <div className="grid grid-cols-6 gap-2">
             {digits.map((d, i) => (
@@ -655,16 +676,12 @@ export const AuthScreen = () => {
                 Didn't receive the OTP?{' '}
                 <button
                   type="button"
-                  onClick={() => {
-                    setTimer(30);
-                    setDigits(Array(6).fill(''));
-                    setError('');
-                    inputs.current[0]?.focus();
-                  }}
-                  className="font-semibold active:opacity-70"
+                  onClick={() => sendOtp(step === 'signup-otp')}
+                  disabled={sending}
+                  className="font-semibold active:opacity-70 disabled:opacity-60"
                   style={{ color: ORANGE }}
                 >
-                  Resend OTP
+                  {sending ? 'Sending...' : 'Resend OTP'}
                 </button>
               </p>
             )}
@@ -680,10 +697,7 @@ export const AuthScreen = () => {
 
           <button
             type="button"
-            onClick={() => {
-              setStep(step === 'signup-otp' ? 'signup' : 'phone');
-              setError('');
-            }}
+            onClick={leaveOtpStep}
             className="mx-auto flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-800"
           >
             <Pencil size={13} /> Change mobile number

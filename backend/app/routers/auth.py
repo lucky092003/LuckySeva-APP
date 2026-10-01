@@ -2,15 +2,18 @@ import re
 
 from fastapi import APIRouter, Depends
 
+from ..config import OTP_DEBUG, OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS
 from ..db import db, one
 from ..exceptions import ApiError
 from ..links import link_professional_to_category
+from ..otp import consume_code, issue_code
 from ..security import sign_token
 from ..dependencies import get_claims
 
 router = APIRouter()
 
 VALID_ROLES = {"customer", "provider", "admin"}
+OTP_ROLES = {"customer", "provider"}
 
 
 def clean_phone(raw) -> str | None:
@@ -52,8 +55,8 @@ def find_or_create_customer_profile(phone: str, body: dict):
             {
                 "phone": phone,
                 "name": name if isinstance(name, str) and name.strip() else f"User {phone[-4:]}",
-                "email": body.get("email") or None,
-                "location": body.get("location") or None,
+                "email": body.get("email") or "",
+                "location": body.get("location") or "",
                 "role": "customer",
             }
         )
@@ -128,6 +131,29 @@ def verify_admin(client, identifier: str, code: str) -> bool:
     return code == "admin123"
 
 
+@router.post("/request-otp")
+def request_otp(body: dict):
+    role = body.get("role", "customer")
+    if role not in OTP_ROLES:
+        role = "customer"
+
+    phone = clean_phone(body.get("phone"))
+    if not phone:
+        raise ApiError(400, "Invalid phone number (10 digits required)")
+
+    code = issue_code(phone, role)
+    response = {
+        "sent": True,
+        "role": role,
+        "expires_in": OTP_TTL_SECONDS,
+        "resend_after": OTP_RESEND_COOLDOWN_SECONDS,
+    }
+    if OTP_DEBUG:
+        # Dev only: no SMS provider is wired up, so the app shows the code instead.
+        response["debug_code"] = code
+    return response
+
+
 @router.post("/verify-otp")
 def verify_otp(body: dict):
     raw = body.get("phone")
@@ -145,21 +171,20 @@ def verify_otp(body: dict):
         token = sign_token(identifier, "admin")
         return {"access_token": token, "role": "admin"}
 
-    if not isinstance(code, str) or not re.fullmatch(r"\d{6}", code):
-        raise ApiError(400, "OTP must be a 6-digit code")
-
     phone = clean_phone(raw)
     if not phone:
         raise ApiError(400, "Invalid phone number (10 digits required)")
+
+    consume_code(phone, role, code)
 
     if role == "provider":
         professional = find_or_create_provider(phone, body)
         client.table("profiles").upsert(
             {
                 "phone": phone,
-                "name": body.get("name"),
-                "email": body.get("email") or None,
-                "location": body.get("serviceArea") or None,
+                "name": body.get("name") or "",
+                "email": body.get("email") or "",
+                "location": body.get("serviceArea") or "",
                 "role": "provider",
             },
             on_conflict="phone",
