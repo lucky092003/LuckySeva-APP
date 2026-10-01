@@ -63,7 +63,7 @@ export const ServicesScreen = () => {
           <>
             {matchedCats.length > 0 && (
               <>
-                <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-400">Categories</p>
+                <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-400">Browse by category</p>
                 <div className="mb-6 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
                   {matchedCats.map((cat, i) => {
                     const Icon = iconFor(cat.icon);
@@ -71,8 +71,8 @@ export const ServicesScreen = () => {
                     return (
                       <button
                         key={cat.id}
-                        onClick={() => navigate({ name: 'category', slug: cat.slug })}
-                        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-gray-50 ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                        onClick={() => navigate({ name: 'professionals', slug: cat.slug })}
+                        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50/70 active:bg-gray-100/70 ${i > 0 ? 'border-t border-gray-100' : ''}`}
                       >
                         <div
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm"
@@ -86,6 +86,9 @@ export const ServicesScreen = () => {
                             {count > 0 ? `${count} service${count > 1 ? 's' : ''}` : cat.description || 'Explore'}
                           </p>
                         </div>
+                        <span className="hidden shrink-0 items-center gap-1 rounded-full bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-white sm:inline-flex">
+                          <Icons.Users size={12} /> Pros
+                        </span>
                         <Icons.ChevronRight size={18} className="shrink-0 text-gray-300" />
                       </button>
                     );
