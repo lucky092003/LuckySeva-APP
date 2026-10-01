@@ -32,6 +32,9 @@ const COUPONS: Record<string, { discount: number; label: string; desc: string }>
 /** Flat fee added on top of whichever professional the customer picks. */
 const VISIT_FEE = 49;
 
+/** Surcharge for booking one of the top-5 recommended professionals. */
+const PRIORITY_FEE = 99;
+
 /** Steps: pick professional, date & time, address, review. */
 const PRO_STEP = 1;
 const WHEN_STEP = 2;
@@ -198,15 +201,20 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     ? priceFor(picked.id, Number(picked.starting_price) || service.starting_price)
     : service.starting_price;
   const visitFee = VISIT_FEE;
+  // Mirrors the backend: only a pick from the top-N list carries the surcharge.
+  // Display only — the server recomputes and owns the real number.
+  const priorityFee =
+    picked && candidates.some((p) => p.id === picked.id) ? PRIORITY_FEE : 0;
   let discountAmount = 0;
   if (appliedCoupon) {
+    const preDiscount = base + visitFee + priorityFee;
     if (appliedCoupon.discount < 1) {
-      discountAmount = Math.round((base + visitFee) * appliedCoupon.discount);
+      discountAmount = Math.round(preDiscount * appliedCoupon.discount);
     } else {
-      discountAmount = Math.min(appliedCoupon.discount, base + visitFee);
+      discountAmount = Math.min(appliedCoupon.discount, preDiscount);
     }
   }
-  const total = base + visitFee - discountAmount;
+  const total = base + visitFee + priorityFee - discountAmount;
 
   const applyCoupon = () => {
     const code = couponCode.toUpperCase().trim();
@@ -271,6 +279,9 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         notes,
         base_price: base,
         visit_fee: visitFee,
+        // The server recomputes this from the top-N check; sent only so the
+        // displayed total and the stored total agree before the response.
+        priority_fee: priorityFee,
         total_amount: total,
         payment_method: method,
         payment_status: method === 'cash' ? 'cash' : 'pending',
@@ -351,7 +362,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
             <p className="truncate text-sm font-bold text-gray-900">{service.name}</p>
             {picked ? (
               <p className="text-[11px] text-gray-500">
-                {picked.name} · {inr(base)} + {inr(VISIT_FEE)} visit fee
+                {picked.name} · {inr(base)} + {inr(visitFee + priorityFee)} charges
               </p>
             ) : (
               <p className="text-[11px] text-gray-500">
@@ -426,13 +437,13 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
 
                       <div className="shrink-0 text-right">
                         <span className="block text-[10px] leading-none text-gray-400">
-                          {inr(VISIT_FEE)} visit fee
+                          {inr(VISIT_FEE + PRIORITY_FEE)} charges
                         </span>
                         <span className="mt-1 block text-sm font-bold leading-none text-emerald-600">
                           {inr(proPrice)}
                         </span>
                         <span className="mt-1 block text-[10px] leading-none text-gray-400">
-                          = {inr(proPrice + VISIT_FEE)}
+                          = {inr(proPrice + VISIT_FEE + PRIORITY_FEE)}
                         </span>
                       </div>
 
@@ -449,9 +460,11 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
               </div>
             )}
 
-            <p className="mt-2 text-[11px] text-gray-400">
-              Every booking adds a {inr(VISIT_FEE)} visitation fee for travel and tools.
-              You can change your choice on the review step.
+            <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+              Every booking adds a {inr(VISIT_FEE)} visitation fee for travel and
+              tools. Choosing one of these top {candidates.length} recommended
+              professionals adds a {inr(PRIORITY_FEE)} priority charge on top. You
+              can change your choice on the review step.
             </p>
           </div>
         )}
@@ -692,6 +705,19 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                   label="Visitation fee"
                   value={`${inr(visitFee)}${picked ? '' : ' (added at checkout)'}`}
                 />
+                {priorityFee > 0 && (
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-xs text-gray-500">
+                      Priority charge
+                      <span className="block text-[10px] text-gray-400">
+                        Top {candidates.length} recommended
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right text-xs font-semibold text-gray-900">
+                      {inr(priorityFee)}
+                    </span>
+                  </div>
+                )}
                 {discountAmount > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-600">Discount ({appliedCoupon?.code})</span>

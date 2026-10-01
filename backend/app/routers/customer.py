@@ -3,12 +3,83 @@ from fastapi import APIRouter, Depends
 from ..db import db, one
 from ..dependencies import require_customer
 from ..exceptions import ApiError
+from .catalog import DEFAULT_NEARBY_RADIUS_KM, _as_float, _nearby_professionals
 
 router = APIRouter(dependencies=[Depends(require_customer)])
 
 
 def customer_phone(claims: dict) -> str:
     return claims["phone"]
+
+
+DEFAULT_PRIORITY_FEE = 99.0
+DEFAULT_PRIORITY_TOP_N = 5
+
+
+def _setting_float(client, key: str, fallback: float) -> float:
+    """Read a numeric platform setting, ignoring junk rather than 500-ing.
+
+    Goes through the None-safe `one()` helper because postgrest returns bare
+    None for a zero-row single-row lookup, which would otherwise blow up here.
+    """
+    row = one(
+        client.table("admin_settings")
+        .select("value")
+        .eq("key", key)
+        .maybe_single()
+        .execute()
+    )
+    try:
+        return float(row["value"]) if row and row.get("value") not in (None, "") else fallback
+    except (KeyError, TypeError, ValueError):
+        return fallback
+
+
+def _is_priority_pick(
+    client,
+    service_id: str,
+    professional_id: str,
+    top_n: int,
+    latitude: float | None,
+    longitude: float | None,
+) -> bool:
+    """Was this professional one of the top-N recommended for the service?
+
+    Recomputed server side through the very same helper that builds the picker's
+    list, so the fee lines up with what the customer was actually shown. Ranking
+    is not simply "highest rated": with coordinates the picker sorts by distance
+    first, so this must defer to `_nearby_professionals` rather than re-sort.
+
+    Trusting a flag in the body would let anyone claim the surcharge by hand or
+    dodge it by sending a different professional_id.
+    """
+    svc = one(
+        client.table("services")
+        .select("category_id")
+        .eq("id", service_id)
+        .maybe_single()
+        .execute()
+    )
+    if not svc:
+        return False
+    cat = one(
+        client.table("categories")
+        .select("slug")
+        .eq("id", svc["category_id"])
+        .maybe_single()
+        .execute()
+    )
+    slug = (cat or {}).get("slug")
+    if not slug:
+        return False
+    ranked = _nearby_professionals(
+        slug,
+        latitude,
+        longitude,
+        DEFAULT_NEARBY_RADIUS_KM,
+        max(1, top_n),
+    )
+    return any(row.get("id") == professional_id for row in ranked)
 
 
 @router.get("/profile")
@@ -191,8 +262,26 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
         if pro and pro.get("name"):
             professional_name = pro["name"]
 
-    visit_fee = float(body.get("visit_fee") or 0)
-    total = float(body.get("total_amount") or 0) or base + visit_fee
+    # Fees and total are computed here, never read from the body. Taking them
+    # from the client let a caller post `total_amount: 1` and book for a rupee.
+    # `visit_fee` stays client-supplied (the platform has no visit-fee setting yet)
+    # but is clamped non-negative so it cannot be used to discount the booking.
+    visit_fee = max(0.0, float(body.get("visit_fee") or 0))
+    priority_fee = 0.0
+    if professional_id and service_id:
+        top_n = int(_setting_float(client, "priority_top_n", DEFAULT_PRIORITY_TOP_N))
+        # The picker's ordering is location dependent, so rank against the same
+        # coordinates the customer booked with rather than assuming a global list.
+        if _is_priority_pick(
+            client,
+            service_id,
+            professional_id,
+            top_n,
+            _as_float(body.get("latitude")),
+            _as_float(body.get("longitude")),
+        ):
+            priority_fee = _setting_float(client, "priority_fee", DEFAULT_PRIORITY_FEE)
+    total = round(base + visit_fee + priority_fee, 2)
     name = profile.get("name") if profile else customer_phone(claims)
 
     # Only accept an address the customer actually owns, so a booking can never
@@ -227,6 +316,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
                 "notes": body.get("notes", ""),
                 "base_price": base,
                 "visit_fee": visit_fee,
+                "priority_fee": priority_fee,
                 "total_amount": total,
                 "payment_method": body.get("payment_method", "cash"),
                 "status": "confirmed",
