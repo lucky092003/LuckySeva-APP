@@ -47,7 +47,11 @@ def link_professional_to_category(professional_id: str, category_slug: str | Non
 
     res = (
         client.table("professional_services")
-        .insert(
+        # `upsert(..., ignore_duplicates=True)` is the postgrest spelling of
+        # INSERT ... ON CONFLICT (professional_id, service_id) DO NOTHING: a
+        # re-link is a no-op instead of a 500 on the unique constraint, and it
+        # cannot overwrite the price a provider set on an existing link.
+        .upsert(
             [
                 {
                     "professional_id": professional_id,
@@ -56,9 +60,8 @@ def link_professional_to_category(professional_id: str, category_slug: str | Non
                 }
                 for r in missing
             ],
-            # UNIQUE (professional_id, service_id): a re-link must be a no-op, not
-            # a 500 on the constraint.
             on_conflict="professional_id,service_id",
+            ignore_duplicates=True,
         )
         .execute()
     )
@@ -185,7 +188,7 @@ def set_professional_services(
         client.table("professional_services").delete().in_("id", stale).execute()
     missing = [s for s in wanted if s not in existing]
     if missing:
-        client.table("professional_services").insert(
+        client.table("professional_services").upsert(
             [
                 {
                     "professional_id": professional_id,
@@ -195,6 +198,7 @@ def set_professional_services(
                 for sid in missing
             ],
             on_conflict="professional_id,service_id",
+            ignore_duplicates=True,
         ).execute()
     floor = min((catalog[s] for s in wanted if catalog[s] > 0), default=0.0)
     # Only re-derive the floor when the selection actually moved: re-saving the

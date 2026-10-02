@@ -34,6 +34,7 @@ class FakeQuery:
         self.mode = "select"
         self.payload = None
         self.on_conflict = None
+        self.ignore_duplicates = False
         self.filters: dict = {}
         self.in_filters: dict = {}
         self.single = False
@@ -41,10 +42,16 @@ class FakeQuery:
     def select(self, *_a, **_k):
         return self
 
-    def insert(self, row, on_conflict=None):
+    def insert(self, row):
+        self.mode = "insert"
+        self.payload = row
+        return self
+
+    def upsert(self, row, on_conflict=None, ignore_duplicates=False):
         self.mode = "insert"
         self.payload = row
         self.on_conflict = on_conflict
+        self.ignore_duplicates = ignore_duplicates
         return self
 
     def update(self, patch):
@@ -75,7 +82,11 @@ class FakeQuery:
         if self.mode in {"insert", "update"}:
             self.db.writes.append((self.table, self.mode, self.payload))
             if self.mode == "insert":
-                self.db.on_conflicts.append((self.table, self.on_conflict))
+                self.db.upserts.append(
+                    (self.table, self.on_conflict, self.ignore_duplicates)
+                )
+                rows = self.payload if isinstance(self.payload, list) else [self.payload]
+                return type("R", (), {"data": rows})()
             return type("R", (), {"data": [self.payload]})()
         if self.mode == "delete":
             self.db.writes.append((self.table, "delete", self.in_filters.get("id", [])))
@@ -93,7 +104,7 @@ class FakeDb:
     def __init__(self, rows: dict):
         self.rows = rows
         self.writes: list = []
-        self.on_conflicts: list = []
+        self.upserts: list = []
 
     def table(self, name):
         return FakeQuery(self, name)
@@ -144,13 +155,17 @@ def test_adding_a_service_back_inserts_it_at_the_catalogue_price(monkeypatch) ->
 
 
 def test_every_link_insert_is_idempotent_on_the_provider_service_key(monkeypatch) -> None:
-    """UNIQUE (professional_id, service_id) would 500 on a double tap without this."""
+    """UNIQUE (professional_id, service_id) would 500 on a double tap without this.
+
+    postgrest only accepts `on_conflict` on upsert, and ignore_duplicates keeps
+    it from overwriting a price already on the link.
+    """
     fake = install(monkeypatch, links_rows=[])
     links.set_professional_services(PRO_ID, "plumber", ["svc-drain"])
     links.link_professional_to_category(PRO_ID, "plumber")
 
-    assert fake.on_conflicts == [
-        ("professional_services", "professional_id,service_id")
+    assert fake.upserts == [
+        ("professional_services", "professional_id,service_id", True)
     ] * 2
 
 
