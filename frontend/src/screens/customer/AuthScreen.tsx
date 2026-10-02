@@ -373,11 +373,6 @@ export const AuthScreen = () => {
 
       {/* White sheet (mobile) / Form column (desktop) */}
       <div className="relative flex w-full flex-1 flex-col rounded-t-[28px] bg-white pb-8 pt-8 shadow-[0_-12px_32px_rgba(0,0,0,0.18)] md:rounded-none md:shadow-none">
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 -mt-px h-1.5 rounded-t-[28px] md:hidden"
-          style={{ background: 'linear-gradient(90deg, rgba(255,107,0,0.35), rgba(255,180,110,0.15), rgba(255,107,0,0.35))' }}
-        />
         <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-6 md:justify-center md:py-10">
 
       {step === 'phone' ? (
