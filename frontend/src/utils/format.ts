@@ -7,14 +7,30 @@ export const slugToLabel = (s: string) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
-export const formatDate = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', {
+/**
+ * A bare `YYYY-MM-DD` string is parsed by `Date` as UTC midnight, so every
+ * reader in a negative-offset timezone renders it a day early. Pin it to local
+ * midnight instead, which is what a `date` column actually means.
+ */
+const parseLocalDate = (iso: string) =>
+  new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + 'T00:00:00' : iso);
+
+export const formatDate = (iso: string) =>
+  parseLocalDate(iso).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
-};
+
+/**
+ * Local calendar day as `YYYY-MM-DD`, for `bookings.scheduled_date`.
+ *
+ * Do not reach for `toISOString().split('T')[0]` here: that converts to UTC
+ * first, so between 00:00 and 05:29 IST — the whole overnight window for this
+ * app's market — it hands back yesterday's date.
+ */
+export const toISODate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export const timeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
@@ -30,7 +46,7 @@ export const timeAgo = (iso: string) => {
 };
 
 export const formatRelativeDay = (iso: string) => {
-  const d = new Date(iso + 'T00:00:00');
+  const d = parseLocalDate(iso);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000);

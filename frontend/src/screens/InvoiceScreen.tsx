@@ -76,7 +76,7 @@ export const InvoiceScreen = ({ bookingId }: { bookingId: string }) => {
               <Logo size={42} />
               <div>
                 <p className="text-lg font-extrabold tracking-tight text-gray-900">
-                  Lucky<span className="text-orange-500">Seva</span>
+                  Lucky<span className="text-emerald-500">Seva</span>
                 </p>
                 <p className="text-[11px] text-gray-500">{FIRM.tagline}</p>
               </div>

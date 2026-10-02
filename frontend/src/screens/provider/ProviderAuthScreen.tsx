@@ -21,8 +21,12 @@ import { useApp } from '@/context/app-context';
 import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 
-const ORANGE = '#FF6B00';
-const ORANGE_SOFT = 'rgba(255, 107, 0, 0.10)';
+// Auth accent, kept on the same emerald ramp the rest of the app uses
+// (Tailwind emerald-500/600) so signing in does not read as a different product.
+const GREEN = '#10B981'; // emerald-500
+const GREEN_MID = '#34D399'; // emerald-400
+const GREEN_LIGHT = '#6EE7B7'; // emerald-300
+const GREEN_SOFT = 'rgba(16, 185, 129, 0.10)';
 const phoneRegex = /^[6-9]\d{9}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Shown only if a backend answers with the signup_required code but no message.
@@ -206,21 +210,21 @@ export const ProviderAuthScreen = () => {
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
             className="absolute -left-20 -top-20 h-64 w-64 rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(255,123,28,0.5) 0%, rgba(255,123,28,0) 70%)' }}
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.5) 0%, rgba(16,185,129,0) 70%)' }}
           />
           <div
             className="absolute -right-16 top-2 h-72 w-72 rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(255,184,90,0.35) 0%, rgba(255,184,90,0) 70%)' }}
+            style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.35) 0%, rgba(52,211,153,0) 70%)' }}
           />
           <div
             className="absolute bottom-0 left-1/2 h-44 w-96 -translate-x-1/2 blur-2xl"
-            style={{ background: 'radial-gradient(55% 65% at 50% 100%, rgba(255,107,0,0.45) 0%, rgba(255,107,0,0) 100%)' }}
+            style={{ background: 'radial-gradient(55% 65% at 50% 100%, rgba(16,185,129,0.45) 0%, rgba(16,185,129,0) 100%)' }}
           />
           <svg className="absolute inset-x-0 bottom-0" width="100%" height="90" viewBox="0 0 375 90" preserveAspectRatio="none">
             <defs>
               <linearGradient id="provider-auth-glow-wave" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#FF8A3D" stopOpacity="0.65" />
-                <stop offset="1" stopColor="#FF6B00" stopOpacity="0.04" />
+                <stop offset="0" stopColor="#34D399" stopOpacity="0.65" />
+                <stop offset="1" stopColor="#10B981" stopOpacity="0.04" />
               </linearGradient>
             </defs>
             <path
@@ -244,7 +248,7 @@ export const ProviderAuthScreen = () => {
           <div className="flex items-center gap-3.5">
             <div
               className="rounded-full ring-4 ring-white/10"
-              style={{ boxShadow: '0 18px 40px -14px rgba(255, 107, 0, 0.55)' }}
+              style={{ boxShadow: '0 18px 40px -14px rgba(16,185,129, 0.55)' }}
             >
               <Logo size={64} className="rounded-full" />
             </div>
@@ -252,7 +256,7 @@ export const ProviderAuthScreen = () => {
               Lucky
               <span
                 className="bg-clip-text text-transparent"
-                style={{ backgroundImage: 'linear-gradient(120deg, #FFC27A 0%, #FF7E24 60%, #FF6B00 100%)' }}
+                style={{ backgroundImage: 'linear-gradient(120deg, #6EE7B7 0%, #34D399 60%, #10B981 100%)' }}
               >
                 Seva
               </span>
@@ -267,13 +271,13 @@ export const ProviderAuthScreen = () => {
             className="mt-10 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold tracking-wide text-white/85"
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 154, 69, 0.25)',
+              border: '1px solid rgba(52,211,153, 0.25)',
               backdropFilter: 'blur(8px)',
             }}
           >
             <span
-              className="h-2 w-2 rounded-full bg-[#FF7E24]"
-              style={{ boxShadow: '0 0 12px rgba(255, 126, 36, 0.95)' }}
+              className="h-2 w-2 rounded-full bg-emerald-400"
+              style={{ boxShadow: '0 0 12px rgba(52,211,153, 0.95)' }}
             />
             India's Trusted Partner Network
           </span>
@@ -284,7 +288,7 @@ export const ProviderAuthScreen = () => {
             <br />
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: 'linear-gradient(100deg, #FFC27A 0%, #FF7E24 55%, #FF6B00 100%)' }}
+              style={{ backgroundImage: 'linear-gradient(100deg, #6EE7B7 0%, #34D399 55%, #10B981 100%)' }}
             >
               with LuckySeva.
             </span>
@@ -296,7 +300,7 @@ export const ProviderAuthScreen = () => {
 
           {/* Quote strip */}
           <p className="mt-9 flex items-center gap-2 text-[12px] font-medium tracking-wide text-white/35">
-            <Shield size={13} style={{ color: '#FF9A45' }} />
+            <Shield size={13} style={{ color: GREEN_MID }} />
             Join thousands of professionals earning with LuckySeva
           </p>
         </div>
@@ -313,8 +317,8 @@ export const ProviderAuthScreen = () => {
             <svg width="100%" height="76" viewBox="0 0 375 76" fill="none" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="provider-login-wave-back" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#FF6B00" stopOpacity="0.04" />
-                  <stop offset="1" stopColor="#FF8A3D" stopOpacity="0.08" />
+                  <stop offset="0" stopColor="#10B981" stopOpacity="0.04" />
+                  <stop offset="1" stopColor="#34D399" stopOpacity="0.08" />
                 </linearGradient>
                 <linearGradient id="provider-login-wave-front" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stopColor="#F3F4F6" stopOpacity="0.92" />
@@ -363,9 +367,9 @@ export const ProviderAuthScreen = () => {
           {error && <ErrorNote>{error}</ErrorNote>}
 
           <div className="mt-6">
-            <OrangeButton onClick={() => sendOtp(false)} disabled={!validPhone} loading={sending}>
+            <PrimaryButton onClick={() => sendOtp(false)} disabled={!validPhone} loading={sending}>
               Continue
-            </OrangeButton>
+            </PrimaryButton>
           </div>
 
           <p className="mt-5 text-center text-sm text-gray-500">
@@ -377,7 +381,7 @@ export const ProviderAuthScreen = () => {
                 setError('');
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
-              style={{ color: ORANGE }}
+              style={{ color: GREEN }}
             >
               Sign up
             </button>
@@ -396,8 +400,8 @@ export const ProviderAuthScreen = () => {
             <svg width="100%" height="76" viewBox="0 0 375 76" fill="none" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="provider-signup-wave-back" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#FF6B00" stopOpacity="0.04" />
-                  <stop offset="1" stopColor="#FF8A3D" stopOpacity="0.08" />
+                  <stop offset="0" stopColor="#10B981" stopOpacity="0.04" />
+                  <stop offset="1" stopColor="#34D399" stopOpacity="0.08" />
                 </linearGradient>
                 <linearGradient id="provider-signup-wave-front" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stopColor="#F3F4F6" stopOpacity="0.92" />
@@ -422,7 +426,7 @@ export const ProviderAuthScreen = () => {
                 className="bg-clip-text text-transparent"
                 style={{
                   backgroundImage:
-                    'linear-gradient(180deg, #FF7E24 0%, #FF6B00 55%, #FF9440 100%)',
+                    'linear-gradient(180deg, #34D399 0%, #10B981 55%, #059669 100%)',
                 }}
               >
                 Partner
@@ -534,10 +538,10 @@ export const ProviderAuthScreen = () => {
                   onClick={fetchServiceArea}
                   disabled={locating}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90 disabled:opacity-50"
-                  style={{ background: ORANGE_SOFT }}
+                  style={{ background: GREEN_SOFT }}
                   title="Use my current location"
                 >
-                  <LocateFixed size={16} style={{ color: ORANGE }} className={locating ? 'animate-spin' : ''} />
+                  <LocateFixed size={16} style={{ color: GREEN }} className={locating ? 'animate-spin' : ''} />
                 </button>
               }
             >
@@ -554,7 +558,7 @@ export const ProviderAuthScreen = () => {
           {error && <ErrorNote>{error}</ErrorNote>}
 
           <div className="relative mt-5">
-            <OrangeButton
+            <PrimaryButton
               onClick={() => {
                 setNameTouched(true);
                 setProfessionTouched(true);
@@ -564,7 +568,7 @@ export const ProviderAuthScreen = () => {
               loading={sending}
             >
               Sign Up
-            </OrangeButton>
+            </PrimaryButton>
           </div>
 
           <p className="mt-3.5 text-center text-sm text-gray-500">
@@ -579,7 +583,7 @@ export const ProviderAuthScreen = () => {
                 setProfessionTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
-              style={{ color: ORANGE }}
+              style={{ color: GREEN }}
             >
               Login
             </button>
@@ -633,11 +637,11 @@ export const ProviderAuthScreen = () => {
                   error
                     ? 'border-red-400 bg-red-50/50 focus:ring-red-100'
                     : d
-                      ? 'bg-white focus:border-[#FF6B00] focus:ring-[#FF6B00]/10'
-                      : 'bg-[#FAFAFA] focus:border-[#FF6B00] focus:ring-[#FF6B00]/10'
+                      ? 'bg-white focus:border-emerald-500 focus:ring-emerald-500/10'
+                      : 'bg-[#FAFAFA] focus:border-emerald-500 focus:ring-emerald-500/10'
                 }`}
                 style={{
-                  borderColor: !error && d ? ORANGE : undefined,
+                  borderColor: !error && d ? GREEN : undefined,
                 }}
               />
             ))}
@@ -660,7 +664,7 @@ export const ProviderAuthScreen = () => {
                   onClick={() => sendOtp(step === 'signup-otp')}
                   disabled={sending}
                   className="font-semibold active:opacity-70 disabled:opacity-60"
-                  style={{ color: ORANGE }}
+                  style={{ color: GREEN }}
                 >
                   {sending ? 'Sending...' : 'Resend OTP'}
                 </button>
@@ -669,9 +673,9 @@ export const ProviderAuthScreen = () => {
           </div>
 
           <div className="mt-7">
-            <OrangeButton onClick={verifyOtp} disabled={code.length !== 6} loading={verifying}>
+            <PrimaryButton onClick={verifyOtp} disabled={code.length !== 6} loading={verifying}>
               Verify & Continue
-            </OrangeButton>
+            </PrimaryButton>
           </div>
 
           <div className="flex-1" />
@@ -691,7 +695,7 @@ export const ProviderAuthScreen = () => {
   );
 };
 
-const OrangeButton = ({
+const PrimaryButton = ({
   children,
   onClick,
   disabled,
@@ -706,10 +710,10 @@ const OrangeButton = ({
     type="button"
     onClick={onClick}
     disabled={disabled || loading}
-    className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[18px] text-[15px] font-semibold text-white transition-all duration-200 focus-visible:ring-4 focus-visible:ring-[#FF6B00]/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+    className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[18px] text-[15px] font-semibold text-white transition-all duration-200 focus-visible:ring-4 focus-visible:ring-emerald-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
     style={{
-      background: disabled || loading ? '#FFC399' : 'linear-gradient(180deg, #FF7E24 0%, #FF6B00 100%)',
-      boxShadow: disabled || loading ? 'none' : '0 12px 24px -8px rgba(255, 107, 0, 0.55)',
+      background: disabled || loading ? GREEN_LIGHT : 'linear-gradient(180deg, #34D399 0%, #10B981 100%)',
+      boxShadow: disabled || loading ? 'none' : '0 12px 24px -8px rgba(16,185,129, 0.55)',
     }}
   >
     {loading ? (
@@ -748,9 +752,9 @@ const Field = ({
       </div>
     )}
     <div
-      className={`flex items-center gap-3 rounded-[16px] border bg-[#FAFAFA] px-4 transition-all duration-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-[#FF6B00]/10 ${
+      className={`flex items-center gap-3 rounded-[16px] border bg-[#FAFAFA] px-4 transition-all duration-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 ${
         compact ? 'h-12' : 'h-[54px]'
-      } ${error ? 'border-red-400' : 'border-gray-200 focus-within:border-[#FF6B00]'}`}
+      } ${error ? 'border-red-400' : 'border-gray-200 focus-within:border-emerald-500'}`}
     >
       <span className="shrink-0 text-gray-500">{icon}</span>
       {children}
@@ -762,8 +766,8 @@ const Field = ({
 
 const TrustFooter = () => (
   <div
-    className="mt-1 flex items-start justify-between gap-1.5 rounded-[18px] border border-orange-100 px-2 py-3.5"
-    style={{ background: 'linear-gradient(180deg, #FFF8F3 0%, #FFFBF7 100%)' }}
+    className="mt-1 flex items-start justify-between gap-1.5 rounded-[18px] border border-GREEN-100 px-2 py-3.5"
+    style={{ background: 'linear-gradient(180deg, #F0FDF8 0%, #F7FDFA 100%)' }}
   >
     {[
       { Icon: Shield, label: 'Verified Jobs' },
@@ -774,9 +778,9 @@ const TrustFooter = () => (
       <div key={label} className="flex min-h-[44px] flex-1 flex-col items-center gap-1.5 px-1 text-center">
         <span
           className="flex h-8 w-8 items-center justify-center rounded-full"
-          style={{ background: '#FFE9DA' }}
+          style={{ background: '#D1FAE5' }}
         >
-          <Icon size={15} strokeWidth={2.2} style={{ color: ORANGE }} />
+          <Icon size={15} strokeWidth={2.2} style={{ color: GREEN }} />
         </span>
         <span className="text-[9px] font-semibold leading-tight text-gray-600">{label}</span>
       </div>

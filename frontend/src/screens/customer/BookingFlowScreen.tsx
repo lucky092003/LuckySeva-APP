@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { useServiceDetail, useCustomerCoords, NEARBY_LIMIT } from '@/hooks';
-import { api } from '@/services/api';
+import { ApiError, api } from '@/services/api';
 import { fetchCurrentLocation, geocodeAddress } from '@/services/location';
 import {
   EMPTY_ADDRESS,
@@ -17,11 +17,30 @@ import {
 import { TopBar } from '@/components/PhoneShell';
 import { AddressForm } from '@/components/AddressForm';
 import { Card, Spinner, Button, Stars, Avatar, VerifiedBadge } from '@/components/ui';
-import { inr } from '@/utils/format';
+import { inr, toISODate } from '@/utils/format';
 import { isVerified } from '@/utils/kyc';
 import type { Booking, AddressRow, Service } from '@/types';
 
-const TIME_SLOTS = ['08:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '04:00 PM', '06:00 PM'];
+/**
+ * Slot labels double as the stored `bookings.scheduled_time` value, which every
+ * screen renders verbatim — so they stay `HH:MM AM/PM` and `minutes` is only
+ * used to work out whether a slot is still bookable.
+ */
+const TIME_SLOTS = [
+  { label: '08:00 AM', minutes: 8 * 60 },
+  { label: '10:00 AM', minutes: 10 * 60 },
+  { label: '11:00 AM', minutes: 11 * 60 },
+  { label: '12:00 PM', minutes: 12 * 60 },
+  { label: '02:00 PM', minutes: 14 * 60 },
+  { label: '04:00 PM', minutes: 16 * 60 },
+  { label: '06:00 PM', minutes: 18 * 60 },
+];
+
+/** Days offered in the picker, starting today. */
+const BOOKING_DAYS = 7;
+
+/** Notice a professional needs before a same-day visit, in minutes. */
+const MIN_LEAD_MINUTES = 120;
 
 const COUPONS: Record<string, { discount: number; label: string; desc: string }> = {
   LUCKY20: { discount: 0.2, label: '20% OFF', desc: 'Flat 20% off (first booking)' },
@@ -57,8 +76,10 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [step, setStep] = useState(1);
   /** Which professional the customer picked in step 1, if any. */
   const [pickedId, setPickedId] = useState<string | null>(professionalId || null);
-  const [date, setDate] = useState(0);
+  /** Bookable day as `YYYY-MM-DD`, so the choice survives the window moving. */
+  const [date, setDate] = useState(() => toISODate(new Date()));
   const [slot, setSlot] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [addr, setAddr] = useState<AddressParts>(EMPTY_ADDRESS);
   const [locCoords, setLocCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [savedAddrs, setSavedAddrs] = useState<AddressRow[]>([]);
@@ -129,12 +150,48 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     applySavedAddress(def);
   }, [step, savedAddrs]);
 
-  const dates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d;
+  // Pinned once per mount. Rebuilding it every render meant that leaving the app
+  // open across midnight re-labelled every chip and silently moved the selected
+  // index onto a different calendar day.
+  const dates = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Array.from({ length: BOOKING_DAYS }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d;
+    });
+  }, []);
+
+  const selectedDate = dates.find((d) => toISODate(d) === date) ?? dates[0];
+  const dateLabel = selectedDate.toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
   });
-  const dateLabel = dates[date].toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+
+  // Recomputed each render rather than memoised on purpose: the lead-time cut-off
+  // moves with the wall clock, and this screen is not hot enough to care.
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const todayISO = toISODate(now);
+  const isToday = date === todayISO;
+
+  /**
+   * Takes the day explicitly rather than closing over `date`. The date chips call
+   * this for the day being *switched to*, which is not the day still in state,
+   * so a closure here would silently validate the previous day's pick.
+   */
+  const slotPastOn = (dayISO: string, minutes: number) =>
+    dayISO === todayISO && minutes < nowMinutes + MIN_LEAD_MINUTES;
+
+  const isSlotPast = (minutes: number) => slotPastOn(date, minutes);
+  const availableSlots = TIME_SLOTS.filter((s) => !isSlotPast(s.minutes));
+  const nextFreeSlot = availableSlots.length ? availableSlots[0].label : '';
+
+  /** The chosen slot, re-checked against the current time at the moment it is used. */
+  const chosenSlot = TIME_SLOTS.find((s) => s.label === slot);
+  const whenValid = !!chosenSlot && !isSlotPast(chosenSlot.minutes);
 
   // Same honesty rule as the service screen: only rank by distance when the
   // customer actually has coordinates, otherwise fall back to top rated.
@@ -250,8 +307,17 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       setShowAddrErrors(true);
       return;
     }
+    // Re-checked here because `canNext` only gates the Continue button: the
+    // customer can sit on the review step long enough for a same-day slot to
+    // drop inside the lead time. Send them back rather than posting a booking
+    // that the server has to reject.
+    if (!whenValid) {
+      setSlot('');
+      setStep(WHEN_STEP);
+      return;
+    }
+    setSubmitError('');
     setSubmitting(true);
-    const bookingDate = dates[date].toISOString().split('T')[0];
     let latitude: number | null = locCoords?.latitude ?? null;
     let longitude: number | null = locCoords?.longitude ?? null;
     if (latitude === null || longitude === null) {
@@ -274,7 +340,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         service_name: service.name,
         professional_id: picked?.id || null,
         professional_name: picked?.name || 'Auto-assign',
-        scheduled_date: bookingDate,
+        scheduled_date: date,
         scheduled_time: slot,
         notes,
         base_price: base,
@@ -287,8 +353,12 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         payment_status: method === 'cash' ? 'cash' : 'pending',
         status: 'confirmed',
       });
-    } catch {
+    } catch (e) {
       setSubmitting(false);
+      // Swallowing this made a rejected POST look like the button had frozen.
+      setSubmitError(
+        e instanceof ApiError ? e.message : 'Could not place the booking. Please try again.'
+      );
       return;
     }
     setSubmitting(false);
@@ -313,6 +383,9 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   };
 
   const goNext = () => {
+    // A failed submit describes the payload they just changed, so it goes stale
+    // the moment they move off the review step.
+    setSubmitError('');
     if (step === ADDR_STEP && !addrValid) {
       setShowAddrErrors(true);
       return;
@@ -325,7 +398,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     // With nobody to choose from the flow falls through to auto-assign, so the
     // picker must not be able to block the customer on an empty list.
     step === PRO_STEP ? !picked || !!candidates.find((p) => p.id === pickedId)
-      : step === WHEN_STEP ? slot !== ''
+      : step === WHEN_STEP ? whenValid
       : step === ADDR_STEP ? addrValid
       : true;
 
@@ -472,38 +545,74 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         {step === WHEN_STEP && (
           <div className="space-y-4">
             <div>
-              <h3 className="mb-2 text-sm font-bold text-gray-900">Select Date</h3>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                {dates.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setDate(i)}
-                    className={`flex shrink-0 flex-col items-center rounded-xl border px-3 py-2.5 transition-all ${date === i ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
-                  >
-                    <span className={`text-[10px] font-medium ${date === i ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      {d.toLocaleDateString('en-IN', { weekday: 'short' })}
-                    </span>
-                    <span className={`text-base font-bold ${date === i ? 'text-emerald-600' : 'text-gray-900'}`}>{d.getDate()}</span>
-                    <span className={`text-[10px] ${date === i ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      {d.toLocaleDateString('en-IN', { month: 'short' })}
-                    </span>
-                  </button>
-                ))}
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-bold text-gray-900">Select Date</h3>
+                <span className="text-[11px] text-gray-400">Next {BOOKING_DAYS} days</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1" role="group" aria-label="Select a date">
+                {dates.map((d) => {
+                  const iso = toISODate(d);
+                  const active = date === iso;
+                  return (
+                    <button
+                      key={iso}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => {
+                        setDate(iso);
+                        // A slot that was bookable on the old day can be inside
+                        // the lead time on the new one, so drop a pick that no
+                        // longer holds rather than letting `whenValid` silently
+                        // fail with Continue greyed out and no explanation.
+                        setSlot((prev) => {
+                          const chosen = TIME_SLOTS.find((s) => s.label === prev);
+                          if (!chosen) return prev;
+                          return slotPastOn(iso, chosen.minutes) ? '' : prev;
+                        });
+                      }}
+                      className={`flex shrink-0 flex-col items-center rounded-xl border px-3 py-2.5 transition-all ${active ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}
+                    >
+                      <span className={`text-[10px] font-medium ${active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {iso === todayISO
+                          ? 'Today'
+                          : d.toLocaleDateString('en-IN', { weekday: 'short' })}
+                      </span>
+                      <span className={`text-base font-bold ${active ? 'text-emerald-600' : 'text-gray-900'}`}>{d.getDate()}</span>
+                      <span className={`text-[10px] ${active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {d.toLocaleDateString('en-IN', { month: 'short' })}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div>
-              <h3 className="mb-2 text-sm font-bold text-gray-900">Select Time Slot</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {TIME_SLOTS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSlot(s)}
-                    className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${slot === s ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-gray-200 bg-white text-gray-600'}`}
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-bold text-gray-900">Select Time Slot</h3>
+                {isToday && availableSlots.length > 0 && availableSlots.length < TIME_SLOTS.length && (
+                  <span className="text-[11px] text-amber-600">Same-day from {nextFreeSlot}</span>
+                )}
               </div>
+              {availableSlots.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-4 text-center text-xs text-gray-500">
+                  No slots left today — same-day bookings need {MIN_LEAD_MINUTES / 60} hours' notice.
+                  Please pick another day.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2" role="group" aria-label="Select a time slot">
+                  {availableSlots.map((s) => (
+                    <button
+                      key={s.label}
+                      type="button"
+                      aria-pressed={slot === s.label}
+                      onClick={() => setSlot(s.label)}
+                      className={`rounded-xl border py-2.5 text-xs font-semibold transition-all ${slot === s.label ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-gray-200 bg-white text-gray-600'}`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -738,19 +847,34 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
-        {step > PRO_STEP && (
-          <Button variant="outline" onClick={() => setStep(step - 1)}>Back</Button>
+      <div className="shrink-0 border-t border-gray-100 bg-white">
+        {submitError && (
+          <p role="alert" className="mx-3 mb-2 mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            {submitError}
+          </p>
         )}
-        {step < REVIEW_STEP ? (
-          <Button onClick={goNext} disabled={!canNext} className="flex-1">
-            Continue
+        <div className="flex items-center gap-3 p-3">
+          {step > PRO_STEP && (
+            <Button
+            variant="outline"
+            onClick={() => {
+              setSubmitError('');
+              setStep(step - 1);
+            }}
+          >
+            Back
           </Button>
-        ) : (
-          <Button onClick={confirm} disabled={submitting} className="flex-1">
-            {submitting ? 'Confirming...' : method === 'cash' ? `Confirm · ${inr(total)}` : `Pay ${inr(total)}`}
-          </Button>
-        )}
+          )}
+          {step < REVIEW_STEP ? (
+            <Button onClick={goNext} disabled={!canNext} className="flex-1">
+              Continue
+            </Button>
+          ) : (
+            <Button onClick={confirm} disabled={submitting} className="flex-1">
+              {submitting ? 'Confirming...' : method === 'cash' ? `Confirm · ${inr(total)}` : `Pay ${inr(total)}`}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
