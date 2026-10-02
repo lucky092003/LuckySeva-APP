@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from ..db import db, one
 from ..dependencies import require_provider
 from ..exceptions import ApiError
+from ..links import set_professional_services
 
 router = APIRouter(dependencies=[Depends(require_provider)])
 
@@ -38,14 +39,31 @@ def _unembed(row: dict) -> dict:
     return {k: v for k, v in row.items() if k != "service"}
 
 
+def _category_services(client, category_id: str) -> list[dict]:
+    """Every service in a trade, so the picker shows what can be switched on.
+
+    Same `order("name")` the customer-facing service list uses, so a provider
+    scans the same labels a customer will.
+    """
+    res = (
+        client.table("services")
+        .select("*")
+        .eq("category_id", category_id)
+        .order("name")
+        .execute()
+    )
+    return res.data or []
+
+
 def _field_filter(client, claims: dict):
-    """Predicate: is this request in the caller's own field of work?
+    """Predicate: is this request work the caller actually takes?
 
     Radius alone is far too wide: every provider in town saw an electrician's
     booking, an AC booking, a beauty booking — all of it. A request belongs to
-    the professionals whose `category_slug` matches the booked service's
-    category, plus anyone explicitly linked to that exact service. Bookings the
-    customer created for this professional in person are always theirs.
+    the professionals who offer that exact service, which `links.py` seeds as
+    the whole category and `PUT /provider/services` then narrows to the
+    provider's own selection. Bookings the customer created for this
+    professional in person are always theirs.
     """
     pid = provider_id(claims)
     pro = one(client.table("professionals").select("category_slug").eq("id", pid).maybe_single().execute())
@@ -57,25 +75,33 @@ def _field_filter(client, claims: dict):
         .execute()
     )
     service_ids = {r.get("service_id") for r in (linked.data or []) if r.get("service_id")}
+    if service_ids:
+        # The selection is authoritative: turning a service off must stop its
+        # requests arriving, even though the category still matches.
+        def in_my_field(row: dict) -> bool:
+            if row.get("professional_id") == pid:
+                return True
+            return bool(row.get("service_id")) and row["service_id"] in service_ids
+
+        return in_my_field
+
     slug_by_category = {
         c["id"]: c["slug"]
         for c in (client.table("categories").select("id, slug").execute().data or [])
         if c.get("id")
     }
-    # Nothing to match on (legacy row with no category and no links): show the
-    # feed rather than an empty app.
-    if not slug and not service_ids:
+    # No links at all (legacy row): fall back to the trade so they still get work.
+    # No category either means nothing to match on — show the feed, not a void.
+    if not slug:
         return lambda row: True
 
-    def in_my_field(row: dict) -> bool:
+    def in_my_category(row: dict) -> bool:
         if row.get("professional_id") == pid:
             return True
-        if row.get("service_id") in service_ids:
-            return True
         category_id = (row.get("service") or {}).get("category_id")
-        return bool(slug) and bool(category_id) and slug_by_category.get(category_id) == slug
+        return bool(category_id) and slug_by_category.get(category_id) == slug
 
-    return in_my_field
+    return in_my_category
 
 
 @router.get("/me")
@@ -121,6 +147,57 @@ def update_me(body: dict, claims: dict = Depends(require_provider)):
     if not res.data:
         raise ApiError(404, "Professional not found")
     return res.data[0]
+
+
+@router.get("/services")
+def my_services(claims: dict = Depends(require_provider)):
+    """The provider's whole category, flagged with what they currently offer."""
+    client = db()
+    pro = one(
+        client.table("professionals")
+        .select("id, category_slug")
+        .eq("id", provider_id(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not pro:
+        raise ApiError(404, "Professional profile not found")
+    slug = pro.get("category_slug") or ""
+    cat = one(client.table("categories").select("id").eq("slug", slug).maybe_single().execute())
+    services = _category_services(client, cat["id"]) if cat else []
+    offered = {
+        r.get("service_id")
+        for r in (
+            client.table("professional_services")
+            .select("service_id")
+            .eq("professional_id", pro["id"])
+            .execute()
+        ).data
+        or []
+    }
+    return {
+        "category_slug": pro.get("category_slug") or "",
+        "services": [{**s, "offered": s["id"] in offered} for s in (services or [])],
+    }
+
+
+@router.put("/services")
+def update_services(body: dict, claims: dict = Depends(require_provider)):
+    """Narrow the auto-linked whole category down to what the provider offers."""
+    raw = body.get("service_ids")
+    if not isinstance(raw, list) or any(not isinstance(s, str) for s in raw):
+        raise ApiError(400, "service_ids must be a list of service ids")
+    pro = one(
+        db()
+        .table("professionals")
+        .select("id, category_slug")
+        .eq("id", provider_id(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not pro:
+        raise ApiError(404, "Professional profile not found")
+    return set_professional_services(pro["id"], pro.get("category_slug"), raw)
 
 
 @router.put("/kyc")

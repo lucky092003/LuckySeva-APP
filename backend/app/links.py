@@ -5,9 +5,15 @@ A professional offers every service in their `category_slug`. Without a
 show ("No professionals available for this service yet") and the profile's
 "Book Now" button stays disabled, so every provider must be linked on
 creation and whenever their category changes.
+
+Creation links the whole category, which is a safe default but overstates
+what a professional actually does: a plumber who only fixes taps should not
+be handed full-house-wiring requests. `set_professional_services` narrows
+that default to the services the professional picked for themselves.
 """
 
 from .db import db, one
+from .exceptions import ApiError
 
 
 def link_professional_to_category(professional_id: str, category_slug: str | None) -> int:
@@ -112,3 +118,89 @@ def relink_professional(professional_id: str, category_slug: str | None) -> int:
             if stale:
                 client.table("professional_services").delete().in_("id", stale).execute()
     return link_professional_to_category(professional_id, category_slug)
+
+
+def set_professional_services(
+    professional_id: str, category_slug: str | None, service_ids: list[str]
+) -> dict:
+    """Replace a professional's service selection with `service_ids`.
+
+    `service_ids` must be a non-empty subset of their category's services: the
+    selection narrows the trade they work in, it does not widen it. Prices on
+    kept links are preserved, and `professionals.starting_price` — the "from"
+    floor several list screens show — is re-derived from what is left selected.
+    """
+    if not professional_id:
+        raise ApiError(404, "Professional not found")
+    # de-duplicate while keeping order, so a doubled id is not a validation error
+    wanted = [s for s in dict.fromkeys(service_ids) if s]
+    if not wanted:
+        raise ApiError(400, "Select at least one service you offer")
+    client = db()
+    cat = (
+        one(client.table("categories").select("id").eq("slug", category_slug).maybe_single().execute())
+        if category_slug
+        else None
+    )
+    if not cat:
+        raise ApiError(400, "Your category is not set, so services cannot be selected")
+    catalog = {
+        r["id"]: float(r.get("starting_price") or 0)
+        for r in (
+            client.table("services")
+            .select("id, starting_price")
+            .eq("category_id", cat["id"])
+            .execute()
+        ).data
+        or []
+    }
+    unknown = [s for s in wanted if s not in catalog]
+    if unknown:
+        raise ApiError(400, "Those services are not part of your category")
+    existing = {
+        r["service_id"]
+        for r in (
+            client.table("professional_services")
+            .select("service_id")
+            .eq("professional_id", professional_id)
+            .execute()
+        ).data
+        or []
+    }
+    stale = [
+        r["id"]
+        for r in (
+            client.table("professional_services")
+            .select("id, service_id")
+            .eq("professional_id", professional_id)
+            .execute()
+        ).data
+        or []
+        if r["service_id"] not in wanted
+    ]
+    if stale:
+        client.table("professional_services").delete().in_("id", stale).execute()
+    missing = [s for s in wanted if s not in existing]
+    if missing:
+        client.table("professional_services").insert(
+            [
+                {
+                    "professional_id": professional_id,
+                    "service_id": sid,
+                    "price": catalog.get(sid) or 0,
+                }
+                for sid in missing
+            ]
+        ).execute()
+    floor = min((catalog[s] for s in wanted if catalog[s] > 0), default=0.0)
+    # Only re-derive the floor when the selection actually moved: re-saving the
+    # same set must not stomp a price the provider set by hand in Pricing.
+    if floor and (stale or missing):
+        client.table("professionals").update({"starting_price": floor}).eq(
+            "id", professional_id
+        ).execute()
+    return {
+        "service_ids": wanted,
+        "starting_price": floor,
+        "linked": len(wanted),
+    }

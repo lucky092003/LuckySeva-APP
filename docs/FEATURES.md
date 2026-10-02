@@ -151,22 +151,52 @@ show if:
 Each request card shows `X km away` + an **IN RADIUS** badge when computable.
 The feed refreshes automatically every **15 seconds** (and after accept/reject).
 
-### A request only reaches professionals of that trade
+### A request only reaches professionals who offer that exact service
 Radius alone was far too wide — every provider in town saw an electrician's booking, an AC
 booking, a beauty booking, all of it. `_field_filter()` in
-`backend/app/routers/provider.py` narrows both provider read endpoints to the caller's field:
+`backend/app/routers/provider.py` narrows both provider read endpoints to what the caller
+actually takes:
 
 ```
 show an open request to me if:
   - the booking was created for me in person (professional_id = me), OR
-  - I am linked to that exact service (professional_services), OR
-  - the booked service's category slug == my category_slug
+  - I am linked to that exact service (professional_services)
 ```
 
-A professional with neither a `category_slug` nor linked services has no field to match on, so
-they see everything rather than an empty app. `GET /provider/bookings/{id}` returns **404** (not
-403) for a booking outside the caller's field, so a stray id cannot confirm it exists. The feed
-header spells the scope out — *"Electrician · within 60 km of Faridabad"*.
+When a professional has linked services (every signup seeds them - see *Services Offered*
+below) **that selection is authoritative**: turning a service off stops its requests arriving,
+even though the category still matches. A professional row with *no* links at all is a legacy
+row, so it falls back to the trade (`service.category_id → categories.slug == my
+category_slug`); with neither links nor a category there is nothing to match on, so they see
+everything rather than an empty app. `GET /provider/bookings/{id}` returns **404** (not 403) for
+a booking outside the caller's field, so a stray id cannot confirm it exists. The feed header
+spells the scope out — *"Electrician · within 60 km of Faridabad"*.
+
+### Services Offered - the provider picks their own subset
+A plumber does not do everything under "plumber". At signup `links.py` links every service of
+the chosen category (`link_professional_to_category`), so the provider is immediately
+bookable; **Profile → Services Offered** then narrows that list to the work they actually do.
+Only services inside their own trade are ever listed, and the API rejects anything else.
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /provider/services` | `{ category_slug, services: [{ ...service, offered }] }` - the whole trade flagged with the current selection |
+| `PUT /provider/services` | body `{ service_ids: [...] }` → replaces the selection |
+
+`set_professional_services()` in `backend/app/links.py` enforces the rules:
+
+- **Non-empty.** Zero links would hide the professional from every service page.
+- **Same trade only.** Unknown or out-of-category ids are a 400, so the selection can only ever
+  shrink - it cannot add work from another field.
+- **Prices survive.** A service that stays selected keeps its existing
+  `professional_services.price`; only newly added links are priced from the catalogue.
+- **Floor price follows.** `professionals.starting_price` is re-derived to the cheapest service
+  still offered, but only when the selection actually changed - re-saving the same set never
+  overwrites a price the provider set by hand in **Pricing**.
+
+The consequences reach the customer automatically, because both customer reads join through
+`professional_services`: a deselected service disappears from the provider's public profile and
+stops listing them on `GET /catalog/services/{id}`.
 
 ### Many providers, one request
 When several providers in the same area see an open request, the state is managed so
@@ -282,7 +312,7 @@ Shared 6-digit OTP component used by customer + provider auth:
 | Area | Screens |
 |---|---|
 | Customer | Home, Services, Service detail, Professional list/profile, Booking flow, My Bookings, Tracking, Addresses, Favourites, Notifications, Profile, Auth, Payments, Reviews, Help |
-| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location), Auth |
+| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location, **services offered**), Auth |
 | Admin | Dashboard, Customers, Providers, Services, Bookings, Profile, Audit log, Add Provider/Service modals, Export CSV |
 
 Navigation is a simple hand-rolled screen-state machine in `frontend/src/context/app-context.tsx`

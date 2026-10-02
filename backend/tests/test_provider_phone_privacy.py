@@ -142,6 +142,7 @@ def test_booking_detail_reveals_the_number_after_accepting(monkeypatch, claims) 
 ELEC_CAT = {"id": "cat-elec", "slug": "electrician"}
 PLUMB_CAT = {"id": "cat-plumb", "slug": "plumber"}
 ELEC_SERVICE = {"id": "svc-elec-1", "category_id": "cat-elec"}
+ELEC_SERVICE_2 = {"id": "svc-elec-2", "category_id": "cat-elec"}
 PLUMB_SERVICE = {"id": "svc-plumb-1", "category_id": "cat-plumb"}
 
 
@@ -191,10 +192,27 @@ def test_an_explicitly_booked_provider_gets_any_field(electrician, claims) -> No
     assert len(provider.feed(claims)) == 1
 
 
-def test_an_explicitly_linked_service_matches_across_its_category(electrician, claims) -> None:
-    """A hand-linked service is a stronger signal than the category slug."""
-    electrician([request_for(PLUMB_SERVICE)], service_ids=("svc-plumb-1",))
+def test_a_deselected_service_in_my_category_stops_reaching_me(
+    electrician, claims
+) -> None:
+    """Turning a service off must bite, even though the trade still matches."""
+    electrician([request_for(ELEC_SERVICE_2)], service_ids=("svc-elec-1",))
+    assert provider.feed(claims) == []
+
+
+def test_a_service_kept_in_my_selection_still_reaches_me(electrician, claims) -> None:
+    electrician([request_for(ELEC_SERVICE_2)], service_ids=("svc-elec-1", "svc-elec-2"))
     assert len(provider.feed(claims)) == 1
+
+
+def test_a_provider_with_no_links_falls_back_to_their_trade(
+    monkeypatch, claims
+) -> None:
+    """Legacy row: nothing selected yet, so the whole category is still theirs."""
+    monkeypatch.setattr(provider, "db", lambda: electrician_client(
+        [request_for(PLUMB_SERVICE)], service_ids=()
+    ))
+    assert provider.feed(claims) == []
 
 
 def test_a_request_with_no_service_left_is_hidden(electrician, claims) -> None:

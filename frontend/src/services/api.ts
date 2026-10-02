@@ -150,6 +150,9 @@ export const api = {
     updateMe: (patch: { status?: string; starting_price?: number | string; service_radius_km?: number | string; bio?: string; service_area?: string; latitude?: number; longitude?: number; name?: string }) =>
       request<Professional>('provider', '/me', 'PUT', patch),
     bookings: () => request<Booking[]>('provider', '/bookings'),
+    myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
+    setServices: (service_ids: string[]) =>
+      request<{ service_ids: string[]; starting_price: number; linked: number }>('provider', '/services', 'PUT', { service_ids }),
     myBookings: () => request<Booking[]>('provider', '/bookings/mine'),
     booking: (id: string) => request<Booking>('provider', `/bookings/${id}`),
     accept: (id: string) => request<Booking>('provider', `/bookings/${id}/accept`, 'POST'),
