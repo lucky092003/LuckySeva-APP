@@ -115,6 +115,15 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
               </span>
             )}
           </div>
+          {!showPhone && (
+            <p className="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+              <Icons.Lock size={13} className="mt-0.5 shrink-0" />
+              <span>
+                The customer's number is hidden while this request is open. Accept the job to see
+                it and get the call button.
+              </span>
+            </p>
+          )}
         </Card>
 
         {/* Service & address */}

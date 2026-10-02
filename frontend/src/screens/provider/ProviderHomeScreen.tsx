@@ -9,6 +9,11 @@ import { inr, formatRelativeDay } from '@/utils/format';
 import { haversineKm } from '@/services/location';
 import type { Booking } from '@/types';
 
+const SORTS = [
+  { key: 'nearest', label: 'Nearest first' },
+  { key: 'newest', label: 'Newest first' },
+] as const;
+
 const isToday = (d: string) => {
   const date = new Date(d + 'T00:00:00');
   const now = new Date();
@@ -22,6 +27,7 @@ export const ProviderHomeScreen = () => {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [declined, setDeclined] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<(typeof SORTS)[number]['key']>('nearest');
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -91,7 +97,23 @@ export const ProviderHomeScreen = () => {
     return km <= myRadius;
   });
 
-  const active = myBookings.filter((b) => b.status === 'on_the_way' || b.status === 'started');
+  // The feed arrives newest-first from the API; distance sort is a re-order only.
+  const orderedRequests =
+    sort === 'newest'
+      ? newRequests
+      : [...newRequests].sort((a, b) => {
+          const ka = distanceTo(a);
+          const kb = distanceTo(b);
+          if (ka === null) return kb === null ? 0 : 1;
+          if (kb === null) return -1;
+          return ka - kb;
+        });
+
+  // `assigned` belongs here too: an accepted job is neither a new request nor
+  // history, so without this it vanishes from the Requests tab entirely.
+  const active = myBookings.filter(
+    (b) => b.status === 'assigned' || b.status === 'on_the_way' || b.status === 'started'
+  );
   const completed = myBookings.filter((b) => b.status === 'completed');
   const todayCompleted = completed.filter((b) => isToday(b.scheduled_date));
   const todayEarnings = todayCompleted.reduce((s, b) => s + Number(b.total_amount), 0);
@@ -113,7 +135,7 @@ export const ProviderHomeScreen = () => {
   if (!proLoading && !professional) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-        <TopBar title="Booking Requests" showBack={false} />
+        <TopBar title="Requests" showBack={false} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <Icons.UserPlus size={40} className="text-gray-300" />
           <p className="text-sm font-semibold text-gray-800">No provider account found</p>
@@ -126,92 +148,207 @@ export const ProviderHomeScreen = () => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar title="Booking Requests" showBack={false} />
+      <TopBar
+        title="Requests"
+        showBack={false}
+        right={
+          <button
+            onClick={() => setTick((n) => n + 1)}
+            aria-label="Refresh requests"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+          >
+            <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+          </button>
+        }
+      />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
         {/* Earnings strip */}
-        <div className="mb-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
-            <Icons.Wallet size={24} />
+        <div className="mb-5 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white shadow-sm shadow-emerald-500/20">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <Icons.Wallet size={22} />
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-white/80">Today's Earnings</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium text-white/80">Today's Earnings</p>
             <p className="text-xl font-bold">{inr(todayEarnings)}</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-white/80">Jobs Today</p>
+          <div className="h-9 w-px shrink-0 bg-white/20" />
+          <div className="shrink-0 pr-1 text-right">
+            <p className="text-[11px] font-medium text-white/80">Jobs Done</p>
             <p className="text-xl font-bold">{todayCompleted.length}</p>
           </div>
         </div>
 
-        <h3 className="mb-2 text-sm font-bold text-gray-900">Active Jobs ({active.length})</h3>
-        {active.length > 0 && (
-          <div className="mb-4 space-y-2">
+        <SectionHeading title="Active Jobs" count={active.length} />
+        {active.length === 0 ? (
+          <p className="mb-5 rounded-2xl border border-dashed border-gray-200 bg-white/60 px-4 py-5 text-center text-xs text-gray-400">
+            Nothing in progress. Accept a request below to start a job.
+          </p>
+        ) : (
+          <div className="mb-5 space-y-2">
             {active.map((b) => (
-              <Card key={b.id} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} className="flex items-center gap-3 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                  <Icons.Loader size={18} className="animate-spin" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-gray-900">{b.service_name}</p>
-                  <p className="text-[11px] text-gray-500">{b.customer_name} · {formatRelativeDay(b.scheduled_date)}</p>
-                </div>
-                <span className="text-sm font-bold text-emerald-600">{inr(b.total_amount)}</span>
-              </Card>
+              <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />
             ))}
           </div>
         )}
 
-        <h3 className="text-sm font-bold text-gray-900">New Requests ({newRequests.length})</h3>
-        <p className="mb-2 text-[10px] text-gray-400">
-          Showing requests within {myRadius} km{professional?.service_area ? ` of ${professional.service_area}` : ''}
-        </p>
+        <SectionHeading
+          title="New Requests"
+          count={newRequests.length}
+          hint={`within ${myRadius} km${professional?.service_area ? ` of ${professional.service_area}` : ''}`}
+        />
+        <div className="mb-3 flex gap-2">
+          {SORTS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSort(s.key)}
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                sort === s.key
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 bg-white text-gray-500'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <Spinner className="py-10" />
-        ) : newRequests.length === 0 ? (
-          <EmptyState icon={<Icons.Inbox size={28} />} title="No new requests" subtitle="Customer requests within your radius will appear here." />
+        ) : orderedRequests.length === 0 ? (
+          <EmptyState
+            icon={<Icons.Inbox size={28} />}
+            title="No new requests"
+            subtitle={`New jobs within ${myRadius} km will show up here automatically. Widen your radius in Profile to see more.`}
+          />
         ) : (
-          <div className="space-y-3">
-            {newRequests.map((b) => {
-              const km = distanceTo(b);
-              return (
-                <Card key={b.id} className="p-4">
-                  <button
-                    type="button"
-                    onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })}
-                    className="block w-full text-left"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-gray-900">{b.service_name}</p>
-                        <p className="text-[11px] text-gray-500">{b.customer_name}</p>
-                      </div>
-                      <span className="text-base font-bold text-emerald-600">{inr(b.total_amount)}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
-                      <span className="flex items-center gap-1"><Icons.Calendar size={11} />{formatRelativeDay(b.scheduled_date)}</span>
-                      <span className="flex items-center gap-1"><Icons.Clock size={11} />{b.scheduled_time}</span>
-                      <span className="flex items-center gap-1 truncate"><Icons.MapPin size={11} />{b.customer_address.split(',').slice(-2)[0]?.trim()}</span>
-                    </div>
-                    {km !== null && (
-                      <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                        <Icons.Navigation size={11} />
-                        {Math.round(km)} km away {km <= myRadius && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold">IN RADIUS</span>}
-                      </div>
-                    )}
-                    <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      View address &amp; details <Icons.ChevronRight size={13} />
-                    </span>
-                  </button>
-                  <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                    <Button variant="outline" onClick={() => reject(b)} className="flex-1 py-2 text-xs text-red-500">Reject</Button>
-                    <Button onClick={() => accept(b)} className="flex-1 py-2 text-xs">Accept</Button>
-                  </div>
-                </Card>
-              );
-            })}
+          <div className="space-y-3 pb-2">
+            {orderedRequests.map((b) => (
+              <RequestCard
+                key={b.id}
+                booking={b}
+                km={distanceTo(b)}
+                myRadius={myRadius}
+                onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
+                onAccept={() => accept(b)}
+                onReject={() => reject(b)}
+              />
+            ))}
           </div>
         )}
       </div>
     </div>
   );
 };
+
+const SectionHeading = ({ title, count, hint }: { title: string; count: number; hint?: string }) => (
+  <div className="mb-2 flex items-baseline justify-between gap-3">
+    <h3 className="shrink-0 text-sm font-bold text-gray-900">
+      {title} <span className="text-gray-400">({count})</span>
+    </h3>
+    {hint && <span className="truncate text-[10px] text-gray-400">{hint}</span>}
+  </div>
+);
+
+const PILL = 'inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-600';
+
+const ACTIVE_STATUS: Record<string, { label: string; chip: string; icon: 'check' | 'nav' | 'tool' }> = {
+  assigned: { label: 'Accepted', chip: 'bg-sky-50 text-sky-600', icon: 'check' },
+  on_the_way: { label: 'On the way', chip: 'bg-amber-50 text-amber-600', icon: 'nav' },
+  started: { label: 'In service', chip: 'bg-emerald-50 text-emerald-600', icon: 'tool' },
+};
+
+const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => void }) => {
+  const meta = ACTIVE_STATUS[booking.status] ?? ACTIVE_STATUS.assigned;
+  return (
+    <Card onClick={onClick} className="flex items-center gap-3 p-3">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${meta.chip}`}>
+        {meta.icon === 'nav' ? (
+          <Icons.Navigation size={18} className="animate-pulse" />
+        ) : meta.icon === 'tool' ? (
+          <Icons.Wrench size={18} />
+        ) : (
+          <Icons.ClipboardCheck size={18} />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.chip}`}>{meta.label}</span>
+        </div>
+        <p className="truncate text-[11px] text-gray-500">
+          {booking.customer_name} · {formatRelativeDay(booking.scheduled_date)}, {booking.scheduled_time}
+        </p>
+      </div>
+      <span className="shrink-0 text-sm font-bold text-emerald-600">{inr(booking.total_amount)}</span>
+      <Icons.ChevronRight size={16} className="shrink-0 text-gray-300" />
+    </Card>
+  );
+};
+
+const RequestCard = ({
+  booking,
+  km,
+  myRadius,
+  onView,
+  onAccept,
+  onReject,
+}: {
+  booking: Booking;
+  km: number | null;
+  myRadius: number;
+  onView: () => void;
+  onAccept: () => void;
+  onReject: () => void;
+}) => (
+  <Card className="overflow-hidden">
+    <button type="button" onClick={onView} className="block w-full p-4 text-left">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-gray-900">{booking.service_name}</p>
+          <p className="text-[11px] text-gray-500">{booking.customer_name}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">NEW</span>
+        <span className="shrink-0 text-base font-bold text-emerald-600">{inr(booking.total_amount)}</span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className={PILL}><Icons.Calendar size={11} />{formatRelativeDay(booking.scheduled_date)}</span>
+        <span className={PILL}><Icons.Clock size={11} />{booking.scheduled_time}</span>
+        {km !== null && (
+          <span className={PILL}>
+            <Icons.Navigation size={11} />{Math.round(km)} km
+            {km <= myRadius && (
+              <span className="ml-0.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white">IN RADIUS</span>
+            )}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-gray-500">
+        <Icons.MapPin size={12} className="mt-0.5 shrink-0" />
+        <span className="line-clamp-2">{booking.customer_address}</span>
+      </p>
+
+      {booking.notes && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-[11px] leading-relaxed text-amber-800">
+          <Icons.StickyNote size={12} className="mt-0.5 shrink-0" />
+          <span className="line-clamp-2">{booking.notes}</span>
+        </p>
+      )}
+
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-50 pt-3">
+        <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400">
+          <Icons.Lock size={11} /> Phone unlocks after you accept
+        </span>
+        <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-emerald-600">
+          View address <Icons.ChevronRight size={13} />
+        </span>
+      </div>
+    </button>
+
+    <div className="flex gap-2 border-t border-gray-100 bg-gray-50/70 p-3">
+      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500">Decline</Button>
+      <Button onClick={onAccept} className="flex-1 py-2.5 text-xs">Accept <Icons.ArrowRight size={14} /></Button>
+    </div>
+  </Card>
+);
