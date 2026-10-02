@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends
 
 from ..db import db, one
@@ -284,6 +286,22 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     total = round(base + visit_fee + priority_fee, 2)
     name = profile.get("name") if profile else customer_phone(claims)
 
+    # `scheduled_date` is a real Postgres `date`, so a missing or malformed value
+    # used to reach the driver as a 22P02 and surface as an unhandled 500. Check
+    # it here instead and answer with the message the client can actually show.
+    raw_date = body.get("scheduled_date")
+    try:
+        scheduled_date = date.fromisoformat(raw_date) if isinstance(raw_date, str) else None
+    except ValueError:
+        scheduled_date = None
+    if scheduled_date is None:
+        raise ApiError(400, "scheduled_date must be an ISO date (YYYY-MM-DD)")
+
+    scheduled_time = body.get("scheduled_time")
+    if not isinstance(scheduled_time, str) or not scheduled_time.strip():
+        raise ApiError(400, "scheduled_time is required")
+    scheduled_time = scheduled_time.strip()
+
     # Only accept an address the customer actually owns, so a booking can never
     # be linked to somebody else's saved address.
     address_id = body.get("address_id") if isinstance(body.get("address_id"), str) else None
@@ -311,8 +329,8 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
                 "service_name": service_name,
                 "professional_id": professional_id,
                 "professional_name": professional_name if isinstance(professional_name, str) else "Auto-assign",
-                "scheduled_date": body.get("scheduled_date", ""),
-                "scheduled_time": body.get("scheduled_time", ""),
+                "scheduled_date": scheduled_date.isoformat(),
+                "scheduled_time": scheduled_time,
                 "notes": body.get("notes", ""),
                 "base_price": base,
                 "visit_fee": visit_fee,

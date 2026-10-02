@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatRelativeDay, inr, slugToLabel, timeAgo } from './format';
+import { formatDate, formatRelativeDay, inr, slugToLabel, timeAgo, toISODate } from './format';
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 const MINUTE = 60000;
@@ -35,6 +35,28 @@ describe('formatDate', () => {
   it('formats ISO date to en-IN format', () => {
     expect(formatDate('2026-09-23')).toMatch(/^23 /);
     expect(formatDate('2026-09-23')).toContain('2026');
+  });
+});
+
+describe('toISODate', () => {
+  it('uses local calendar fields, not UTC', () => {
+    // Built from local parts on purpose: `new Date(2026, 0, 2)` is local
+    // midnight, which in a negative-offset zone is 2026-01-02 in UTC too, but
+    // `toISOString` would still be a day out for any positive-offset zone.
+    expect(toISODate(new Date(2026, 0, 2, 23, 30))).toBe('2026-01-02');
+    expect(toISODate(new Date(2026, 0, 2, 0, 30))).toBe('2026-01-02');
+  });
+
+  it('zero-pads months and days', () => {
+    expect(toISODate(new Date(2026, 8, 5))).toBe('2026-09-05');
+    expect(toISODate(new Date(2026, 11, 25))).toBe('2026-12-25');
+  });
+
+  it('never rolls the day back for an early-morning local time', () => {
+    // 00:30 IST is 19:00 UTC the previous day, which is what the old
+    // `toISOString().split('T')[0]` booked against.
+    const d = new Date(2026, 9, 3, 0, 30);
+    expect(toISODate(d)).toBe('2026-10-03');
   });
 });
 
