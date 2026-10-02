@@ -420,8 +420,8 @@ require_admin  (no handler receives claims)
 
 | Table | Notes that matter |
 |---|---|
-| `categories` | `slug` UNIQUE, `icon` (lucide name), `color`, `sort_order`. 11 seeded, `other` last. |
-| `services` | `category_id` FK->categories CASCADE. `starting_price` numeric, `popular` bool. **No unique constraint on `name`.** 26 seeded. |
+| `categories` | `slug` UNIQUE, `icon` (lucide name), `color`, `sort_order`. 15 seeded, `other` last. |
+| `services` | `category_id` FK->categories CASCADE. `starting_price` numeric, `popular` bool. **No unique constraint on `name`.** 182 seeded. |
 | `professionals` | `category_slug` (text, not a FK), `skills text[]`, `status` (`available`/`busy`), `distance_km` (**stored, never computed**), `latitude`/`longitude` numeric, `service_radius_km int NOT NULL DEFAULT 60`, 6 `kyc_*` columns, `phone`, `email`. |
 | `professional_services` | junction, `UNIQUE (professional_id, service_id)`, `price`. |
 | `bookings` | **denormalized** `customer_name` / `professional_name` / `service_name` / `customer_address`. `professional_id NULL` + `professional_name = 'Auto-assign'` = **open request**. `latitude`/`longitude` = the customer request location. `address_id` FK->addresses SET NULL. `status` default `confirmed`, `payment_status` default `pending`, `payment_method` default `cash`. |
@@ -560,13 +560,16 @@ is the single shared form used by `AddressesScreen` and `BookingFlowScreen`.
 - `clean_phone`: strips non-digits, drops a leading `91` when the result is exactly 12 digits,
   requires exactly 10, else `400 Invalid phone number (10 digits required)`.
 - An unknown `role` in the body is **silently coerced to `customer`** (not a 400).
-- Provider signup (`find_or_create_provider`) inserts defaults: `rating 0`, `starting_price 99`,
+- Provider signup (`find_or_create_provider`) inserts defaults: `rating 0`,
   `avatar_url ""`, `distance_km 1.0`, `status 'available'`, `service_radius_km 60`, and upserts a
-  `profiles` row with `role='provider'`.
-- `category_for(profession)` in `auth.py` maps 9 regex families to slugs and falls back to
-  `"other"`. **There is no `physiotherapy` branch on the backend**, even though that category
-  exists in the DB — a physiotherapy provider who self-signs-up lands in `other`.
-  `ProviderAuthScreen.categoryFor` *does* have the branch, so client and server disagree here.
+  `profiles` row with `role='provider'`. `starting_price` is **not** a fixed literal any more — it is
+  `links.cheapest_in_category(category_slug)` (cheapest service in their category), falling back to
+  `99` only if the category has no priced services. The booking always bills
+  `services.starting_price`, so seeding the floor from the catalogue keeps the two in step.
+- `category_for(profession)` in `auth.py` maps 14 regex families to slugs and falls back to
+  `"other"`. `ProviderAuthScreen.categoryFor` mirrors the same list. They are kept in sync by hand —
+  the backend was missing its `physiotherapy` branch until `20261003000000`, so a physiotherapy
+  provider who self-signed-up before that landed in `other`.
 - `verify_admin` compares credentials with plain `==` against `admin_settings` (cleartext).
   Fallbacks: identifier `"admin"`, password `"admin123"`.
 - `admin_password` is written in cleartext by `AdminProfile.changePassword`.
@@ -591,6 +594,8 @@ loop in the CI `migrations` job.
 | `20260929000000_pr_review_bot.sql` | `pr_review_settings` + `pr_reviews` for the review bot (see §12) |
 | `20260930000000_backfill_professional_services.sql` | re-links every professional to every service of their `category_slug` at the starting price, and deletes links that point outside it. The `DELETE` is intentional here but slips past the CI guard below, which only matches an unaliased `DELETE FROM <table>;` |
 | `20260930000000_changelog_entries.sql` | `changelog_entries` + the `changelog_*` settings and `pr_reviews` outcome columns (see §12.1) |
+| `20261002000000_booking_priority_fee.sql` | `bookings.priority_fee` + `admin_settings` rows `priority_top_n` / `priority_fee` |
+| `20261003000000_full_catalog_market_rates.sql` | full catalog: 4 new categories (`packer-mover`, `cctv-security`, `laundry-dry-cleaning`, `lawn-garden`), 182 services re-priced to market, `other` pushed to `sort_order` 15, junction relink + re-mirror, `professionals.starting_price` resynced to each category minimum, and a duplicate-service `DELETE` (see below) |
 
 Rules you must follow:
 
@@ -608,8 +613,19 @@ Rules you must follow:
   but runtime queries through a non-service client will see nothing.
 - `services` has **no unique constraint**, so seeds must guard with
   `WHERE NOT EXISTS (SELECT 1 FROM services WHERE name = ...)` — `ON CONFLICT` is unavailable.
+  **A bare `ON CONFLICT DO NOTHING` is not a substitute.** With no unique constraint it can never
+  fire, so the insert runs again on every apply — which is why
+  `20260830093336_luckyseva_schema.sql` duplicates its 21 services on a second pass and CI's own
+  double-apply built a database with each of them listed twice.
+  `20261003000000_full_catalog_market_rates.sql` repairs the result with an aliased
+  `DELETE FROM services keep USING services extra WHERE extra.name = keep.name AND extra.id > keep.id`
+  (lowest id per name wins). Edit that base file if you ever need to, but it is already applied in
+  production, so prefer a new forward migration.
 - **CI does not apply migrations to the real Supabase project.** Applying to production is a
   deliberate manual step (`npx supabase db push`, or paste into the SQL Editor in order).
+  Neither path is available without an access token and the DB password; a DML-only migration can
+  also be replayed through the PostgREST `/rest/v1` API with the service-role key, but that is
+  **not transactional**, so snapshot the affected tables first and verify afterwards.
 
 ---
 

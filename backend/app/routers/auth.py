@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from ..config import OTP_DEBUG, OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS
 from ..db import db, one
 from ..exceptions import ApiError
-from ..links import link_professional_to_category
+from ..links import cheapest_in_category, link_professional_to_category
 from ..otp import consume_code, issue_code
 from ..security import sign_token
 from ..dependencies import get_claims
@@ -67,6 +67,11 @@ def category_for(profession: str) -> str:
         (r"appliance|wash|fridge|microwave|geyser", "appliance-repair"),
         (r"beauty|salon|hair|makeup|spa|facial", "beauty-salon"),
         (r"pest|termite|roach", "pest-control"),
+        (r"physio|physiotherap|rehab|exercise|massage", "physiotherapy"),
+        (r"packer|mover|shifting|relocation", "packer-mover"),
+        (r"cctv|camera|security|surveillance|alarm", "cctv-security"),
+        (r"laundry|dry\s?clean|launder|ironing", "laundry-dry-cleaning"),
+        (r"lawn|garden|landscap|terrace\s?garden|hedge", "lawn-garden"),
     ]:
         if re.search(pattern, p):
             return slug
@@ -124,7 +129,7 @@ def find_or_create_provider(phone: str, body: dict) -> dict:
                 "rating": 0,
                 "reviews_count": 0,
                 "completed_jobs": 0,
-                "starting_price": 99,
+                "starting_price": cheapest_in_category(category_slug) or 99,
                 "avatar_url": "",
                 "distance_km": 1.0,
                 "status": "available",

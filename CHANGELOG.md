@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-01
+**Last updated:** 2026-10-03
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-03
+
+### Added
+- Full service catalog at market rates (`20261003000000_full_catalog_market_rates.sql`):
+  every category is filled out — 26 services became **182** across **15** categories.
+  Prices are Indian at-home market rates (visit included, parts excluded), and the
+  26 pre-existing services were re-priced to match; only two actually moved
+  (`Full House Wiring` ₹4999→₹7999, `1 BHK Painting` ₹4999→₹5999).
+- Four categories a home-services platform is expected to have:
+  **Packer & Mover**, **CCTV & Security**, **Laundry & Dry Cleaning**, **Lawn & Garden**.
+  `other` moved to `sort_order` 15 so it stays the catch-all.
+- `links.cheapest_in_category()` seeds a new professional's `starting_price` from the
+  cheapest service in their category instead of the hardcoded `99`, so the "from ₹X"
+  shown in the professional list matches what the booking actually charges. Applied to
+  both provider signup and admin-created providers.
+- `category_for()` on the backend gained the missing `physiotherapy` branch plus branches
+  for the four new categories, bringing it in line with `ProviderAuthScreen.categoryFor`.
+
+### Fixed
+- Duplicate service rows. `20260830093336_luckyseva_schema.sql` seeds with a bare
+  `ON CONFLICT DO NOTHING`, which can never fire against a table with no unique
+  constraint — so re-applying the migration set inserted its 21 services a second time.
+  Any database built by applying the set twice (exactly what CI does) had each of them
+  listed twice. Repaired in the new migration with an aliased `DELETE ... USING`, keeping
+  the lowest id per name.
+- `professionals.starting_price` still held the `99` signup default on existing rows and
+  is rendered directly by `ProfessionalListScreen`, `ServiceDetailScreen` and
+  `FavouritesScreen`. It is now resynced to each professional's category minimum.
+- `professional_services.price` no longer drifts from `services.starting_price`; the new
+  migration re-mirrors it (the earlier backfills used `ON CONFLICT DO NOTHING`, so they
+  never refreshed an existing row).
+- The `TRENDING` search chip "Salon at Home" matched nothing — the service is called
+  "Salon Prime for Women". Replaced with terms that resolve against real service names.
 
 ## 2026-10-01
 

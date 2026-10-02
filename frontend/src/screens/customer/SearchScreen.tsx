@@ -6,7 +6,9 @@ import { Card, Spinner, EmptyState, Stars, Badge, Avatar } from '@/components/ui
 import { inr } from '@/utils/format';
 import type { Service, Professional, Category } from '@/types';
 
-const TRENDING = ['AC Service', 'Deep Cleaning', 'Plumber', 'Salon at Home', 'Electrician'];
+// Substrings only — each one has to match a service or category name below, or
+// the chip silently returns nothing.
+const TRENDING = ['AC Service', 'Deep Cleaning', 'Plumber', 'Mens Haircut', 'House Shifting'];
 
 export const SearchScreen = () => {
   const { navigate, back } = useApp();
