@@ -54,7 +54,9 @@ SUPABASE_JWT_SECRET=...         # from Supabase: Settings → API → JWT Secret
 Migrations live in `backend/supabase/migrations/`. Key tables:
 
 ### `services` / `categories`
-Catalog of bookable services organised into categories (seed data included).
+Catalog of bookable services organised into categories. 15 categories and 182
+services are seeded, priced at Indian at-home market rates (visit included,
+parts excluded) by `20261003000000_full_catalog_market_rates.sql`.
 
 ### `professionals`
 | Column | Notes |
@@ -78,7 +80,7 @@ Catalog of bookable services organised into categories (seed data included).
 | `service_id`, `service_name` | denormalised service |
 | `professional_id`, `professional_name` | `NULL` + `Auto-assign` = **open request** |
 | `scheduled_date`, `scheduled_time`, `notes` | schedule |
-| `base_price`, `visit_fee`, `total_amount` | money |
+| `base_price`, `visit_fee`, `priority_fee`, `total_amount` | money |
 | `payment_method`, `payment_status` | `cash` / `upi` / `card` / `netbanking`; `cash` / `paid` / `pending` |
 | `status` | lifecycle (below) |
 | `created_at` | |

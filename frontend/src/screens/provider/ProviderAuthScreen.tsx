@@ -40,6 +40,10 @@ function categoryFor(profession: string): string {
   if (/beauty|salon|hair|makeup|spa|facial/.test(p)) return 'beauty-salon';
   if (/pest|termite|roach/.test(p)) return 'pest-control';
   if (/physio|physiotherap|rehab|exercise|massage/.test(p)) return 'physiotherapy';
+  if (/packer|mover|shifting|relocation/.test(p)) return 'packer-mover';
+  if (/cctv|camera|security|surveillance|alarm/.test(p)) return 'cctv-security';
+  if (/laundry|dry\s?clean|launder|ironing/.test(p)) return 'laundry-dry-cleaning';
+  if (/lawn|garden|landscap|terrace\s?garden|hedge/.test(p)) return 'lawn-garden';
   return 'other';
 }
 

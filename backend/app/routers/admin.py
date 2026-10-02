@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from ..db import db, one
 from ..dependencies import require_admin
 from ..exceptions import ApiError
-from ..links import link_professional_to_category, relink_professional
+from ..links import cheapest_in_category, link_professional_to_category, relink_professional
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -88,7 +88,9 @@ def create_professional(body: dict):
                 "rating": float(body.get("rating") or 0),
                 "reviews_count": int(body.get("reviews_count") or 0),
                 "completed_jobs": int(body.get("completed_jobs") or 0),
-                "starting_price": float(body.get("starting_price") or 99),
+                "starting_price": float(
+                    body.get("starting_price") or cheapest_in_category(body.get("category_slug", "other")) or 99
+                ),
                 "avatar_url": body.get("avatar_url", ""),
                 "distance_km": float(body.get("distance_km") or 1),
                 "status": "busy" if body.get("status") == "busy" else "available",
@@ -211,7 +213,7 @@ def create_category(body: dict):
             {
                 "name": name,
                 "slug": slug,
-                "icon": body.get("icon", "MoreHorizontal"),
+                "icon": body.get("icon", "Ellipsis"),
                 "color": body.get("color", "#64748b"),
                 "description": body.get("description", ""),
                 "sort_order": int(body.get("sort_order") or 0),
