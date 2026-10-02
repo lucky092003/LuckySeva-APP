@@ -148,7 +148,7 @@ export const ProfileScreen = () => {
         </div>
 
         {/* Refer */}
-        <button onClick={copyReferral} className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 p-4 text-left text-white">
+        <button onClick={copyReferral} className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-600 p-4 text-left text-white">
           <Icons.Percent size={22} />
           <div className="flex-1">
             <p className="text-sm font-bold">{copied ? `Copied code ${copied}!` : 'Refer & Earn ₹100'}</p>

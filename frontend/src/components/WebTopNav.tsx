@@ -34,7 +34,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
           <Logo size={36} />
           <span className="text-lg font-extrabold tracking-tight">
             <span className="text-black">Lucky</span>
-            <span className="text-orange-500">Seva</span>
+            <span className="text-emerald-500">Seva</span>
           </span>
         </button>
         <div className="flex items-center gap-1">
@@ -55,7 +55,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
           {showBell && <NotificationBell />}
         </div>
       </nav>
-      <div className="hidden h-0.5 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500 md:block" />
+      <div className="hidden h-0.5 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300 md:block" />
     </div>
   );
 };
