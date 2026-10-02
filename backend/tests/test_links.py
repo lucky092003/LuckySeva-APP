@@ -40,9 +40,10 @@ class FakeQuery:
         self.mode = "maybe_single"
         return self
 
-    def insert(self, rows):
+    def insert(self, rows, on_conflict=None):
         self.mode = "insert"
         self.insert_rows = rows if isinstance(rows, list) else [rows]
+        self.on_conflict = on_conflict
         return self
 
     def delete(self):

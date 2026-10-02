@@ -33,6 +33,7 @@ class FakeQuery:
         self.table = table
         self.mode = "select"
         self.payload = None
+        self.on_conflict = None
         self.filters: dict = {}
         self.in_filters: dict = {}
         self.single = False
@@ -40,9 +41,10 @@ class FakeQuery:
     def select(self, *_a, **_k):
         return self
 
-    def insert(self, row):
+    def insert(self, row, on_conflict=None):
         self.mode = "insert"
         self.payload = row
+        self.on_conflict = on_conflict
         return self
 
     def update(self, patch):
@@ -72,6 +74,8 @@ class FakeQuery:
     def execute(self):
         if self.mode in {"insert", "update"}:
             self.db.writes.append((self.table, self.mode, self.payload))
+            if self.mode == "insert":
+                self.db.on_conflicts.append((self.table, self.on_conflict))
             return type("R", (), {"data": [self.payload]})()
         if self.mode == "delete":
             self.db.writes.append((self.table, "delete", self.in_filters.get("id", [])))
@@ -89,6 +93,7 @@ class FakeDb:
     def __init__(self, rows: dict):
         self.rows = rows
         self.writes: list = []
+        self.on_conflicts: list = []
 
     def table(self, name):
         return FakeQuery(self, name)
@@ -136,6 +141,17 @@ def test_adding_a_service_back_inserts_it_at_the_catalogue_price(monkeypatch) ->
             [{"professional_id": PRO_ID, "service_id": "svc-drain", "price": 199}],
         )
     ]
+
+
+def test_every_link_insert_is_idempotent_on_the_provider_service_key(monkeypatch) -> None:
+    """UNIQUE (professional_id, service_id) would 500 on a double tap without this."""
+    fake = install(monkeypatch, links_rows=[])
+    links.set_professional_services(PRO_ID, "plumber", ["svc-drain"])
+    links.link_professional_to_category(PRO_ID, "plumber")
+
+    assert fake.on_conflicts == [
+        ("professional_services", "professional_id,service_id")
+    ] * 2
 
 
 def test_keeping_the_current_selection_writes_nothing(monkeypatch) -> None:

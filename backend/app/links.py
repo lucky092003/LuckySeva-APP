@@ -55,7 +55,10 @@ def link_professional_to_category(professional_id: str, category_slug: str | Non
                     "price": r.get("starting_price") or 0,
                 }
                 for r in missing
-            ]
+            ],
+            # UNIQUE (professional_id, service_id): a re-link must be a no-op, not
+            # a 500 on the constraint.
+            on_conflict="professional_id,service_id",
         )
         .execute()
     )
@@ -190,7 +193,8 @@ def set_professional_services(
                     "price": catalog.get(sid) or 0,
                 }
                 for sid in missing
-            ]
+            ],
+            on_conflict="professional_id,service_id",
         ).execute()
     floor = min((catalog[s] for s in wanted if catalog[s] > 0), default=0.0)
     # Only re-derive the floor when the selection actually moved: re-saving the
