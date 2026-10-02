@@ -2,7 +2,7 @@ import * as Icons from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
 import { useProfessionalWithFallback, useReviews } from '@/hooks';
-import { api, setApiToken } from '@/services/api';
+import { ApiError, api, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge, Avatar } from '@/components/ui';
@@ -11,6 +11,16 @@ import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/utils/kyc';
 import type { Professional, Service } from '@/types';
 
 type OfferedService = Service & { offered: boolean };
+
+const STALE_BACKEND_HINT =
+  'This backend build has no services picker yet. Redeploy the backend (Render), then retry.';
+
+/** A failed load must not be dressed up as "your trade has no services". */
+const servicesErrorMessage = (e: unknown) => {
+  if (e instanceof ApiError && e.status === 404) return STALE_BACKEND_HINT;
+  if (e instanceof ApiError && e.status === 401) return 'Session expired — log in again.';
+  return e instanceof Error ? e.message : 'Could not load your services';
+};
 
 export const ProviderProfileScreen = () => {
   const { setProviderId, navigate, providerId } = useApp();
@@ -31,6 +41,7 @@ export const ProviderProfileScreen = () => {
 
   const loadServices = useCallback(() => {
     setLoadingServices(true);
+    setServicesError('');
     api.provider
       .myServices()
       .then(({ services, category_slug }) => {
@@ -38,7 +49,7 @@ export const ProviderProfileScreen = () => {
         setCatalog(services || []);
         setPicked((services || []).filter((s) => s.offered).map((s) => s.id));
       })
-      .catch(() => setServicesError('Could not load your services'))
+      .catch((e) => setServicesError(servicesErrorMessage(e)))
       .finally(() => setLoadingServices(false));
   }, []);
 
@@ -104,7 +115,7 @@ export const ProviderProfileScreen = () => {
       reload();
       setSheet(null);
     } catch (e) {
-      setServicesError(e instanceof Error ? e.message : 'Could not update your services');
+      setServicesError(servicesErrorMessage(e));
     } finally {
       setSavingServices(false);
     }
@@ -256,7 +267,18 @@ export const ProviderProfileScreen = () => {
 
         {/* Menu */}
         <div className="mt-4 space-y-2">
-          <MenuRow icon={<Icons.Wrench size={18} />} label="Services Offered" value={`${picked.length} of ${catalog.length}`} onClick={() => { setServicesError(''); setSheet('services'); }} />
+          <MenuRow
+            icon={<Icons.Wrench size={18} />}
+            label="Services Offered"
+            value={
+              loadingServices
+                ? 'loading...'
+                : servicesError
+                  ? 'unavailable'
+                  : `${picked.length} of ${catalog.length}`
+            }
+            onClick={() => { setServicesError(''); setSheet('services'); }}
+          />
           <MenuRow icon={<Icons.Tags size={18} />} label="Pricing" value={inr(pro.starting_price) + '+'} onClick={() => { setPrice(String(pro.starting_price)); setSheet('pricing'); }} />
           <MenuRow icon={<Icons.Star size={18} />} label="Ratings & Reviews" value={`${pro.reviews_count}`} onClick={() => setSheet('reviews')} />
           <MenuRow icon={<Icons.Banknote size={18} />} label="Bank Details" value="Withdraw" onClick={() => setSheet('bank')} />
@@ -312,8 +334,23 @@ export const ProviderProfileScreen = () => {
             {sheet === 'services' && (
               loadingServices ? (
                 <Spinner className="py-10" />
+              ) : servicesError && catalog.length === 0 ? (
+                <Card className="p-4 text-center">
+                  <Icons.WifiOff size={26} className="mx-auto text-gray-300" />
+                  <p className="mt-2 text-sm font-semibold text-gray-900">Could not load your services</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-gray-500">{servicesError}</p>
+                  <Button variant="outline" onClick={loadServices} className="mt-3 w-full">Retry</Button>
+                </Card>
               ) : catalog.length === 0 ? (
-                <EmptyState icon={<Icons.Wrench size={26} />} title="No services in your trade" subtitle="Your category has no services yet — ask the admin to add some." />
+                <EmptyState
+                  icon={<Icons.Wrench size={26} />}
+                  title={tradeSlug ? `No ${tradeLabel} services yet` : 'Your trade is not set'}
+                  subtitle={
+                    tradeSlug
+                      ? 'This trade has no services in the catalogue yet — ask the admin to add some.'
+                      : 'Ask the admin to set your trade, then pick the services you offer.'
+                  }
+                />
               ) : (
                 <>
                   <Card className="p-3.5">
