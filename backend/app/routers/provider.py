@@ -18,6 +18,21 @@ def provider_id(claims: dict) -> str:
     return claims["professional_id"]
 
 
+def _phone_visible(row: dict, claims: dict) -> bool:
+    """Customer contact is released only once this professional owns the job.
+
+    The `confirmed` feed is shared by every provider in the radius, so handing
+    out the number there lets any provider farm leads instead of taking jobs.
+    """
+    return row.get("professional_id") == provider_id(claims) or row.get("status") != "confirmed"
+
+
+def _hide_phone(row: dict, claims: dict) -> dict:
+    if _phone_visible(row, claims):
+        return row
+    return {**row, "customer_phone": ""}
+
+
 @router.get("/me")
 def me(claims: dict = Depends(require_provider)):
     client = db()
@@ -112,9 +127,9 @@ def feed(claims: dict = Depends(require_provider)):
     feed_rows = []
     for row in bookings.data or []:
         if row.get("professional_id") == provider_id(claims):
-            feed_rows.append(row)
+            feed_rows.append(_hide_phone(row, claims))
         elif row.get("professional_id") is None and row["id"] not in declined_ids:
-            feed_rows.append(row)
+            feed_rows.append(_hide_phone(row, claims))
     return feed_rows[:30]
 
 
@@ -137,7 +152,7 @@ def booking(booking_id: str, claims: dict = Depends(require_provider)):
     booking = one(client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute())
     if not booking:
         raise ApiError(404, "Booking not found")
-    return booking
+    return _hide_phone(booking, claims)
 
 
 @router.post("/bookings/{booking_id}/accept")

@@ -163,6 +163,21 @@ that *accepted* removes it everywhere, but *declined* is **per-provider**:
   `professional_id`/`professional_name` back to `Auto-assign`, turning it into an open
   request that other providers in radius can accept.
 
+### The number unlocks on accept, not on viewing
+Every request card is tappable and opens **Booking Details** (`ProviderDetailScreen`) with the
+service, date, time, notes, payment and **full customer address**. The customer's
+`customer_phone` is withheld until that provider owns the job:
+
+- `_hide_phone()` in `backend/app/routers/provider.py` blanks `customer_phone` on
+  `GET /provider/bookings` and `GET /provider/bookings/{id}` while the booking is still
+  `confirmed` and not assigned to the caller — the open feed is shared by every provider in
+  the radius, so shipping the number there would let anyone farm leads.
+- The screen mirrors it: while `status === 'confirmed'` and the booking is not this
+  provider's, the number line reads *"Number unlocks after you accept"* with a lock icon
+  instead of the digits and the call button.
+- After **Accept** the booking reloads as `assigned` with `professional_id` set, so the real
+  number and the `tel:` call button appear.
+
 ### Example
 Provider located in Faridabad with `service_radius_km = 60`:
 

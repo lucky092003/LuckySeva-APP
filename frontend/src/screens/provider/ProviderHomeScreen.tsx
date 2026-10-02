@@ -175,24 +175,33 @@ export const ProviderHomeScreen = () => {
               const km = distanceTo(b);
               return (
                 <Card key={b.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-gray-900">{b.service_name}</p>
-                      <p className="text-[11px] text-gray-500">{b.customer_name}</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })}
+                    className="block w-full text-left"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-gray-900">{b.service_name}</p>
+                        <p className="text-[11px] text-gray-500">{b.customer_name}</p>
+                      </div>
+                      <span className="text-base font-bold text-emerald-600">{inr(b.total_amount)}</span>
                     </div>
-                    <span className="text-base font-bold text-emerald-600">{inr(b.total_amount)}</span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
-                    <span className="flex items-center gap-1"><Icons.Calendar size={11} />{formatRelativeDay(b.scheduled_date)}</span>
-                    <span className="flex items-center gap-1"><Icons.Clock size={11} />{b.scheduled_time}</span>
-                    <span className="flex items-center gap-1 truncate"><Icons.MapPin size={11} />{b.customer_address.split(',').slice(-2)[0]?.trim()}</span>
-                  </div>
-                  {km !== null && (
-                    <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                      <Icons.Navigation size={11} />
-                      {Math.round(km)} km away {km <= myRadius && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold">IN RADIUS</span>}
+                    <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
+                      <span className="flex items-center gap-1"><Icons.Calendar size={11} />{formatRelativeDay(b.scheduled_date)}</span>
+                      <span className="flex items-center gap-1"><Icons.Clock size={11} />{b.scheduled_time}</span>
+                      <span className="flex items-center gap-1 truncate"><Icons.MapPin size={11} />{b.customer_address.split(',').slice(-2)[0]?.trim()}</span>
                     </div>
-                  )}
+                    {km !== null && (
+                      <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                        <Icons.Navigation size={11} />
+                        {Math.round(km)} km away {km <= myRadius && <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold">IN RADIUS</span>}
+                      </div>
+                    )}
+                    <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                      View address &amp; details <Icons.ChevronRight size={13} />
+                    </span>
+                  </button>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button variant="outline" onClick={() => reject(b)} className="flex-1 py-2 text-xs text-red-500">Reject</Button>
                     <Button onClick={() => accept(b)} className="flex-1 py-2 text-xs">Accept</Button>

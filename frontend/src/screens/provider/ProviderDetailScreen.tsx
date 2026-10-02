@@ -26,7 +26,7 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
-  const { back, navigate } = useApp();
+  const { back, navigate, providerId } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -75,6 +75,8 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const nextStatus = NEXT_STATUS[booking.status];
   const isCancelled = booking.status === 'cancelled';
   const isCompleted = booking.status === 'completed';
+  // The number is released on accept, never on merely reading the request.
+  const showPhone = Boolean(booking.customer_phone) && (booking.status !== 'confirmed' || booking.professional_id === providerId);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -95,11 +97,23 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-gray-900">{booking.customer_name}</p>
-              <p className="text-[11px] text-gray-500">{booking.customer_phone}</p>
+              {showPhone ? (
+                <p className="text-[11px] text-gray-500">{booking.customer_phone}</p>
+              ) : (
+                <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                  <Icons.Lock size={11} /> Number unlocks after you accept
+                </p>
+              )}
             </div>
-            <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-              <Icons.Phone size={18} />
-            </a>
+            {showPhone ? (
+              <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <Icons.Phone size={18} />
+              </a>
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-300">
+                <Icons.Lock size={16} />
+              </span>
+            )}
           </div>
         </Card>
 
