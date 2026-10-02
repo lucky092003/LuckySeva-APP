@@ -6,7 +6,7 @@ import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Button } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { inr, formatRelativeDay } from '@/utils/format';
+import { inr, formatRelativeDay, slugToLabel } from '@/utils/format';
 import { haversineKm } from '@/services/location';
 import type { Booking } from '@/types';
 
@@ -139,6 +139,15 @@ export const ProviderHomeScreen = () => {
     setTick((n) => n + 1);
   };
 
+  // The feed is routed by trade as well as distance, so say so on the header.
+  const field = professional?.category_slug ? slugToLabel(professional.category_slug) : '';
+  const feedScope = [
+    field,
+    `within ${myRadius} km${professional?.service_area ? ` of ${professional.service_area}` : ''}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   if (!proLoading && !professional) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -198,11 +207,7 @@ export const ProviderHomeScreen = () => {
           </div>
         )}
 
-        <SectionHeading
-          title="New Requests"
-          count={newRequests.length}
-          hint={`within ${myRadius} km${professional?.service_area ? ` of ${professional.service_area}` : ''}`}
-        />
+        <SectionHeading title="New Requests" count={newRequests.length} hint={feedScope} />
         <div className="mb-3 flex gap-2">
           {SORTS.map((s) => (
             <button
@@ -225,7 +230,7 @@ export const ProviderHomeScreen = () => {
           <EmptyState
             icon={<Icons.Inbox size={28} />}
             title="No new requests"
-            subtitle={`New jobs within ${myRadius} km will show up here automatically. Widen your radius in Profile to see more.`}
+            subtitle={`New ${field || 'service'} requests ${feedScope} will show up here automatically.`}
           />
         ) : (
           <div className="space-y-3 pb-2">

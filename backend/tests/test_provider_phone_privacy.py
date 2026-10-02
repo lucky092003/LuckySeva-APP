@@ -5,6 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from app.exceptions import ApiError
 from app.routers import provider
 
 PRO_ID = "pro-me"
@@ -132,3 +133,100 @@ def test_booking_detail_withholds_the_number_before_accepting(monkeypatch, claim
 def test_booking_detail_reveals_the_number_after_accepting(monkeypatch, claims) -> None:
     install(monkeypatch, booking_row(status="assigned", professional_id=PRO_ID))
     assert provider.booking("bk-1", claims)["customer_phone"] == PHONE
+
+
+# --- Field routing -------------------------------------------------------
+# A request belongs to professionals of that trade only, not every provider in
+# the radius.
+
+ELEC_CAT = {"id": "cat-elec", "slug": "electrician"}
+PLUMB_CAT = {"id": "cat-plumb", "slug": "plumber"}
+ELEC_SERVICE = {"id": "svc-elec-1", "category_id": "cat-elec"}
+PLUMB_SERVICE = {"id": "svc-plumb-1", "category_id": "cat-plumb"}
+
+
+def electrician_client(bookings, category_slug="electrician", service_ids=("svc-elec-1",)):
+    return TablesClient(
+        {
+            "bookings": bookings,
+            "booking_declines": [],
+            "professionals": {"id": PRO_ID, "category_slug": category_slug},
+            "professional_services": [{"service_id": s} for s in service_ids],
+            "categories": [ELEC_CAT, PLUMB_CAT],
+        }
+    )
+
+
+def request_for(service, **overrides):
+    return booking_row(service_id=service["id"], service=service, **overrides)
+
+
+@pytest.fixture()
+def electrician(monkeypatch: pytest.MonkeyPatch):
+    def install(bookings, **kwargs):
+        client = electrician_client(bookings, **kwargs)
+        monkeypatch.setattr(provider, "db", lambda: client)
+
+    return install
+
+
+def test_request_in_my_field_reaches_me(electrician, claims) -> None:
+    electrician([request_for(ELEC_SERVICE)])
+    assert len(provider.feed(claims)) == 1
+
+
+def test_request_from_another_field_never_reaches_me(electrician, claims) -> None:
+    electrician([request_for(PLUMB_SERVICE)])
+    assert provider.feed(claims) == []
+
+
+def test_a_bookings_service_row_is_stripped_from_the_response(electrician, claims) -> None:
+    electrician([request_for(ELEC_SERVICE)])
+    assert "service" not in provider.feed(claims)[0]
+
+
+def test_an_explicitly_booked_provider_gets_any_field(electrician, claims) -> None:
+    """The customer picked this professional, so the trade check must not apply."""
+    electrician([request_for(PLUMB_SERVICE, professional_id=PRO_ID)])
+    assert len(provider.feed(claims)) == 1
+
+
+def test_an_explicitly_linked_service_matches_across_its_category(electrician, claims) -> None:
+    """A hand-linked service is a stronger signal than the category slug."""
+    electrician([request_for(PLUMB_SERVICE)], service_ids=("svc-plumb-1",))
+    assert len(provider.feed(claims)) == 1
+
+
+def test_a_request_with_no_service_left_is_hidden(electrician, claims) -> None:
+    """`service_id` is ON DELETE SET NULL, so a deleted service leaves no field."""
+    electrician([booking_row(service_id=None, service=None)])
+    assert provider.feed(claims) == []
+
+
+def test_a_provider_with_no_field_at_all_still_sees_the_feed(
+    monkeypatch, claims
+) -> None:
+    monkeypatch.setattr(provider, "db", lambda: TablesClient({
+        "bookings": [request_for(PLUMB_SERVICE)],
+        "booking_declines": [],
+        "professionals": None,
+        "professional_services": [],
+        "categories": [ELEC_CAT, PLUMB_CAT],
+    }))
+    assert len(provider.feed(claims)) == 1
+
+
+def test_booking_detail_of_another_field_is_not_found(monkeypatch, claims) -> None:
+    monkeypatch.setattr(
+        provider, "db", lambda: electrician_client(request_for(PLUMB_SERVICE))
+    )
+    with pytest.raises(ApiError) as exc:
+        provider.booking("bk-1", claims)
+    assert exc.value.status == 404
+
+
+def test_booking_detail_of_my_field_is_returned(monkeypatch, claims) -> None:
+    monkeypatch.setattr(
+        provider, "db", lambda: electrician_client(request_for(ELEC_SERVICE))
+    )
+    assert provider.booking("bk-1", claims)["customer_phone"] == ""

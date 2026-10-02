@@ -33,6 +33,51 @@ def _hide_phone(row: dict, claims: dict) -> dict:
     return {**row, "customer_phone": ""}
 
 
+def _unembed(row: dict) -> dict:
+    """Drop the `service:services(...)` join the field filter needed."""
+    return {k: v for k, v in row.items() if k != "service"}
+
+
+def _field_filter(client, claims: dict):
+    """Predicate: is this request in the caller's own field of work?
+
+    Radius alone is far too wide: every provider in town saw an electrician's
+    booking, an AC booking, a beauty booking — all of it. A request belongs to
+    the professionals whose `category_slug` matches the booked service's
+    category, plus anyone explicitly linked to that exact service. Bookings the
+    customer created for this professional in person are always theirs.
+    """
+    pid = provider_id(claims)
+    pro = one(client.table("professionals").select("category_slug").eq("id", pid).maybe_single().execute())
+    slug = (pro or {}).get("category_slug") or ""
+    linked = (
+        client.table("professional_services")
+        .select("service_id")
+        .eq("professional_id", pid)
+        .execute()
+    )
+    service_ids = {r.get("service_id") for r in (linked.data or []) if r.get("service_id")}
+    slug_by_category = {
+        c["id"]: c["slug"]
+        for c in (client.table("categories").select("id, slug").execute().data or [])
+        if c.get("id")
+    }
+    # Nothing to match on (legacy row with no category and no links): show the
+    # feed rather than an empty app.
+    if not slug and not service_ids:
+        return lambda row: True
+
+    def in_my_field(row: dict) -> bool:
+        if row.get("professional_id") == pid:
+            return True
+        if row.get("service_id") in service_ids:
+            return True
+        category_id = (row.get("service") or {}).get("category_id")
+        return bool(slug) and bool(category_id) and slug_by_category.get(category_id) == slug
+
+    return in_my_field
+
+
 @router.get("/me")
 def me(claims: dict = Depends(require_provider)):
     client = db()
@@ -121,15 +166,21 @@ def feed(claims: dict = Depends(require_provider)):
     client = db()
     declined = client.table("booking_declines").select("booking_id").eq("professional_id", provider_id(claims)).execute()
     declined_ids = {row["booking_id"] for row in (declined.data or [])}
+    in_my_field = _field_filter(client, claims)
     bookings = (
-        client.table("bookings").select("*").eq("status", "confirmed").order("created_at", desc=True).limit(50).execute()
+        client.table("bookings")
+        .select("*, service:services(category_id)")
+        .eq("status", "confirmed")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
     )
     feed_rows = []
     for row in bookings.data or []:
         if row.get("professional_id") == provider_id(claims):
-            feed_rows.append(_hide_phone(row, claims))
-        elif row.get("professional_id") is None and row["id"] not in declined_ids:
-            feed_rows.append(_hide_phone(row, claims))
+            feed_rows.append(_hide_phone(_unembed(row), claims))
+        elif row.get("professional_id") is None and row["id"] not in declined_ids and in_my_field(row):
+            feed_rows.append(_hide_phone(_unembed(row), claims))
     return feed_rows[:30]
 
 
@@ -149,10 +200,19 @@ def my_bookings(claims: dict = Depends(require_provider)):
 @router.get("/bookings/{booking_id}")
 def booking(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
-    booking = one(client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute())
-    if not booking:
+    row = one(
+        client.table("bookings")
+        .select("*, service:services(category_id)")
+        .eq("id", booking_id)
+        .maybe_single()
+        .execute()
+    )
+    if not row:
         raise ApiError(404, "Booking not found")
-    return _hide_phone(booking, claims)
+    # 404, not 403: a provider outside this field should not learn the booking exists.
+    if row.get("professional_id") != provider_id(claims) and not _field_filter(client, claims)(row):
+        raise ApiError(404, "Booking not found")
+    return _hide_phone(_unembed(row), claims)
 
 
 @router.post("/bookings/{booking_id}/accept")

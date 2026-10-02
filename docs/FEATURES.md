@@ -135,7 +135,8 @@ When the customer confirms a booking, coordinates are resolved in this order:
 
 ### The match — `ProviderHomeScreen`
 The provider's "New Requests" feed loads all `confirmed` bookings that are either
-**assigned to this provider** or **open** (`professional_id IS NULL`), then:
+**assigned to this provider** or **open** (`professional_id IS NULL`), that fall in **their trade**,
+then:
 
 ```
 distance = haversine(provider.latitude, provider.longitude,
@@ -149,6 +150,23 @@ show if:
 
 Each request card shows `X km away` + an **IN RADIUS** badge when computable.
 The feed refreshes automatically every **15 seconds** (and after accept/reject).
+
+### A request only reaches professionals of that trade
+Radius alone was far too wide — every provider in town saw an electrician's booking, an AC
+booking, a beauty booking, all of it. `_field_filter()` in
+`backend/app/routers/provider.py` narrows both provider read endpoints to the caller's field:
+
+```
+show an open request to me if:
+  - the booking was created for me in person (professional_id = me), OR
+  - I am linked to that exact service (professional_services), OR
+  - the booked service's category slug == my category_slug
+```
+
+A professional with neither a `category_slug` nor linked services has no field to match on, so
+they see everything rather than an empty app. `GET /provider/bookings/{id}` returns **404** (not
+403) for a booking outside the caller's field, so a stray id cannot confirm it exists. The feed
+header spells the scope out — *"Electrician · within 60 km of Faridabad"*.
 
 ### Many providers, one request
 When several providers in the same area see an open request, the state is managed so
