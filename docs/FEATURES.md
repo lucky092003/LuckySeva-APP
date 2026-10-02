@@ -182,6 +182,7 @@ Only services inside their own trade are ever listed, and the API rejects anythi
 |---|---|
 | `GET /provider/services` | `{ category_slug, services: [{ ...service, offered }] }` - the whole trade flagged with the current selection |
 | `PUT /provider/services` | body `{ service_ids: [...] }` → replaces the selection |
+| `PUT /provider/trade` | body `{ category_slug }` → sets/changes the trade, then links that trade |
 
 `set_professional_services()` in `backend/app/links.py` enforces the rules:
 
@@ -197,6 +198,13 @@ Only services inside their own trade are ever listed, and the API rejects anythi
 The consequences reach the customer automatically, because both customer reads join through
 `professional_services`: a deselected service disappears from the provider's public profile and
 stops listing them on `GET /catalog/services/{id}`.
+
+**No admin in the loop.** A professional whose trade is unset (or whose trade the catalogue has
+nothing for) gets the trade list inside *Services Offered* itself and picks their own trade, so
+setting a trade is never blocked on someone else. The trade badge in the sheet header is tappable,
+so an established professional can switch trade: the app asks for confirmation first (the old
+trade's services are dropped), then `PUT /provider/trade` relinks the whole new trade and the list
+is reloaded, so the sheet only ever shows the current trade's services.
 
 ### Many providers, one request
 When several providers in the same area see an open request, the state is managed so

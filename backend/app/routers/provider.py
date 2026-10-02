@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from ..db import db, one
 from ..dependencies import require_provider
 from ..exceptions import ApiError
-from ..links import set_professional_services
+from ..links import set_professional_services, set_professional_trade
 
 router = APIRouter(dependencies=[Depends(require_provider)])
 
@@ -179,6 +179,25 @@ def my_services(claims: dict = Depends(require_provider)):
         "category_slug": pro.get("category_slug") or "",
         "services": [{**s, "offered": s["id"] in offered} for s in (services or [])],
     }
+
+
+@router.put("/trade")
+def update_trade(body: dict, claims: dict = Depends(require_provider)):
+    """Let a professional set their own trade, so the picker is never admin-gated."""
+    slug = body.get("category_slug")
+    if not isinstance(slug, str):
+        raise ApiError(400, "category_slug must be a string")
+    pro = one(
+        db()
+        .table("professionals")
+        .select("id")
+        .eq("id", provider_id(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not pro:
+        raise ApiError(404, "Professional not found")
+    return set_professional_trade(pro["id"], slug)
 
 
 @router.put("/services")

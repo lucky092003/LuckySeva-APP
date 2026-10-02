@@ -151,6 +151,13 @@ export const api = {
       request<Professional>('provider', '/me', 'PUT', patch),
     bookings: () => request<Booking[]>('provider', '/bookings'),
     myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
+    setTrade: (category_slug: string) =>
+      request<{ category_slug: string; category_name: string; linked: number; starting_price: number }>(
+        'provider',
+        '/trade',
+        'PUT',
+        { category_slug }
+      ),
     setServices: (service_ids: string[]) =>
       request<{ service_ids: string[]; starting_price: number; linked: number }>('provider', '/services', 'PUT', { service_ids }),
     myBookings: () => request<Booking[]>('provider', '/bookings/mine'),

@@ -126,6 +126,41 @@ def relink_professional(professional_id: str, category_slug: str | None) -> int:
     return link_professional_to_category(professional_id, category_slug)
 
 
+def set_professional_trade(professional_id: str, category_slug: str) -> dict:
+    """Move a professional into `category_slug` and (re)link that whole trade.
+
+    Signup guesses the trade from the free-text profession, so a professional can
+    end up with an empty one - or `other` - and then the service picker has
+    nothing to show: every service id has to belong to their own category. Rather
+    than leaving them stuck waiting on an admin edit, they pick the trade
+    themselves. It is a reset, exactly like a fresh signup: links outside the new
+    category are dropped and every service inside it is linked, so they narrow it
+    to what they actually do on the next screen.
+    """
+    slug = (category_slug or "").strip().lower()
+    if not professional_id:
+        raise ApiError(404, "Professional not found")
+    if not slug:
+        raise ApiError(400, "Pick the trade you work in")
+    client = db()
+    cat = one(client.table("categories").select("id, name").eq("slug", slug).maybe_single().execute())
+    if not cat:
+        raise ApiError(400, "That trade does not exist")
+    client.table("professionals").update({"category_slug": slug}).eq("id", professional_id).execute()
+    linked = relink_professional(professional_id, slug)
+    floor = cheapest_in_category(slug)
+    if floor:
+        client.table("professionals").update({"starting_price": floor}).eq(
+            "id", professional_id
+        ).execute()
+    return {
+        "category_slug": slug,
+        "category_name": cat.get("name") or slug,
+        "linked": linked,
+        "starting_price": floor,
+    }
+
+
 def set_professional_services(
     professional_id: str, category_slug: str | None, service_ids: list[str]
 ) -> dict:
