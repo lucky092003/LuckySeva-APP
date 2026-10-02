@@ -108,7 +108,7 @@ export const Button = ({
 }: {
   children: ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
   className?: string;
   disabled?: boolean;
   type?: 'button' | 'submit';
@@ -118,6 +118,7 @@ export const Button = ({
     secondary: 'bg-gray-900 text-white hover:bg-gray-800',
     ghost: 'text-gray-700 hover:bg-gray-100',
     outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white',
+    danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm shadow-red-500/30',
   };
   return (
     <button

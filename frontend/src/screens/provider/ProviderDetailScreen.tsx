@@ -4,6 +4,7 @@ import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking, BookingStatus } from '@/types';
 
@@ -30,6 +31,8 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [showReject, setShowReject] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -60,12 +63,12 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     load();
   };
 
-  const reject = async () => {
+  const confirmReject = async () => {
     if (!booking) return;
-    if (!window.confirm(`Decline the ${booking.service_name} request? It goes back to other providers.`)) return;
-    setUpdating(true);
+    setRejecting(true);
     await api.provider.decline(booking.id).catch(() => {});
-    setUpdating(false);
+    setRejecting(false);
+    setShowReject(false);
     back();
   };
 
@@ -159,7 +162,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
       {!isCancelled && !isCompleted && (
         <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
           {booking.status === 'confirmed' && (
-            <Button variant="outline" onClick={reject} disabled={updating} className="text-red-500">
+            <Button variant="outline" onClick={() => setShowReject(true)} disabled={updating} className="text-red-500">
               Reject
             </Button>
           )}
@@ -175,6 +178,17 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
           </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showReject}
+        busy={rejecting}
+        title="Reject this request?"
+        message={`The ${booking.service_name} request will be passed to other providers. You won't be able to accept it later.`}
+        confirmLabel="Reject"
+        cancelLabel="Keep request"
+        onConfirm={confirmReject}
+        onCancel={() => setShowReject(false)}
+      />
     </div>
   );
 };

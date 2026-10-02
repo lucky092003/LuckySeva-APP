@@ -5,6 +5,7 @@ import { useProfessionalWithFallback } from '@/hooks';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Button } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import { haversineKm } from '@/services/location';
 import type { Booking } from '@/types';
@@ -28,6 +29,8 @@ export const ProviderHomeScreen = () => {
   const [declined, setDeclined] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<(typeof SORTS)[number]['key']>('nearest');
+  const [declining, setDeclining] = useState<Booking | null>(null);
+  const [decliningBusy, setDecliningBusy] = useState(false);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -124,10 +127,14 @@ export const ProviderHomeScreen = () => {
     navigate({ name: 'provider-detail', bookingId: b.id });
   };
 
-  const reject = async (b: Booking) => {
-    if (!professional?.id) return;
-    if (!window.confirm(`Decline the ${b.service_name} request from ${b.customer_name}? It stays available for other providers.`)) return;
+  const confirmDecline = async () => {
+    if (!declining) return;
+    const b = declining;
+    setDecliningBusy(true);
     await api.provider.decline(b.id).catch(() => {});
+    setDecliningBusy(false);
+    setDeclining(null);
+    // Hide it locally right away; the next poll re-syncs if the write failed.
     setDeclined((prev) => new Set(prev).add(b.id));
     setTick((n) => n + 1);
   };
@@ -230,12 +237,27 @@ export const ProviderHomeScreen = () => {
                 myRadius={myRadius}
                 onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
                 onAccept={() => accept(b)}
-                onReject={() => reject(b)}
+                onReject={() => setDeclining(b)}
               />
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!declining}
+        busy={decliningBusy}
+        title="Decline this request?"
+        message={
+          declining
+            ? `The ${declining.service_name} request from ${declining.customer_name} will be passed to other providers. You won't be able to accept it later.`
+            : ''
+        }
+        confirmLabel="Decline"
+        cancelLabel="Keep request"
+        onConfirm={confirmDecline}
+        onCancel={() => setDeclining(null)}
+      />
     </div>
   );
 };

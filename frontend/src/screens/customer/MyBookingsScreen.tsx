@@ -5,6 +5,7 @@ import { useBookings, BookingFilter } from '@/hooks';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Badge, Button } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking } from '@/types';
 
@@ -19,14 +20,17 @@ export const MyBookingsScreen = () => {
   const { navigate, customer } = useApp();
   const [tab, setTab] = useState<BookingFilter>('upcoming');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [pendingCancel, setPendingCancel] = useState<Booking | null>(null);
   const { bookings, loading, reload } = useBookings(tab, customer?.phone || undefined);
 
-  const cancel = async (b: Booking) => {
-    if (!window.confirm(`Cancel your ${b.service_name} booking?`)) return;
+  const cancel = async () => {
+    if (!pendingCancel) return;
+    const b = pendingCancel;
     setCancellingId(b.id);
-    await api.customer.cancelBooking(b.id).catch(() => {});
+    const ok = await api.customer.cancelBooking(b.id).then(() => true).catch(() => false);
     setCancellingId(null);
-    reload();
+    setPendingCancel(null);
+    if (ok) reload();
   };
 
   return (
@@ -58,11 +62,22 @@ export const MyBookingsScreen = () => {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })} onCancel={() => cancel(b)} cancelling={cancellingId === b.id} />
+              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })} onCancel={() => setPendingCancel(b)} cancelling={cancellingId === b.id} />
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingCancel}
+        busy={!!pendingCancel && cancellingId === pendingCancel.id}
+        title="Cancel this booking?"
+        message={pendingCancel ? `Your ${pendingCancel.service_name} booking will be cancelled and the professional will be informed.` : ''}
+        confirmLabel="Cancel booking"
+        cancelLabel="Keep booking"
+        onConfirm={cancel}
+        onCancel={() => setPendingCancel(null)}
+      />
     </div>
   );
 };
