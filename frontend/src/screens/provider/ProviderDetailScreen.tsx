@@ -4,6 +4,7 @@ import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking, BookingStatus } from '@/types';
 
@@ -26,10 +27,12 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 };
 
 export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
-  const { back, navigate } = useApp();
+  const { back, navigate, providerId } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [showReject, setShowReject] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -60,12 +63,12 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     load();
   };
 
-  const reject = async () => {
+  const confirmReject = async () => {
     if (!booking) return;
-    if (!window.confirm(`Decline the ${booking.service_name} request? It goes back to other providers.`)) return;
-    setUpdating(true);
+    setRejecting(true);
     await api.provider.decline(booking.id).catch(() => {});
-    setUpdating(false);
+    setRejecting(false);
+    setShowReject(false);
     back();
   };
 
@@ -75,6 +78,8 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const nextStatus = NEXT_STATUS[booking.status];
   const isCancelled = booking.status === 'cancelled';
   const isCompleted = booking.status === 'completed';
+  // The number is released on accept, never on merely reading the request.
+  const showPhone = Boolean(booking.customer_phone) && (booking.status !== 'confirmed' || booking.professional_id === providerId);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -95,12 +100,33 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-gray-900">{booking.customer_name}</p>
-              <p className="text-[11px] text-gray-500">{booking.customer_phone}</p>
+              {showPhone ? (
+                <p className="text-[11px] text-gray-500">{booking.customer_phone}</p>
+              ) : (
+                <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                  <Icons.Lock size={11} /> Number unlocks after you accept
+                </p>
+              )}
             </div>
-            <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-              <Icons.Phone size={18} />
-            </a>
+            {showPhone ? (
+              <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <Icons.Phone size={18} />
+              </a>
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-300">
+                <Icons.Lock size={16} />
+              </span>
+            )}
           </div>
+          {!showPhone && (
+            <p className="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+              <Icons.Lock size={13} className="mt-0.5 shrink-0" />
+              <span>
+                The customer's number is hidden while this request is open. Accept the job to see
+                it and get the call button.
+              </span>
+            </p>
+          )}
         </Card>
 
         {/* Service & address */}
@@ -136,7 +162,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
       {!isCancelled && !isCompleted && (
         <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
           {booking.status === 'confirmed' && (
-            <Button variant="outline" onClick={reject} disabled={updating} className="text-red-500">
+            <Button variant="outline" onClick={() => setShowReject(true)} disabled={updating} className="text-red-500">
               Reject
             </Button>
           )}
@@ -152,6 +178,17 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
           </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showReject}
+        busy={rejecting}
+        title="Reject this request?"
+        message={`The ${booking.service_name} request will be passed to other providers. You won't be able to accept it later.`}
+        confirmLabel="Reject"
+        cancelLabel="Keep request"
+        onConfirm={confirmReject}
+        onCancel={() => setShowReject(false)}
+      />
     </div>
   );
 };

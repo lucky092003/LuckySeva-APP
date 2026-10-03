@@ -45,6 +45,13 @@ class FakeQuery:
         self.insert_rows = rows if isinstance(rows, list) else [rows]
         return self
 
+    def upsert(self, rows, on_conflict=None, ignore_duplicates=False):
+        self.mode = "insert"
+        self.insert_rows = rows if isinstance(rows, list) else [rows]
+        self.on_conflict = on_conflict
+        self.ignore_duplicates = ignore_duplicates
+        return self
+
     def delete(self):
         self.mode = "delete"
         return self

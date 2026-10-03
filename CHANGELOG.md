@@ -28,8 +28,28 @@ matches the newest dated section.
   both provider signup and admin-created providers.
 - `category_for()` on the backend gained the missing `physiotherapy` branch plus branches
   for the four new categories, bringing it in line with `ProviderAuthScreen.categoryFor`.
+- **Services Offered** (`GET`/`PUT /provider/services`): a professional now narrows their
+  trade to the work they actually do. The signup flow is unchanged — it still links every
+  service of the chosen category so the provider is immediately bookable — and
+  **Profile → Services Offered** is where the selection is made: a checkbox per service,
+  Select all / Clear, a selected count, and a save button that only enables on a change.
+  `set_professional_services()` in `backend/app/links.py` refuses an empty selection and
+  any service outside the provider's own trade, keeps a hand-set price on services that
+  stay selected, and re-derives `professionals.starting_price` from what is left. Because
+  both customer reads join through `professional_services`, a deselected service vanishes
+  from the public profile and from that service's provider list.
+- `PUT /provider/trade`, so a professional can set **or change** their own trade without an
+  admin. The trade badge in the sheet header opens the trade list, a confirmation dialog
+  explains that the previous services are dropped, and the list reloads so the sheet only
+  ever shows the current trade's services.
+- Requests are routed only to professionals of that field: `_field_filter()` narrows the
+  provider feed and booking lookup by `professional_services`, falling back to
+  `category_slug` for professionals who have no links yet.
 
 ### Fixed
+- The customer's phone number is no longer handed to every provider who can see a request.
+  It is released only once a provider accepts the job — before that, the request shows
+  without a number, so the shared feed cannot be used to farm leads.
 - Duplicate service rows. `20260830093336_luckyseva_schema.sql` seeds with a bare
   `ON CONFLICT DO NOTHING`, which can never fire against a table with no unique
   constraint — so re-applying the migration set inserted its 21 services a second time.
@@ -44,6 +64,15 @@ matches the newest dated section.
   never refreshed an existing row).
 - The `TRENDING` search chip "Salon at Home" matched nothing — the service is called
   "Salon Prime for Women". Replaced with terms that resolve against real service names.
+- A failed load of the provider's services used to render as "your trade has no services",
+  which sent the provider off to re-pick a trade that was in fact fine. The sheet now
+  distinguishes a failed load (message plus Retry) from a genuinely empty trade.
+- Re-selecting an already linked service raised `insert() got an unexpected keyword
+  argument 'on_conflict'`: PostgREST's insert has no conflict handling, so the
+  `professional_services` writes go through `upsert(..., ignore_duplicates=True)`, which is
+  idempotent on the `(professional_id, service_id)` unique key.
+- `test_provider_service_selection.py` seeds fresh rows per test. It reused the module-level
+  constants, so a test that added a second trade leaked it into the following ones.
 
 ## 2026-10-01
 

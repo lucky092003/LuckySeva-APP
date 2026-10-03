@@ -1,14 +1,27 @@
 import * as Icons from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
 import { useProfessionalWithFallback, useReviews } from '@/hooks';
-import { api, setApiToken } from '@/services/api';
+import { ApiError, api, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge, Avatar } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
 import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/utils/kyc';
-import type { Professional, Service } from '@/types';
+import type { Category, Professional, Service } from '@/types';
+
+type OfferedService = Service & { offered: boolean };
+
+const STALE_BACKEND_HINT =
+  'This backend build has no services picker yet. Redeploy the backend (Render), then retry.';
+
+/** A failed load must not be dressed up as "your trade has no services". */
+const servicesErrorMessage = (e: unknown) => {
+  if (e instanceof ApiError && e.status === 404) return STALE_BACKEND_HINT;
+  if (e instanceof ApiError && e.status === 401) return 'Session expired — log in again.';
+  return e instanceof Error ? e.message : 'Could not load your services';
+};
 
 export const ProviderProfileScreen = () => {
   const { setProviderId, navigate, providerId } = useApp();
@@ -16,23 +29,85 @@ export const ProviderProfileScreen = () => {
   const { reviews, loading: revLoading } = useReviews(pro?.id || null);
   const [updatingAvail, setUpdatingAvail] = useState(false);
   const [sheet, setSheet] = useState<'services' | 'pricing' | 'reviews' | 'bank' | 'settings' | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
+  const [catalog, setCatalog] = useState<OfferedService[]>([]);
+  const [tradeSlug, setTradeSlug] = useState('');
+  const [trades, setTrades] = useState<Category[]>([]);
+  const [loadingTrades, setLoadingTrades] = useState(false);
+  const [savingTrade, setSavingTrade] = useState('');
+  const [pendingTrade, setPendingTrade] = useState('');
+  const [pickingTrade, setPickingTrade] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [savingServices, setSavingServices] = useState(false);
+  const [servicesError, setServicesError] = useState('');
   const [price, setPrice] = useState('');
   const [radius, setRadius] = useState('60');
   const [updatingLoc, setUpdatingLoc] = useState(false);
   const [savingRadius, setSavingRadius] = useState(false);
 
+  const loadServices = useCallback(() => {
+    setLoadingServices(true);
+    setServicesError('');
+    api.provider
+      .myServices()
+      .then(({ services, category_slug }) => {
+        setTradeSlug(category_slug || '');
+        setCatalog(services || []);
+        setPicked((services || []).filter((s) => s.offered).map((s) => s.id));
+      })
+      .catch((e) => setServicesError(servicesErrorMessage(e)))
+      .finally(() => setLoadingServices(false));
+  }, []);
+
+  // Only on identity change: a radius/price save calls reload(), and re-running
+  // here would throw away the selection the provider is still editing.
   useEffect(() => {
     if (!pro?.id) return;
-    api.provider
-      .me()
-      .then(({ services }) => {
-        setServices((services || []).map((r) => r.service).filter(Boolean));
-      })
-      .catch(() => {});
-    setPrice(String(pro.starting_price));
-    setRadius(String(pro.service_radius_km || 60));
-  }, [pro?.id, pro?.starting_price, pro?.service_radius_km]);
+    loadServices();
+  }, [pro?.id, loadServices]);
+
+  useEffect(() => {
+    setPrice(String(pro?.starting_price));
+    setRadius(String(pro?.service_radius_km || 60));
+  }, [pro?.starting_price, pro?.service_radius_km]);
+
+  const loadTrades = useCallback(async () => {
+    setLoadingTrades(true);
+    try {
+      setTrades(await api.catalog.categories());
+    } catch {
+      setTrades([]);
+    } finally {
+      setLoadingTrades(false);
+    }
+  }, []);
+
+  /** Only used when the trade is unset, so a provider is never admin-gated. */
+  const pickTrade = async (slug: string) => {
+    setSavingTrade(slug);
+    setServicesError('');
+    try {
+      await api.provider.setTrade(slug);
+      setPendingTrade('');
+      setPickingTrade(false);
+      loadServices();
+      reload();
+    } catch (e) {
+      setServicesError(servicesErrorMessage(e));
+    } finally {
+      setSavingTrade('');
+    }
+  };
+
+  /** Changing trade drops the old trade's services, so ask before that happens. */
+  const requestTrade = (slug: string) => {
+    const hasSelection = picked.length > 0 || catalog.some((s) => s.offered);
+    if (hasSelection) {
+      setPendingTrade(slug);
+      return;
+    }
+    pickTrade(slug);
+  };
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Profile" showBack={false} /><Spinner className="py-20" /></div>;
   if (!pro)
@@ -48,6 +123,10 @@ export const ProviderProfileScreen = () => {
       </div>
     );
 
+  const tradeLabel = (tradeSlug || '').replace(/-/g, ' ');
+  const savedIds = catalog.filter((s) => s.offered).map((s) => s.id);
+  const dirty = picked.length !== savedIds.length || picked.some((id) => !savedIds.includes(id));
+
   const toggleAvailability = async () => {
     if (!pro) return;
     setUpdatingAvail(true);
@@ -60,6 +139,30 @@ export const ProviderProfileScreen = () => {
     await api.provider.updateMe({ starting_price: Number(price) || 0 }).catch(() => {});
     setSheet(null);
     reload();
+  };
+
+  const toggleService = (id: string) => {
+    setServicesError('');
+    setPicked((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  };
+
+  const saveServices = async () => {
+    if (!picked.length) {
+      setServicesError('Keep at least one service — customers can only book what you offer.');
+      return;
+    }
+    setSavingServices(true);
+    setServicesError('');
+    try {
+      await api.provider.setServices(picked);
+      loadServices();
+      reload();
+      setSheet(null);
+    } catch (e) {
+      setServicesError(servicesErrorMessage(e));
+    } finally {
+      setSavingServices(false);
+    }
   };
 
   const updateLocation = async () => {
@@ -208,7 +311,23 @@ export const ProviderProfileScreen = () => {
 
         {/* Menu */}
         <div className="mt-4 space-y-2">
-          <MenuRow icon={<Icons.Wrench size={18} />} label="Services Offered" value={`${services.length}`} onClick={() => setSheet('services')} />
+          <MenuRow
+            icon={<Icons.Wrench size={18} />}
+            label="Services Offered"
+            value={
+              loadingServices
+                ? 'loading...'
+                : servicesError
+                  ? 'unavailable'
+                  : `${picked.length} of ${catalog.length}`
+            }
+            onClick={() => {
+              setServicesError('');
+              setPickingTrade(false);
+              setSheet('services');
+              if (!catalog.length) loadTrades();
+            }}
+          />
           <MenuRow icon={<Icons.Tags size={18} />} label="Pricing" value={inr(pro.starting_price) + '+'} onClick={() => { setPrice(String(pro.starting_price)); setSheet('pricing'); }} />
           <MenuRow icon={<Icons.Star size={18} />} label="Ratings & Reviews" value={`${pro.reviews_count}`} onClick={() => setSheet('reviews')} />
           <MenuRow icon={<Icons.Banknote size={18} />} label="Bank Details" value="Withdraw" onClick={() => setSheet('bank')} />
@@ -250,25 +369,164 @@ export const ProviderProfileScreen = () => {
       {sheet && (
         <div className="absolute inset-0 z-40 flex flex-col bg-gray-50">
           <div className="flex items-center gap-3 border-b border-gray-100 bg-white p-3">
-            <button onClick={() => setSheet(null)} className="text-gray-400"><Icons.X size={22} /></button>
+            <button onClick={() => (pickingTrade && catalog.length ? setPickingTrade(false) : setSheet(null))} className="text-gray-400">
+              <Icons.X size={22} />
+            </button>
             <p className="flex-1 text-base font-bold text-gray-900">
-              {sheet === 'services' ? 'Services Offered' : sheet === 'pricing' ? 'Pricing' : sheet === 'reviews' ? 'Ratings & Reviews' : sheet === 'bank' ? 'Bank Details' : 'Settings'}
+              {sheet === 'services'
+                ? pickingTrade && catalog.length
+                  ? 'Change Trade'
+                  : 'Services Offered'
+                : sheet === 'pricing' ? 'Pricing' : sheet === 'reviews' ? 'Ratings & Reviews' : sheet === 'bank' ? 'Bank Details' : 'Settings'}
             </p>
+            {sheet === 'services' && tradeLabel && !pickingTrade && (
+              <button
+                onClick={() => { setServicesError(''); setPickingTrade(true); loadTrades(); }}
+                className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+              >
+                {tradeLabel}
+              </button>
+            )}
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar space-y-3 p-4">
             {sheet === 'services' && (
-              services.length ? (
-                services.map((svc) => (
-                  <Card key={svc.id} className="flex items-center justify-between p-3.5">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{svc.name}</p>
-                      <p className="text-[11px] text-gray-400">{svc.estimated_duration}</p>
-                    </div>
-                    <span className="text-sm font-bold text-emerald-600">{inr(svc.starting_price)}</span>
+              loadingServices ? (
+                <Spinner className="py-10" />
+              ) : servicesError && catalog.length === 0 ? (
+                <Card className="p-4 text-center">
+                  <Icons.WifiOff size={26} className="mx-auto text-gray-300" />
+                  <p className="mt-2 text-sm font-semibold text-gray-900">Could not load your services</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-gray-500">{servicesError}</p>
+                  <Button variant="outline" onClick={loadServices} className="mt-3 w-full">Retry</Button>
+                </Card>
+              ) : pickingTrade || catalog.length === 0 ? (
+                /* No trade set (or one the catalogue has nothing for): let the
+                   provider pick their own trade here instead of waiting on an
+                   admin edit. Once set, only that trade's sub-services appear. */
+                loadingTrades ? (
+                  <Spinner className="py-10" />
+                ) : trades.length === 0 ? (
+                  <Card className="p-4 text-center">
+                    <Icons.Wrench size={26} className="mx-auto text-gray-300" />
+                    <p className="mt-2 text-sm font-semibold text-gray-900">Could not load the trades</p>
+                    <p className="mt-1 text-[11px] text-gray-500">Check your connection and try again.</p>
+                    <Button variant="outline" onClick={loadTrades} className="mt-3 w-full">Retry</Button>
                   </Card>
-                ))
+                ) : (
+                  <>
+                    <Card className="p-3.5">
+                      <p className="text-sm font-bold text-gray-900">
+                        {catalog.length ? 'Change your trade' : 'Which trade do you work in?'}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+                        Pick your trade, then tick only the {tradeSlug ? tradeLabel : 'trade'} sub-services you actually
+                        offer. You can change it later.
+                      </p>
+                    </Card>
+                    {servicesError && <p className="text-[11px] font-medium text-red-500">{servicesError}</p>}
+                    {trades.map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => requestTrade(t.slug)}
+                        disabled={!!savingTrade}
+                        className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors disabled:opacity-60 ${
+                          t.slug === tradeSlug ? 'border-emerald-200 bg-emerald-50/60' : 'border-gray-100 bg-white'
+                        }`}
+                      >
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                          style={{ backgroundColor: t.color || '#0ea5e9' }}
+                        >
+                          {t.name.charAt(0)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-gray-900">{t.name}</p>
+                          <p className="truncate text-[11px] text-gray-400">{t.description}</p>
+                        </div>
+                        {savingTrade === t.slug ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : (
+                          <Icons.ChevronRight size={16} className="shrink-0 text-gray-300" />
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )
               ) : (
-                <EmptyState icon={<Icons.Wrench size={26} />} title="No services linked" subtitle="Link services to start receiving bookings." />
+                <>
+                  <Card className="p-3.5">
+                    <p className="text-[11px] leading-relaxed text-gray-500">
+                      These are only the {tradeLabel ? tradeLabel.toLowerCase() : 'trade'} services — the trade you
+                      signed up with. Turn off the ones you don't do: those requests stop coming to you and customers
+                      stop seeing them. Switch trade with the badge above.
+                    </p>
+                    <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
+                      <span className="text-xs font-semibold text-gray-900">
+                        {picked.length} of {catalog.length} selected
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => { setServicesError(''); setPicked(catalog.map((s) => s.id)); }} className="text-[11px] font-semibold text-emerald-600">
+                          Select all
+                        </button>
+                        <button onClick={() => { setServicesError(''); setPicked([]); }} className="text-[11px] font-semibold text-gray-400">
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all"
+                        style={{ width: `${catalog.length ? (picked.length / catalog.length) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </Card>
+
+                  {catalog.map((svc) => {
+                    const on = picked.includes(svc.id);
+                    return (
+                      <button
+                        key={svc.id}
+                        type="button"
+                        onClick={() => toggleService(svc.id)}
+                        className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
+                          on ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-100 bg-white'
+                        }`}
+                      >
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                            on ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          {on && <Icons.Check size={14} />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-gray-900">{svc.name}</p>
+                          <p className="text-[11px] text-gray-400">
+                            {svc.estimated_duration}
+                            {!on && <span className="ml-1 font-medium text-gray-400">· hidden</span>}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-xs font-bold text-gray-700">{inr(svc.starting_price)}</span>
+                      </button>
+                    );
+                  })}
+
+                  {servicesError && <p className="text-[11px] font-medium text-red-500">{servicesError}</p>}
+
+                  <Button onClick={saveServices} disabled={savingServices || !dirty} className="w-full">
+                    {savingServices
+                      ? 'Saving...'
+                      : !picked.length
+                        ? 'Save selection'
+                        : picked.length === catalog.length
+                          ? `Save all ${catalog.length} services`
+                          : `Save ${picked.length} of ${catalog.length} services`}
+                  </Button>
+                  <p className="text-center text-[10px] text-gray-400">
+                    Your profile price updates to the cheapest service you keep.
+                  </p>
+                </>
               )
             )}
 
@@ -323,6 +581,17 @@ export const ProviderProfileScreen = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingTrade}
+        busy={!!savingTrade}
+        title="Change your trade?"
+        message={`Switching to ${trades.find((t) => t.slug === pendingTrade)?.name || 'this trade'} will remove the ${tradeLabel || 'current'} services you selected. You can tick the new ones after that.`}
+        confirmLabel="Change trade"
+        cancelLabel="Keep trade"
+        onConfirm={() => pendingTrade && pickTrade(pendingTrade)}
+        onCancel={() => setPendingTrade('')}
+      />
     </div>
   );
 };
