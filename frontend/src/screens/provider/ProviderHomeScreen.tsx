@@ -287,12 +287,13 @@ const ACTIVE_STATUS: Record<string, { label: string; chip: string; icon: 'check'
 };
 
 const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => {
-  if (!deadline) return null;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
+    if (!deadline) return;
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [deadline]);
+  if (!deadline) return null;
   const end = new Date(deadline).getTime();
   if (isNaN(end)) return null;
   if (end <= now) return null;

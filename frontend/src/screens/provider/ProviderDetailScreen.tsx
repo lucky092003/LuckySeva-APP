@@ -20,12 +20,13 @@ const NEXT_STATUS: Record<BookingStatus, BookingStatus | null> = {
 };
 
 const ExpiryTimer = ({ deadline }: { deadline: string | null | undefined }) => {
-  if (!deadline) return null;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
+    if (!deadline) return;
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [deadline]);
+  if (!deadline) return null;
   const end = new Date(deadline).getTime();
   if (isNaN(end)) return null;
   if (end <= now) return <span className="text-[11px] font-semibold text-red-600">Expired</span>;
