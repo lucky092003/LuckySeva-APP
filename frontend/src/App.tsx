@@ -41,6 +41,10 @@ import {
   AdminServices,
   AdminBookings,
   AdminProfile,
+  AdminCoupons,
+  AdminPayouts,
+  AdminRefunds,
+  AdminDisputes,
 } from '@/screens/admin/AdminScreens';
 
 function Router() {
@@ -126,6 +130,10 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
     case 'admin-bookings': return <AdminBookings />;
     case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     case 'admin-profile': return <AdminProfile />;
+    case 'admin-coupons': return <AdminCoupons />;
+    case 'admin-payouts': return <AdminPayouts />;
+    case 'admin-refunds': return <AdminRefunds />;
+    case 'admin-disputes': return <AdminDisputes />;
     default: return <AdminDashboard />;
   }
 }

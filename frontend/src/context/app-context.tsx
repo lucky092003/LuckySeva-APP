@@ -53,7 +53,11 @@ export type Screen =
   | { name: 'admin-providers' }
   | { name: 'admin-services' }
   | { name: 'admin-bookings' }
-  | { name: 'admin-profile' };
+  | { name: 'admin-profile' }
+  | { name: 'admin-coupons' }
+  | { name: 'admin-payouts' }
+  | { name: 'admin-refunds' }
+  | { name: 'admin-disputes' };
 
 export type Customer = {
   name: string;

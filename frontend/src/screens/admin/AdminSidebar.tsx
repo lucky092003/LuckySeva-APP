@@ -10,6 +10,10 @@ const MAIN: NavItem[] = [
   { label: 'Customers', icon: Icons.Users, screen: { name: 'admin-customers' } },
   { label: 'Providers', icon: Icons.Wrench, screen: { name: 'admin-providers' } },
   { label: 'Services', icon: Icons.Tags, screen: { name: 'admin-services' } },
+  { label: 'Coupons', icon: Icons.Ticket, screen: { name: 'admin-coupons' } as Screen },
+  { label: 'Payouts', icon: Icons.Wallet, screen: { name: 'admin-payouts' } as Screen },
+  { label: 'Refunds', icon: Icons.Undo, screen: { name: 'admin-refunds' } as Screen },
+  { label: 'Disputes', icon: Icons.AlertTriangle, screen: { name: 'admin-disputes' } as Screen },
 ];
 
 const ACCOUNT: NavItem[] = [
