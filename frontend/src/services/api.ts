@@ -142,7 +142,8 @@ export const api = {
     notifications: () => request<Notification[]>('customer', '/notifications'),
     markNotificationRead: (id: string) => request<Notification>('customer', `/notifications/${id}/read`, 'PUT'),
     markAllNotificationsRead: () => request<{ ok: boolean; updated: number }>('customer', '/notifications/read-all', 'PUT'),
-    deviceToken: (fcm_token: string) => request<{ ok: boolean }>('customer', '/device-token', 'POST', { fcm_token }),
+    deviceToken: (token: string, platform = 'web') =>
+      request<{ registered: boolean }>('customer', '/device-token', 'POST', { token, platform }),
     coupons: () => request<{ code: string; discount_pct: number; min_amount: number; expires_at: string | null }[]>('customer', '/coupons'),
     quote: (service_id: string, address_id?: string) =>
       request<{ base_price: number; visit_fee: number; discount_amount: number; coupon_code: string | null; total: number }>('customer', '/quote', 'POST', { service_id, address_id }),
@@ -162,7 +163,8 @@ export const api = {
     updateAvailability: (payload: { status?: string; latitude?: number; longitude?: number }) =>
       request<{ ok: boolean }>('provider', '/availability', 'POST', payload),
     heartbeat: () => request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST'),
-    deviceToken: (fcm_token: string) => request<{ ok: boolean }>('provider', '/device-token', 'POST', { fcm_token }),
+    deviceToken: (token: string, platform = 'web') =>
+      request<{ registered: boolean }>('provider', '/device-token', 'POST', { token, platform }),
     myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
     setTrade: (category_slug: string) =>
       request<{ category_slug: string; category_name: string; linked: number; starting_price: number }>(
