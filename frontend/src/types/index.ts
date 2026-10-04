@@ -75,7 +75,7 @@ export type Favourite = {
   created_at: string;
 };
 
-export type Payout = {
+export type PayoutRequest = {
   id: string;
   professional_id: string;
   amount: number;
@@ -135,11 +135,54 @@ export type Booking = {
   base_price: number;
   visit_fee: number;
   priority_fee?: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
+  commission_pct?: number;
+  platform_fee?: number;
+  provider_earnings?: number;
+  settled_amount?: number;
+  refund_amount?: number;
   total_amount: number;
   payment_method: string;
   payment_status: string;
   status: BookingStatus;
   created_at: string;
+  accept_deadline?: string | null;
+  accept_expired_at?: string | null;
+  decline_count?: number;
   latitude: number | null;
   longitude: number | null;
+};
+
+export type Payment = {
+  id: string;
+  booking_id: string;
+  customer_phone: string;
+  method: string;
+  status: string;
+  amount: number;
+  gateway_order_id?: string | null;
+  gateway_payment_id?: string | null;
+  created_at: string;
+};
+
+export type Refund = {
+  id: string;
+  booking_id: string | null;
+  amount: number;
+  status: string;
+  reason: string;
+  note: string;
+  created_at: string;
+};
+
+export type Payout = {
+  id: string;
+  professional_id: string;
+  amount: number;
+  status: 'requested' | 'approved' | 'completed' | 'rejected' | 'cancelled' | 'failed';
+  note?: string | null;
+  settled_at?: string | null;
+  settlement_ref?: string | null;
+  created_at: string;
 };

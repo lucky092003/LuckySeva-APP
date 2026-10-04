@@ -2,12 +2,17 @@ import type {
   Booking,
   Category,
   Notification,
+  Payment,
+  Payout,
   Professional,
   Profile,
+  Refund,
   Review,
   Service,
   SupportTicket,
 } from '@/types';
+
+type PayoutRequest = Payout;
 
 const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
@@ -222,6 +227,5 @@ export type ServiceDetailResponse = {
 
 type Favourite = { id: string; customer_phone: string; professional_id: string };
 
-type Payout = { id: string; professional_id: string; amount: number; status: string; created_at: string };
-
+type PayoutReq = { id: string; professional_id: string; amount: number; status: string; created_at: string };
 type AuditLog = { id: string; action: string; detail: string; created_at: string };
