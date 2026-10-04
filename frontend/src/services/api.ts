@@ -2,7 +2,6 @@ import type {
   Booking,
   Category,
   Notification,
-  Payment,
   Payout,
   Professional,
   Profile,
@@ -11,8 +10,6 @@ import type {
   Service,
   SupportTicket,
 } from '@/types';
-
-type PayoutRequest = Payout;
 
 const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
@@ -214,9 +211,9 @@ export const api = {
     addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
     coupons: () => request<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>('admin', '/coupons'),
     createCoupon: (c: { code: string; discount_pct: number; min_amount?: number; expires_at?: string | null }) =>
-      request<any>('admin', '/coupons', 'POST', c),
+      request<unknown>('admin', '/coupons', 'POST', c),
     updateCoupon: (id: string, c: { discount_pct?: number; min_amount?: number; expires_at?: string | null; active?: boolean }) =>
-      request<any>('admin', `/coupons/${id}`, 'PUT', c),
+      request<unknown>('admin', `/coupons/${id}`, 'PUT', c),
     deleteCoupon: (id: string) => request<{ ok: boolean }>('admin', `/coupons/${id}`, 'DELETE'),
     payouts: () => request<Payout[]>('/ledger', '/admin/payouts'),
     settlePayout: (id: string, s: { status: string; note?: string; settlement_ref?: string }) =>
@@ -225,8 +222,8 @@ export const api = {
     createRefund: (r: { booking_id?: string | null; amount: number; reason: string; note?: string }) =>
       request<Refund>('/ledger', '/admin/refunds', 'POST', r),
     settleRefund: (id: string, s: { status: string; note?: string }) => request<Refund>('/ledger', `/admin/refunds/${id}`, 'PUT', s),
-    disputes: () => request<any[]>('/ledger', '/admin/disputes'),
-    settleDispute: (id: string, s: { status: string; note?: string }) => request<any>('/ledger', `/admin/disputes/${id}`, 'PUT', s),
+    disputes: () => request<unknown[]>('/ledger', '/admin/disputes'),
+    settleDispute: (id: string, s: { status: string; note?: string }) => request<unknown>('/ledger', `/admin/disputes/${id}`, 'PUT', s),
   },
 };
 
@@ -257,5 +254,4 @@ export type ServiceDetailResponse = {
 
 type Favourite = { id: string; customer_phone: string; professional_id: string };
 
-type PayoutReq = { id: string; professional_id: string; amount: number; status: string; created_at: string };
 type AuditLog = { id: string; action: string; detail: string; created_at: string };

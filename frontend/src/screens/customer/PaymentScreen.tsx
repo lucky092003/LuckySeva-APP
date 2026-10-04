@@ -10,7 +10,20 @@ import type { Booking } from '@/types';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: {
+      new (options: {
+        key: string;
+        amount: number;
+        currency: string;
+        name: string;
+        description?: string;
+        order_id: string;
+        handler: (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void;
+        prefill?: { name?: string; email?: string; contact?: string };
+        theme?: { color?: string };
+        modal?: { ondismiss?: () => void };
+      }): { open: () => void };
+    };
   }
 }
 
@@ -56,14 +69,14 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
       if (!window.Razorpay) {
         throw new Error('Razorpay SDK not loaded');
       }
-      const options: any = {
+      const options = {
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
         name: 'LuckySeva',
         description: booking.service_name,
         order_id: order.order_id,
-        handler: async (response: any) => {
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           try {
             await api.customer.verifyPayment({
               booking_id: bookingId,
@@ -73,9 +86,9 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
             });
             setPaying(false);
             navigate({ name: 'booking-success', bookingId });
-          } catch (e: any) {
+          } catch (e) {
             setPaying(false);
-            alert(e?.message || 'Payment verification failed');
+            alert(e instanceof Error ? e.message : 'Payment verification failed');
           }
         },
         prefill: booking.customer_name
@@ -86,12 +99,12 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
           : undefined,
         theme: { color: '#10B981' },
         modal: { ondismiss: () => setPaying(false) },
-      };
+      } as const;
       const rzp = new window.Razorpay(options);
       rzp.open();
-    } catch (e: any) {
+    } catch (e) {
       setPaying(false);
-      alert(e?.message || 'Could not start payment');
+      alert(e instanceof Error ? e.message : 'Could not start payment');
     }
   };
 
