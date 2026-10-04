@@ -145,6 +145,13 @@ export const api = {
     notifications: () => request<Notification[]>('customer', '/notifications'),
     markNotificationRead: (id: string) => request<Notification>('customer', `/notifications/${id}/read`, 'PUT'),
     markAllNotificationsRead: () => request<{ ok: boolean; updated: number }>('customer', '/notifications/read-all', 'PUT'),
+    deviceToken: (fcm_token: string) => request<{ ok: boolean }>('customer', '/device-token', 'POST', { fcm_token }),
+    coupons: () => request<{ code: string; discount_pct: number; min_amount: number; expires_at: string | null }[]>('customer', '/coupons'),
+    quote: (service_id: string, address_id?: string) =>
+      request<{ base_price: number; visit_fee: number; discount_amount: number; coupon_code: string | null; total: number }>('customer', '/quote', 'POST', { service_id, address_id }),
+    createPaymentOrder: (booking_id: string) => request<{ order_id: string; amount: number; currency: string; key_id: string }>('/payments', '/customer/orders', 'POST', { booking_id }),
+    verifyPayment: (payload: { booking_id: string; order_id: string; payment_id: string; signature: string }) =>
+      request<{ ok: boolean; booking: Booking }>('/payments', '/customer/verify', 'POST', payload),
     reviews: () => request<Review[]>('customer', '/reviews'),
     addReview: (r: { booking_id?: string | null; professional_id: string; rating: number; comment?: string }) =>
       request<Review>('customer', '/reviews', 'POST', r),
@@ -155,6 +162,10 @@ export const api = {
     updateMe: (patch: { status?: string; starting_price?: number | string; service_radius_km?: number | string; bio?: string; service_area?: string; latitude?: number; longitude?: number; name?: string }) =>
       request<Professional>('provider', '/me', 'PUT', patch),
     bookings: () => request<Booking[]>('provider', '/bookings'),
+    updateAvailability: (payload: { status?: string; latitude?: number; longitude?: number }) =>
+      request<{ ok: boolean }>('provider', '/availability', 'POST', payload),
+    heartbeat: () => request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST'),
+    deviceToken: (fcm_token: string) => request<{ ok: boolean }>('provider', '/device-token', 'POST', { fcm_token }),
     myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
     setTrade: (category_slug: string) =>
       request<{ category_slug: string; category_name: string; linked: number; starting_price: number }>(
@@ -172,6 +183,9 @@ export const api = {
     updateStatus: (id: string, status: string) =>
       request<Booking>('provider', `/bookings/${id}/status`, 'PUT', { status }),
     earnings: () => request<{ total_earnings: number; by_date: Record<string, number>; payouts: Payout[]; available: number }>('provider', '/earnings'),
+    payoutAccount: () => request<{ bank_account_number: string | null; bank_ifsc: string | null; upi_id: string | null }>('/ledger', '/provider/payout-account'),
+    savePayoutAccount: (a: { bank_account_number?: string; bank_ifsc?: string; upi_id?: string }) =>
+      request<{ ok: boolean }>('/ledger', '/provider/payout-account', 'POST', a),
     dashboard: () => request<{ active: number; completed_jobs: number; today_earnings: number; total_earnings: number }>('provider', '/dashboard'),
     requestPayout: (amount: number) => request<Payout>('provider', '/payouts', 'POST', { amount }),
     submitKyc: (input: { doc_type: string; doc_number: string }) =>
@@ -180,6 +194,7 @@ export const api = {
 
   admin: {
     stats: () => request<{ bookings: number; customers: number; providers: number; reviews: number; today_revenue: number; recent_bookings: Booking[] }>('admin', '/stats'),
+    revenue: () => request<{ total_platform_fee: number; by_date: Record<string, number> }>('/ledger', '/admin/revenue'),
     bookings: () => request<Booking[]>('admin', '/bookings'),
     professionals: () => request<Professional[]>('admin', '/professionals'),
     categories: () => request<Category[]>('admin', '/categories'),
@@ -197,6 +212,21 @@ export const api = {
     reviewKyc: (professionalId: string, decision: 'approved' | 'rejected', note?: string) =>
       request<Professional>('admin', `/kyc/${professionalId}`, 'PUT', { decision, note }),
     addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
+    coupons: () => request<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>('admin', '/coupons'),
+    createCoupon: (c: { code: string; discount_pct: number; min_amount?: number; expires_at?: string | null }) =>
+      request<any>('admin', '/coupons', 'POST', c),
+    updateCoupon: (id: string, c: { discount_pct?: number; min_amount?: number; expires_at?: string | null; active?: boolean }) =>
+      request<any>('admin', `/coupons/${id}`, 'PUT', c),
+    deleteCoupon: (id: string) => request<{ ok: boolean }>('admin', `/coupons/${id}`, 'DELETE'),
+    payouts: () => request<Payout[]>('/ledger', '/admin/payouts'),
+    settlePayout: (id: string, s: { status: string; note?: string; settlement_ref?: string }) =>
+      request<Payout>('/ledger', `/admin/payouts/${id}`, 'PUT', s),
+    refunds: () => request<Refund[]>('/ledger', '/admin/refunds'),
+    createRefund: (r: { booking_id?: string | null; amount: number; reason: string; note?: string }) =>
+      request<Refund>('/ledger', '/admin/refunds', 'POST', r),
+    settleRefund: (id: string, s: { status: string; note?: string }) => request<Refund>('/ledger', `/admin/refunds/${id}`, 'PUT', s),
+    disputes: () => request<any[]>('/ledger', '/admin/disputes'),
+    settleDispute: (id: string, s: { status: string; note?: string }) => request<any>('/ledger', `/admin/disputes/${id}`, 'PUT', s),
   },
 };
 
