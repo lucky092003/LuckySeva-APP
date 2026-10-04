@@ -2,9 +2,20 @@ from datetime import date
 
 from fastapi import APIRouter, Depends
 
+from .. import events, ledger
+from .. import payments as gateway
 from ..db import db, one
 from ..dependencies import require_customer
+from ..events import (
+    accepting_professionals,
+    insert_notification,
+    new_accept_deadline,
+    providers_for_service,
+    sweep_expired_requests,
+)
 from ..exceptions import ApiError
+from ..pricing import category_slug_for_service, commission_pct_for, compute_split, discount_for, round2
+from ..push import notify, notify_new_request
 from .catalog import DEFAULT_NEARBY_RADIUS_KM, _as_float, _nearby_professionals
 
 router = APIRouter(dependencies=[Depends(require_customer)])
@@ -82,6 +93,97 @@ def _is_priority_pick(
         max(1, top_n),
     )
     return any(row.get("id") == professional_id for row in ranked)
+
+
+def _load_coupon(client, code: str) -> dict | None:
+    if not isinstance(code, str):
+        return None
+    return one(
+        client.table("coupons").select("*").eq("code", code.strip().upper()).maybe_single().execute()
+    )
+
+
+def coupon_code_present(body: dict) -> bool:
+    """Did the client actually try to use a code?
+
+    Distinguishes "no coupon" (fine, full price) from "a code was sent and it is
+    not valid" (must be an error, not a quiet full-price booking).
+    """
+    code = body.get("coupon_code")
+    return isinstance(code, str) and bool(code.strip())
+
+
+def _booking_count(client, phone: str) -> int:
+    """How many live bookings this customer already placed, for welcome offers.
+
+    Cancelled attempts do not count: a customer who booked, cancelled and is
+    coming back is still a first-time customer as far as LUCKY20 is concerned.
+    """
+    res = (
+        client.table("bookings")
+        .select("id", count="exact", head=True)
+        .eq("customer_phone", phone)
+        .neq("status", "cancelled")
+        .execute()
+    )
+    return res.count or 0
+
+
+def _redemption_count(client, code: str, phone: str) -> int:
+    res = (
+        client.table("coupon_redemptions")
+        .select("id", count="exact", head=True)
+        .eq("coupon_code", code)
+        .eq("customer_phone", phone)
+        .execute()
+    )
+    return res.count or 0
+
+
+def _price_quote(
+    client,
+    *,
+    service_id: str | None,
+    base: float,
+    visit_fee: float,
+    priority_fee: float,
+    coupon_code: str | None,
+    phone: str,
+) -> tuple[float, float, float, dict | None, str | None]:
+    """Work out the discount and the post-discount total.
+
+    Pure apart from the reads it does, so `POST /customer/quote` and
+    `create_booking` call the same function and are guaranteed to agree - which
+    is what stops the screen showing one number and the invoice another.
+
+    Returns (pre_discount, discount, total, coupon_row_or_None, error_or_None).
+    """
+    pre_discount = round2(base + visit_fee + priority_fee)
+    discount = 0.0
+    coupon = None
+    coupon_error = None
+
+    if coupon_code:
+        coupon = _load_coupon(client, coupon_code)
+        if coupon is None:
+            coupon_error = "Invalid coupon code"
+        else:
+            slug = coupon.get("category_slug")
+            if slug:
+                booked_slug = category_slug_for_service(client, service_id)
+                if booked_slug and booked_slug != slug:
+                    coupon, coupon_error = None, "This coupon is valid on a different service"
+            if coupon is not None:
+                discount, coupon_error = discount_for(
+                    coupon,
+                    pre_discount,
+                    booking_count=_booking_count(client, phone),
+                    redemption_count=_redemption_count(client, coupon["code"], phone),
+                )
+                if coupon_error:
+                    coupon = None
+
+    return pre_discount, round2(discount), round2(pre_discount - discount), coupon, coupon_error
 
 
 @router.get("/profile")
@@ -215,22 +317,12 @@ def delete_address(address_id: str, claims: dict = Depends(require_customer)):
     return {"ok": True}
 
 
-@router.get("/bookings")
-def bookings(claims: dict = Depends(require_customer)):
-    client = db()
-    res = (
-        client.table("bookings")
-        .select("*")
-        .eq("customer_phone", customer_phone(claims))
-        .order("created_at", desc=True)
-        .execute()
-    )
-    return res.data or []
-
-
 @router.get("/bookings/{booking_id}")
 def booking(booking_id: str, claims: dict = Depends(require_customer)):
     client = db()
+    # Lazily lapse anything whose accept window closed, so the customer sees the
+    # truth about their own booking instead of it sitting "confirmed" forever.
+    sweep_expired_requests(client)
     booking = one(
         client.table("bookings")
         .select("*")
@@ -242,6 +334,20 @@ def booking(booking_id: str, claims: dict = Depends(require_customer)):
     if not booking:
         raise ApiError(404, "Booking not found")
     return booking
+
+
+@router.get("/bookings")
+def bookings(claims: dict = Depends(require_customer)):
+    client = db()
+    sweep_expired_requests(client)
+    res = (
+        client.table("bookings")
+        .select("*")
+        .eq("customer_phone", customer_phone(claims))
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data or []
 
 
 @router.post("/bookings", status_code=201)
@@ -283,8 +389,28 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
             _as_float(body.get("longitude")),
         ):
             priority_fee = _setting_float(client, "priority_fee", DEFAULT_PRIORITY_FEE)
-    total = round(base + visit_fee + priority_fee, 2)
     name = profile.get("name") if profile else customer_phone(claims)
+
+    # Coupons are priced server-side. A client that computed its own discount and
+    # posted `total_amount: 0` previously got a free booking, because the total
+    # was rebuilt from the fees regardless of the code.
+    _, discount, total, coupon, coupon_error = _price_quote(
+        client,
+        service_id=service_id,
+        base=base,
+        visit_fee=visit_fee,
+        priority_fee=priority_fee,
+        coupon_code=body.get("coupon_code"),
+        phone=customer_phone(claims),
+    )
+    if coupon_code_present(body) and coupon is None:
+        # An unusable code must not silently become a full-price booking.
+        raise ApiError(400, coupon_error or "This coupon cannot be applied", "coupon_invalid")
+
+    # The platform's take and the professional's share, frozen at booking time
+    # so a later commission change never rewrites history.
+    commission_pct = commission_pct_for(client, category_slug_for_service(client, service_id))
+    platform_fee, provider_earnings = compute_split(total, commission_pct)
 
     # `scheduled_date` is a real Postgres `date`, so a missing or malformed value
     # used to reach the driver as a 22P02 and surface as an unhandled 500. Check
@@ -317,6 +443,9 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
         if not owned:
             address_id = None
 
+    method = gateway.normalise_method(body.get("payment_method"))
+    # Cash collects offline later; anything else must be authorised online, so it
+    # starts as `pending` and only the verified callback flips it to `paid`.
     res = (
         client.table("bookings")
         .insert(
@@ -335,9 +464,18 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
                 "base_price": base,
                 "visit_fee": visit_fee,
                 "priority_fee": priority_fee,
+                "discount_amount": discount,
+                "coupon_code": coupon["code"] if coupon else None,
+                "commission_pct": commission_pct,
+                "platform_fee": platform_fee,
+                "provider_earnings": provider_earnings,
                 "total_amount": total,
-                "payment_method": body.get("payment_method", "cash"),
+                "payment_method": method,
+                "payment_status": "cash" if method == gateway.CASH else "pending",
                 "status": "confirmed",
+                # The window a provider has to take this job. Always set, even for
+                # a pre-picked professional, so nobody waits forever.
+                "accept_deadline": new_accept_deadline(client),
                 "latitude": body.get("latitude") if isinstance(body.get("latitude"), (int, float)) else None,
                 "longitude": body.get("longitude") if isinstance(body.get("longitude"), (int, float)) else None,
             }
@@ -348,25 +486,132 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     if not res.data:
         raise ApiError(400, "Could not create booking")
     booking_row = res.data[0]
-    client.table("notifications").insert(
-        {
-            "customer_phone": customer_phone(claims),
-            "type": "booking",
-            "title": "Booking confirmed",
-            "message": f"Your {service_name} booking has been placed.",
-            "booking_id": booking_row["id"],
-            "read": False,
-        }
-    ).execute()
+
+    if coupon:
+        # Redemption is recorded on success only, and the counter is bumped here
+        # rather than by a database trigger so `usage_limit` stays single-writer.
+        client.table("coupon_redemptions").insert(
+            {
+                "coupon_code": coupon["code"],
+                "customer_phone": customer_phone(claims),
+                "booking_id": booking_row["id"],
+                "discount_amount": discount,
+            }
+        ).execute()
+        client.table("coupons").update({"used_count": int(coupon.get("used_count") or 0) + 1}).eq(
+            "id", coupon["id"]
+        ).execute()
+
+    insert_notification(
+        customer_phone(claims),
+        "booking",
+        "Booking confirmed",
+        f"Your {service_name} booking for {scheduled_date.isoformat()} at {scheduled_time} has been placed.",
+        booking_row["id"],
+    )
+
+    # Tell the professionals who can actually take this trade and are accepting
+    # jobs. Best effort: a push failure must not fail the booking.
+    if not professional_id:
+        candidates = providers_for_service(
+            client, service_id, category_slug_for_service(client, service_id)
+        )
+        for pid in accepting_professionals(client, candidates):
+            notify_new_request([pid], service_name, body.get("_distance_km"))
+    else:
+        notify(
+            "provider",
+            professional_id,
+            "New booking assigned to you",
+            f"{service_name} for {scheduled_date.isoformat()} at {scheduled_time}. Accept before it expires.",
+            {"booking_id": booking_row["id"]},
+        )
+
     return booking_row
 
 
+@router.post("/quote")
+def quote(body: dict, claims: dict = Depends(require_customer)):
+    """Price a booking without creating it, so the review screen shows the truth.
+
+    Same helper `create_booking` uses, so the number the customer approves is the
+    number that gets stored and charged.
+    """
+    client = db()
+    service_id = body.get("service_id") if isinstance(body.get("service_id"), str) else None
+    base = 0.0
+    if service_id:
+        svc = one(client.table("services").select("starting_price").eq("id", service_id).maybe_single().execute())
+        if svc:
+            base = float(svc.get("starting_price") or 0)
+    visit_fee = max(0.0, float(body.get("visit_fee") or 0))
+    priority_fee = max(0.0, float(body.get("priority_fee") or 0))
+    pre, discount, total, coupon, error = _price_quote(
+        client,
+        service_id=service_id,
+        base=base,
+        visit_fee=visit_fee,
+        priority_fee=priority_fee,
+        coupon_code=body.get("coupon_code"),
+        phone=customer_phone(claims),
+    )
+    return {
+        "base_price": round2(base),
+        "charges": round2(visit_fee + priority_fee),
+        "pre_discount": pre,
+        "discount": discount,
+        "total": total,
+        "coupon_code": coupon["code"] if coupon else None,
+        "coupon_description": coupon.get("description") if coupon else None,
+        "error": error,
+        "payments_enabled": gateway.payments_enabled(),
+    }
+
+
+@router.get("/coupons")
+def list_coupons(claims: dict = Depends(require_customer)):
+    """Active coupons the customer can actually use right now."""
+    client = db()
+    rows = client.table("coupons").select("*").eq("active", True).order("discount_value", desc=True).execute().data or []
+    phone = customer_phone(claims)
+    out = []
+    for row in rows:
+        discount, error = discount_for(
+            row,
+            round2(float(row.get("min_amount") or 0) or 0) or 100.0,
+            booking_count=_booking_count(client, phone),
+            redemption_count=_redemption_count(client, row["code"], phone),
+        )
+        # A code the customer has already burned is not worth showing.
+        if error and ("already used" in error or "first booking" in error or "claimed" in error):
+            continue
+        out.append(
+            {
+                "code": row["code"],
+                "description": row.get("description") or "",
+                "discount_type": row.get("discount_type"),
+                "discount_value": row.get("discount_value"),
+                "category_slug": row.get("category_slug"),
+                "min_amount": row.get("min_amount"),
+                "note": error,
+            }
+        )
+    return out
+
+
 @router.put("/bookings/{booking_id}/cancel")
-def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
+def cancel_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+    """Cancel a booking and, if money was taken, start the refund.
+
+    Cancelling used to set `payment_status: cancelled` on a booking that may
+    already have been paid, which marked the customer's money as simply gone.
+    Now a paid booking raises a refund (auto-settled inside the platform's
+    window) and the status reflects what is actually owed.
+    """
     client = db()
     existing = one(
         client.table("bookings")
-        .select("status")
+        .select("*")
         .eq("id", booking_id)
         .eq("customer_phone", customer_phone(claims))
         .maybe_single()
@@ -376,28 +621,59 @@ def cancel_booking(booking_id: str, claims: dict = Depends(require_customer)):
         raise ApiError(404, "Booking not found")
     if existing["status"] == "completed":
         raise ApiError(400, "Completed bookings cannot be cancelled")
+    if existing["status"] == "cancelled":
+        raise ApiError(400, "This booking is already cancelled")
+    if existing["status"] in {"on_the_way", "started"}:
+        raise ApiError(400, "Your professional has already started. Please contact support.")
+
+    reason = body.get("reason") if isinstance(body.get("reason"), str) else "Cancelled by customer"
+    refund_note = ""
+    payment = ledger.successful_payment(client, booking_id)
+    if payment:
+        try:
+            ledger.request_refund(existing, reason, source="auto")
+            refund_note = "Refund initiated."
+        except ApiError as exc:
+            # The cancellation still stands; the admin console picks the refund up.
+            refund_note = f"Refund pending review: {exc.message}"
+
+    payment_status = "refund_pending" if payment else "cancelled"
     res = (
         client.table("bookings")
-        .update({"status": "cancelled", "payment_status": "cancelled"})
+        .update({"status": "cancelled", "payment_status": payment_status})
         .eq("id", booking_id)
         .select("*")
         .execute()
     )
-    client.table("notifications").insert(
-        {
-            "customer_phone": customer_phone(claims),
-            "type": "alert",
-            "title": "Booking Cancelled",
-            "message": "Your booking has been cancelled.",
-            "booking_id": booking_id,
-            "read": False,
-        }
-    ).execute()
+    if not res.data:
+        raise ApiError(400, "Could not cancel booking")
+    if existing.get("professional_id"):
+        notify(
+            "provider",
+            existing["professional_id"],
+            "Booking cancelled",
+            f"The {existing.get('service_name')} booking for {existing.get('scheduled_date')} was cancelled by the customer.",
+            {"booking_id": booking_id},
+        )
+    insert_notification(
+        customer_phone(claims),
+        "alert",
+        "Booking Cancelled",
+        refund_note or f"Your {existing.get('service_name')} booking has been cancelled.",
+        booking_id,
+    )
     return res.data[0]
 
 
 @router.put("/bookings/{booking_id}/payment")
 def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+    """Record an offline (cash) settlement.
+
+    Online payments are not settled here. This endpoint used to accept
+    `payment_status: paid` for any booking, which let a caller mark an unpaid
+    booking as paid with one PUT. Only cash can be settled client-side now;
+    online goes through `POST /payments/verify`, which checks Razorpay's HMAC.
+    """
     client = db()
     existing = one(
         client.table("bookings")
@@ -409,26 +685,112 @@ def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_cust
     )
     if not existing:
         raise ApiError(404, "Booking not found")
-    patch = {}
-    if isinstance(body.get("payment_method"), str) and body["payment_method"].strip():
-        patch["payment_method"] = body["payment_method"].strip()
-    if body.get("payment_status") in {"cash", "paid", "pending"}:
-        patch["payment_status"] = body["payment_status"]
-    if not patch:
-        raise ApiError(400, "Nothing to update")
-    res = client.table("bookings").update(patch).eq("id", booking_id).select("*").execute()
-    row = res.data[0]
-    client.table("notifications").insert(
-        {
-            "customer_phone": customer_phone(claims),
-            "type": "payment",
-            "title": "Payment Confirmed",
-            "message": f"Payment of ₹{float(row.get('total_amount') or 0):g} received for your {row.get('service_name')} booking.",
-            "booking_id": booking_id,
-            "read": False,
-        }
-    ).execute()
+    if existing["status"] == "cancelled":
+        raise ApiError(400, "This booking was cancelled")
+
+    requested = body.get("payment_method")
+    method = gateway.normalise_method(requested if requested is not None else existing.get("payment_method"))
+    if gateway.is_online(method):
+        raise ApiError(
+            400,
+            "Online payments are confirmed by the payment gateway, not by the app",
+            "use_payment_flow",
+        )
+
+    amount = round2(existing.get("total_amount") or 0)
+    payment = ledger.record_payment(existing, gateway.CASH, amount, status="paid")
+
+    client.table("bookings").update(
+        {"payment_method": gateway.CASH, "payment_status": "paid", "settled_amount": amount}
+    ).eq("id", booking_id).execute()
+    row = one(client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute())
+
+    if existing.get("professional_id"):
+        notify(
+            "provider",
+            existing["professional_id"],
+            "Payment received",
+            f"Rs {amount:g} collected in cash for your {existing.get('service_name')} job.",
+            {"booking_id": booking_id},
+        )
+    insert_notification(
+        customer_phone(claims),
+        "payment",
+        "Payment Recorded",
+        f"Payment of Rs {amount:g} recorded for your {existing.get('service_name')} booking.",
+        booking_id,
+    )
+    return {"booking": row, "payment": payment}
+
+
+@router.post("/bookings/{booking_id}/refund-request")
+def refund_request(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+    """Ask for money back. Always creates a dispute the admin console can act on."""
+    client = db()
+    existing = one(
+        client.table("bookings")
+        .select("*")
+        .eq("id", booking_id)
+        .eq("customer_phone", customer_phone(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not existing:
+        raise ApiError(404, "Booking not found")
+    reason = body.get("reason") if isinstance(body.get("reason"), str) else ""
+    if not reason.strip():
+        raise ApiError(400, "Tell us what went wrong so we can act on it")
+    row = ledger.request_refund(existing, reason.strip(), source="manual")
     return row
+
+
+@router.get("/refunds")
+def my_refunds(claims: dict = Depends(require_customer)):
+    client = db()
+    res = (
+        client.table("refunds")
+        .select("*")
+        .eq("customer_phone", customer_phone(claims))
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    return res.data or []
+
+
+@router.post("/device-token")
+def register_device_token(body: dict, claims: dict = Depends(require_customer)):
+    """Register an FCM token so this customer can be reached outside the app."""
+    token = body.get("token")
+    if not isinstance(token, str) or len(token.strip()) < 20:
+        raise ApiError(400, "A valid push token is required")
+    platform = body.get("platform") if isinstance(body.get("platform"), str) else "web"
+    res = (
+        db().table("device_tokens")
+        .upsert(
+            {
+                "role": "customer",
+                "owner_id": customer_phone(claims),
+                "token": token.strip(),
+                "platform": platform,
+                "last_seen_at": events.now_iso(),
+            },
+            on_conflict="token",
+        )
+        .execute()
+    )
+    return {"registered": bool(res.data is not None)}
+
+
+@router.delete("/device-token")
+def unregister_device_token(body: dict, claims: dict = Depends(require_customer)):
+    token = body.get("token")
+    if not isinstance(token, str):
+        raise ApiError(400, "token required")
+    db().table("device_tokens").delete().eq("token", token.strip()).eq(
+        "owner_id", customer_phone(claims)
+    ).execute()
+    return {"ok": True}
 
 
 @router.get("/favourites")
@@ -560,15 +922,39 @@ def create_ticket(body: dict, claims: dict = Depends(require_customer)):
 
 @router.get("/reviews")
 def my_reviews(claims: dict = Depends(require_customer)):
+    """Reviews this customer actually wrote.
+
+    `reviews.customer_name` stores the profile *name*, so filtering it on the
+    phone number only ever matched reviews by customers who never set a name -
+    which is why "My reviews" was empty for most accounts. Join back to the
+    bookings instead, since the booking knows who paid for it.
+    """
     client = db()
+    phone = customer_phone(claims)
+    mine = client.table("bookings").select("id, service_name, professional_id, scheduled_date").eq(
+        "customer_phone", phone
+    ).execute().data or []
+    booking_ids = [b["id"] for b in mine if b.get("id")]
+    if not booking_ids:
+        return []
     res = (
         client.table("reviews")
         .select("*")
-        .eq("customer_name", customer_phone(claims))
+        .in_("booking_id", booking_ids)
         .order("created_at", desc=True)
         .execute()
     )
-    return res.data or []
+    # Reviews posted without a booking_id still belong to the customer if they
+    # were written against a professional they actually booked.
+    unlinked = (
+        client.table("reviews")
+        .select("*")
+        .eq("customer_name", phone)
+        .is_("booking_id", None)
+        .order("created_at", desc=True)
+        .execute()
+    ).data or []
+    return list(res.data or []) + unlinked
 
 
 @router.post("/reviews", status_code=201)

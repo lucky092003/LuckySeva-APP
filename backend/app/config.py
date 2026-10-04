@@ -35,6 +35,37 @@ OTP_DEBUG = _flag("OTP_DEBUG")
 # Dev only escape hatch: accept any well-formed code and skip OTP checks entirely.
 OTP_BYPASS = _flag("OTP_BYPASS")
 
+# --- Payments (Razorpay) ---------------------------------------------------
+# Keys come from the Razorpay dashboard. Everything stays off until
+# PAYMENTS_ENABLED is set *and* both keys are present, so a deploy that forgets
+# the keys degrades to the cash flow instead of taking broken payments.
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+PAYMENTS_ENABLED = _flag("PAYMENTS_ENABLED")
+
+# --- Marketplace rules (all overridable from admin_settings) ----------------
+# Defaults only. `admin_settings` is the source of truth once a row exists; these
+# are what a fresh database falls back to.
+ACCEPT_DEADLINE_MINUTES = int(os.getenv("ACCEPT_DEADLINE_MINUTES", "30"))
+AUTO_REFUND_MINUTES = int(os.getenv("AUTO_REFUND_MINUTES", "60"))
+PAYOUT_MIN_AMOUNT = float(os.getenv("PAYOUT_MIN_AMOUNT", "500"))
+PLATFORM_GST_PCT = float(os.getenv("PLATFORM_GST_PCT", "18"))
+
+# --- Push (Firebase Cloud Messaging) ---------------------------------------
+# Optional. The FCM sender path is only imported when these are present, so the
+# backend has no hard firebase-admin dependency.
+FCM_PROJECT_ID = os.getenv("FCM_PROJECT_ID", "")
+FCM_CREDENTIALS_JSON = os.getenv("FCM_CREDENTIALS_JSON", "")
+
+
+def is_payments_enabled() -> bool:
+    return PAYMENTS_ENABLED
+
+
+def push_configured() -> bool:
+    return bool(FCM_PROJECT_ID and FCM_CREDENTIALS_JSON)
+
 
 def require_env(name: str) -> str:
     value = os.getenv(name, "")

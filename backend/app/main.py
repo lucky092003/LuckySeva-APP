@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .exceptions import ApiError
-from .routers import auth, catalog, customer, provider, admin
+from .routers import auth, catalog, customer, payments, provider, admin
 
 app = FastAPI(
     title="LuckySeva API",
@@ -31,8 +31,12 @@ async def api_error_handler(_, exc: ApiError):
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(catalog.router, prefix="/catalog", tags=["catalog"])
 app.include_router(customer.router, prefix="/customer", tags=["customer"])
+app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(provider.router, prefix="/provider", tags=["provider"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+# Outside the customer guard on purpose: Razorpay authenticates with an HMAC of
+# the raw body, not a customer JWT.
+app.include_router(payments.webhook, prefix="/payments", tags=["payments"])
 
 
 @app.get("/health")
