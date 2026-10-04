@@ -8,6 +8,25 @@ import { inr } from '@/utils/format';
 import { useEffect, useState as useS } from 'react';
 import type { Booking } from '@/types';
 
+declare global {
+  interface Window {
+    Razorpay: {
+      new (options: {
+        key: string;
+        amount: number;
+        currency: string;
+        name: string;
+        description?: string;
+        order_id: string;
+        handler: (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void;
+        prefill?: { name?: string; email?: string; contact?: string };
+        theme?: { color?: string };
+        modal?: { ondismiss?: () => void };
+      }): { open: () => void };
+    };
+  }
+}
+
 const METHODS = [
   { key: 'upi', label: 'UPI', desc: 'GPay, PhonePe, Paytm', icon: 'Smartphone' },
   { key: 'card', label: 'Card', desc: 'Credit / Debit card', icon: 'CreditCard' },
@@ -36,15 +55,57 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
   }, [bookingId]);
 
   const pay = async () => {
+    if (!booking) return;
     setPaying(true);
-    await new Promise((r) => setTimeout(r, 1500));
     try {
-      await api.customer.payBooking(bookingId, { payment_method: method, payment_status: method === 'cash' ? 'cash' : 'paid' });
-    } catch {
-      // ignore; navigation still proceeds
+      if (method === 'cash') {
+        await api.customer.payBooking(bookingId, { payment_method: 'cash', payment_status: 'cash' });
+        setPaying(false);
+        navigate({ name: 'booking-success', bookingId });
+        return;
+      }
+      // Online: create Razorpay order
+      const order = await api.customer.createPaymentOrder(bookingId);
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded');
+      }
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'LuckySeva',
+        description: booking.service_name,
+        order_id: order.order_id,
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          try {
+            await api.customer.verifyPayment({
+              booking_id: bookingId,
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+            setPaying(false);
+            navigate({ name: 'booking-success', bookingId });
+          } catch (e) {
+            setPaying(false);
+            alert(e instanceof Error ? e.message : 'Payment verification failed');
+          }
+        },
+        prefill: booking.customer_name
+          ? {
+              name: booking.customer_name,
+              contact: booking.customer_phone,
+            }
+          : undefined,
+        theme: { color: '#10B981' },
+        modal: { ondismiss: () => setPaying(false) },
+      } as const;
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (e) {
+      setPaying(false);
+      alert(e instanceof Error ? e.message : 'Could not start payment');
     }
-    setPaying(false);
-    navigate({ name: 'booking-success', bookingId });
   };
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Payment" /><Spinner className="py-20" /></div>;

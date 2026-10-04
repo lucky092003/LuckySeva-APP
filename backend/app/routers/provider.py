@@ -3,10 +3,13 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends
 
+from .. import ledger
 from ..db import db, one
 from ..dependencies import require_provider
+from ..events import insert_notification, now_iso, sweep_expired_requests
 from ..exceptions import ApiError
 from ..links import set_professional_services, set_professional_trade
+from ..pricing import round2
 
 router = APIRouter(dependencies=[Depends(require_provider)])
 
@@ -17,6 +20,12 @@ def provider_id(claims: dict) -> str:
     if not claims.get("professional_id"):
         raise ApiError(401, "Provider token missing professional_id")
     return claims["professional_id"]
+
+
+def _fresh_deadline(client) -> str:
+    from ..events import new_accept_deadline
+
+    return new_accept_deadline(client)
 
 
 def _phone_visible(row: dict, claims: dict) -> bool:
@@ -257,9 +266,108 @@ def submit_kyc(body: dict, claims: dict = Depends(require_provider)):
     return res.data[0]
 
 
+@router.put("/availability")
+def set_availability(body: dict, claims: dict = Depends(require_provider)):
+    """The on/off switch that decides whether new requests reach this provider.
+
+    Separate from the legacy `status` field because `status` only drives how the
+    profile is *labelled*. This one actually gates the feed and rejects accepts,
+    so a provider who switches off genuinely stops being interrupted.
+    """
+    if body.get("accepting_jobs") is not None:
+        accepting = body["accepting_jobs"]
+        if not isinstance(accepting, bool):
+            raise ApiError(400, "accepting_jobs must be true or false")
+    else:
+        accepting = not bool(body.get("value"))
+    res = (
+        db().table("professionals")
+        .update({"accepting_jobs": accepting, "last_seen_at": now_iso()})
+        .eq("id", provider_id(claims))
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(404, "Professional not found")
+    return res.data[0]
+
+
+@router.post("/heartbeat")
+def heartbeat(claims: dict = Depends(require_provider)):
+    """Stamped by the provider app on load and on every feed poll.
+
+    Drives the "Active now" badge and is the liveness signal for pushing a new
+    job, so a provider who closed the app is not pinged for a request they will
+    only see hours later.
+    """
+    res = (
+        db().table("professionals")
+        .update({"last_seen_at": now_iso()})
+        .eq("id", provider_id(claims))
+        .select("id, last_seen_at")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(404, "Professional not found")
+    return res.data[0]
+
+
+@router.post("/device-token")
+def register_device_token(body: dict, claims: dict = Depends(require_provider)):
+    token = body.get("token")
+    if not isinstance(token, str) or len(token.strip()) < 20:
+        raise ApiError(400, "A valid push token is required")
+    platform = body.get("platform") if isinstance(body.get("platform"), str) else "web"
+    res = (
+        db().table("device_tokens")
+        .upsert(
+            {
+                "role": "provider",
+                "owner_id": provider_id(claims),
+                "token": token.strip(),
+                "platform": platform,
+                "last_seen_at": now_iso(),
+            },
+            on_conflict="token",
+        )
+        .execute()
+    )
+    return {"registered": bool(res.data is not None)}
+
+
+@router.put("/payout-account")
+def set_payout_account(body: dict, claims: dict = Depends(require_provider)):
+    """Where settlements should be sent. Recorded for admin to verify."""
+    patch = {}
+    upi = body.get("upi_id")
+    bank = body.get("bank_account")
+    if isinstance(upi, str):
+        if upi.strip() and "@" not in upi.strip():
+            raise ApiError(400, "That does not look like a UPI ID (it needs an @)")
+        patch["bank_upi_id"] = upi.strip() or None
+    if isinstance(bank, str):
+        patch["bank_account"] = bank.strip() or None
+    if not patch:
+        raise ApiError(400, "Nothing to update")
+    res = (
+        db().table("professionals")
+        .update(patch)
+        .eq("id", provider_id(claims))
+        .select("id, bank_upi_id, bank_account")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(404, "Professional not found")
+    return res.data[0]
+
+
 @router.get("/bookings")
 def feed(claims: dict = Depends(require_provider)):
     client = db()
+    # Lapse anything that timed out before deciding what this provider can see,
+    # so an expired request never shows as accept-able and then 400s on accept.
+    sweep_expired_requests(client)
+
     declined = client.table("booking_declines").select("booking_id").eq("professional_id", provider_id(claims)).execute()
     declined_ids = {row["booking_id"] for row in (declined.data or [])}
     in_my_field = _field_filter(client, claims)
@@ -267,7 +375,11 @@ def feed(claims: dict = Depends(require_provider)):
         client.table("bookings")
         .select("*, service:services(category_id)")
         .eq("status", "confirmed")
-        .order("created_at", desc=True)
+    )
+    if hasattr(bookings, "is_"):
+        bookings = bookings.is_("accept_expired_at", None)
+    bookings = (
+        bookings.order("created_at", desc=True)
         .limit(50)
         .execute()
     )
@@ -314,31 +426,52 @@ def booking(booking_id: str, claims: dict = Depends(require_provider)):
 @router.post("/bookings/{booking_id}/accept")
 def accept(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
-    pro = one(client.table("professionals").select("name").eq("id", provider_id(claims)).maybe_single().execute())
-    pro_name = pro.get("name") if pro else None
+    pid = provider_id(claims)
+    pro = one(
+        client.table("professionals")
+        .select("name, accepting_jobs")
+        .eq("id", pid)
+        .maybe_single()
+        .execute()
+    )
+    if not pro:
+        raise ApiError(404, "Professional profile not found")
+    if pro.get("accepting_jobs") is not True:
+        raise ApiError(400, "Turn on 'Accept new requests' to take this job", "provider_offline")
+
     booking_row = one(
         client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute()
     )
     if not booking_row:
         raise ApiError(404, "Booking not found")
     row = booking_row
+
+    # Already gone by the time the button was pressed: tell the truth rather than
+    # handing out work the customer has been told has lapsed.
+    if row.get("accept_expired_at"):
+        raise ApiError(410, "This request has expired and is no longer available", "request_expired")
     if row.get("status") != "confirmed":
         raise ApiError(400, f"Booking is already {row.get('status')}")
+
+    pro_name = pro.get("name")
     next_values = {"status": "assigned"}
-    if row.get("professional_id") != provider_id(claims):
-        next_values["professional_id"] = provider_id(claims)
+    if row.get("professional_id") != pid:
+        next_values["professional_id"] = pid
         next_values["professional_name"] = pro_name or "Professional"
+    # Claiming it is the answer; stop the expiry sweep from lapsing it later.
+    next_values["accept_expired_at"] = row.get("accept_expired_at") or None
     res = client.table("bookings").update(next_values).eq("id", booking_id).select("*").execute()
-    client.table("notifications").insert(
-        {
-            "customer_phone": row.get("customer_phone"),
-            "type": "provider",
-            "title": "Provider Assigned",
-            "message": f"{pro_name or 'A professional'} has accepted your {row.get('service_name')} booking.",
-            "booking_id": booking_id,
-            "read": False,
-        }
-    ).execute()
+    if not res.data:
+        # Lost the race: another provider accepted between our read and write.
+        raise ApiError(409, "Someone else took this job", "already_taken")
+    client.table("professionals").update({"last_seen_at": now_iso()}).eq("id", pid).execute()
+    insert_notification(
+        row.get("customer_phone"),
+        "provider",
+        "Provider Assigned",
+        f"{pro_name or 'A professional'} has accepted your {row.get('service_name')} booking.",
+        booking_id,
+    )
     return res.data[0]
 
 
@@ -346,18 +479,31 @@ def accept(booking_id: str, claims: dict = Depends(require_provider)):
 def decline(booking_id: str, claims: dict = Depends(require_provider)):
     client = db()
     booking_row = one(
-        client.table("bookings").select("professional_id, status").eq("id", booking_id).maybe_single().execute()
+        client.table("bookings").select("professional_id, status, decline_count").eq("id", booking_id).maybe_single().execute()
     )
     if not booking_row:
         raise ApiError(404, "Booking not found")
     row = booking_row
-    client.table("booking_declines").insert(
-        {"booking_id": booking_id, "professional_id": provider_id(claims)}
+    # Declining twice would double-count and wrongly report "3 declined" for one
+    # provider, so make the insert idempotent on the pair.
+    client.table("booking_declines").upsert(
+        {"booking_id": booking_id, "professional_id": provider_id(claims)}, on_conflict="booking_id,professional_id"
     ).execute()
+    if row.get("professional_id") != provider_id(claims):
+        client.table("bookings").update(
+            {"decline_count": int(row.get("decline_count") or 0) + 1}
+        ).eq("id", booking_id).execute()
     if row.get("professional_id") == provider_id(claims):
         if row.get("status") not in {"completed", "cancelled"}:
             client.table("bookings").update(
-                {"professional_id": None, "professional_name": "Auto-assign"}
+                {
+                    "professional_id": None,
+                    "professional_name": "Auto-assign",
+                    "status": "confirmed",
+                    # Released back to the pool with a fresh window.
+                    "accept_deadline": _fresh_deadline(client),
+                    "accept_expired_at": None,
+                }
             ).eq("id", booking_id).execute()
     return {"ok": True}
 
@@ -421,34 +567,86 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
 
 @router.get("/earnings")
 def earnings(claims: dict = Depends(require_provider)):
+    """What this professional has earned, and how much of it is withdrawable.
+
+    Figures are `provider_earnings` (the total less the platform's commission),
+    not `total_amount`, so a professional is never shown money that belongs to
+    the platform.
+    """
     client = db()
+    pid = provider_id(claims)
     completed = (
         client.table("bookings")
-        .select("total_amount, scheduled_date, created_at")
-        .eq("professional_id", provider_id(claims))
+        .select("provider_earnings, total_amount, scheduled_date, created_at, service_name")
+        .eq("professional_id", pid)
         .eq("status", "completed")
         .execute()
     )
     rows = completed.data or []
-    total = sum(float(r.get("total_amount") or 0) for r in rows)
+
+    def net(row: dict) -> float:
+        value = row.get("provider_earnings")
+        return float(value) if value is not None else float(row.get("total_amount") or 0)
+
+    total = round2(sum(net(r) for r in rows))
     by_date: dict[str, float] = {}
     for r in rows:
         key = r.get("scheduled_date") or (r.get("created_at") or "")[:10]
-        by_date[key] = by_date.get(key, 0) + float(r.get("total_amount") or 0)
+        by_date[key] = round2(by_date.get(key, 0) + net(r))
     payouts = (
+        client.table("payouts")
+        .select("*")
+        .eq("professional_id", pid)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    balance = ledger.provider_balance(client, pid)
+    return {
+        "total_earnings": total,
+        "by_date": by_date,
+        "payouts": payouts.data or [],
+        "available": balance["available"],
+        "on_hold": balance["on_hold"],
+        "settled": balance["settled"],
+        "payout_minimum": balance["payout_minimum"],
+        "gross_earnings": round2(sum(float(r.get("total_amount") or 0) for r in rows)),
+    }
+
+
+@router.get("/earnings/daily")
+def earnings_daily(claims: dict = Depends(require_provider)):
+    """Per-day net earnings for the provider's chart."""
+    client = db()
+    rows = (
+        client.table("bookings")
+        .select("scheduled_date, created_at, provider_earnings, total_amount")
+        .eq("professional_id", provider_id(claims))
+        .eq("status", "completed")
+        .execute()
+    ).data or []
+    by_date: dict[str, float] = {}
+    for r in rows:
+        key = r.get("scheduled_date") or (r.get("created_at") or "")[:10]
+        value = r.get("provider_earnings")
+        net = float(value) if value is not None else float(r.get("total_amount") or 0)
+        by_date[key] = round2(by_date.get(key, 0) + net)
+    return [
+        {"date": k, "amount": v}
+        for k, v in sorted(by_date.items(), reverse=True)[:30]
+    ]
+
+
+@router.get("/payouts")
+def payouts(claims: dict = Depends(require_provider)):
+    client = db()
+    res = (
         client.table("payouts")
         .select("*")
         .eq("professional_id", provider_id(claims))
         .order("created_at", desc=True)
         .execute()
     )
-    paid_out = sum(float(p.get("amount") or 0) for p in (payouts.data or []))
-    return {
-        "total_earnings": total,
-        "by_date": by_date,
-        "payouts": payouts.data or [],
-        "available": total - paid_out,
-    }
+    return res.data or []
 
 
 @router.post("/payouts", status_code=201)
@@ -459,15 +657,23 @@ def request_payout(body: dict, claims: dict = Depends(require_provider)):
         raise ApiError(400, "Valid amount required")
     if amount <= 0:
         raise ApiError(400, "Valid amount required")
+    return ledger.create_payout(db(), provider_id(claims), amount)
+
+
+@router.post("/payouts/{payout_id}/cancel")
+def cancel_payout(payout_id: str, claims: dict = Depends(require_provider)):
+    """Withdraw a request that has not been paid out yet."""
     client = db()
-    res = (
-        client.table("payouts")
-        .insert({"professional_id": provider_id(claims), "amount": amount, "status": "requested"})
-        .execute()
+    existing = one(
+        client.table("payouts").select("*").eq("id", payout_id).maybe_single().execute()
     )
-    if not res.data:
-        raise ApiError(400, "Could not request payout")
-    return res.data[0]
+    if not existing:
+        raise ApiError(404, "Payout not found")
+    if existing.get("professional_id") != provider_id(claims):
+        raise ApiError(403, "Not your payout")
+    if existing.get("status") != "requested":
+        raise ApiError(400, f"Payout is already {existing.get('status')}")
+    return ledger.settle_payout(payout_id, status="cancelled", note="Cancelled by provider")
 
 
 @router.get("/dashboard")
