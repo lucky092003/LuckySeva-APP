@@ -130,7 +130,7 @@ export const ProviderProfileScreen = () => {
   const toggleAvailability = async () => {
     if (!pro) return;
     setUpdatingAvail(true);
-    await api.provider.updateMe({ status: pro.status === 'available' ? 'busy' : 'available' }).catch(() => {});
+    await api.provider.updateAvailability({ status: pro.status === 'available' ? 'busy' : 'available' }).catch(() => {});
     setUpdatingAvail(false);
     reload();
   };
@@ -170,6 +170,12 @@ export const ProviderProfileScreen = () => {
     try {
       const loc = await fetchCurrentLocation();
       await api.provider
+        .updateAvailability({
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+        })
+        .catch(() => {});
+      await api.provider
         .updateMe({
           latitude: loc.latitude,
           longitude: loc.longitude,
@@ -178,9 +184,10 @@ export const ProviderProfileScreen = () => {
         .catch(() => {});
     } catch {
       /* location remains unchanged on failure */
+    } finally {
+      setUpdatingLoc(false);
+      reload();
     }
-    setUpdatingLoc(false);
-    reload();
   };
 
   const saveRadius = async () => {
