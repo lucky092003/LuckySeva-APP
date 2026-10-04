@@ -10,6 +10,7 @@ import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge, Avatar } from 
 import { inr, formatDate } from '@/utils/format';
 import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/utils/kyc';
 import type { Category, Professional, Service } from '@/types';
+import { usePayouts } from '@/hooks';
 
 type OfferedService = Service & { offered: boolean };
 
@@ -27,8 +28,12 @@ export const ProviderProfileScreen = () => {
   const { setProviderId, navigate, providerId } = useApp();
   const { professional: pro, loading, reload } = useProfessionalWithFallback(providerId);
   const { reviews, loading: revLoading } = useReviews(pro?.id || null);
+  const { reload: reloadPayouts } = usePayouts(pro?.id || null);
   const [updatingAvail, setUpdatingAvail] = useState(false);
   const [sheet, setSheet] = useState<'services' | 'pricing' | 'reviews' | 'bank' | 'settings' | null>(null);
+  const [bank, setBank] = useState({ bank_account_number: '', bank_ifsc: '', upi_id: '' });
+  const [savingBank, setSavingBank] = useState(false);
+  const [bankMsg, setBankMsg] = useState('');
   const [catalog, setCatalog] = useState<OfferedService[]>([]);
   const [tradeSlug, setTradeSlug] = useState('');
   const [trades, setTrades] = useState<Category[]>([]);
@@ -44,6 +49,14 @@ export const ProviderProfileScreen = () => {
   const [radius, setRadius] = useState('60');
   const [updatingLoc, setUpdatingLoc] = useState(false);
   const [savingRadius, setSavingRadius] = useState(false);
+  useEffect(() => {
+    if (sheet === 'bank') {
+      api.provider
+        .payoutAccount()
+        .then((a) => setBank({ bank_account_number: a.bank_account_number || '', bank_ifsc: a.bank_ifsc || '', upi_id: a.upi_id || '' }))
+        .catch(() => setBank({ bank_account_number: '', bank_ifsc: '', upi_id: '' }));
+    }
+  }, [sheet]);
 
   const loadServices = useCallback(() => {
     setLoadingServices(true);
@@ -203,6 +216,20 @@ export const ProviderProfileScreen = () => {
     await api.provider.updateMe({ service_radius_km: km }).catch(() => {});
     setSavingRadius(false);
     reload();
+  };
+  const saveBank = async () => {
+    setSavingBank(true);
+    setBankMsg('');
+    try {
+      await api.provider.savePayoutAccount(bank);
+      setBankMsg('Saved');
+      setSheet(null);
+      reloadPayouts();
+    } catch (e) {
+      setBankMsg(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setSavingBank(false);
+    }
   };
 
   return (
@@ -549,6 +576,40 @@ export const ProviderProfileScreen = () => {
                   />
                 </Card>
                 <Button onClick={savePricing} className="w-full">Save Pricing</Button>
+              </>
+            )}
+            {sheet === 'bank' && (
+              <>
+                <Card className="p-4 space-y-3">
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-gray-700">UPI ID</p>
+                    <input
+                      value={bank.upi_id}
+                      onChange={(e) => setBank({ ...bank, upi_id: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-gray-700">Account number</p>
+                    <input
+                      value={bank.bank_account_number}
+                      onChange={(e) => setBank({ ...bank, bank_account_number: e.target.value })}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-gray-700">IFSC</p>
+                    <input
+                      value={bank.bank_ifsc}
+                      onChange={(e) => setBank({ ...bank, bank_ifsc: e.target.value.toUpperCase() })}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    />
+                  </div>
+                </Card>
+                {bankMsg && <p className="text-[11px] text-gray-500">{bankMsg}</p>}
+                <Button onClick={saveBank} disabled={savingBank} className="w-full">
+                  {savingBank ? 'Saving...' : 'Save Bank Details'}
+                </Button>
               </>
             )}
 
