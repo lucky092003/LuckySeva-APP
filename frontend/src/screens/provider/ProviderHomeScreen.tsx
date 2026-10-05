@@ -81,8 +81,22 @@ export const ProviderHomeScreen = () => {
 
   useEffect(() => {
     if (!professional?.id) return;
-    const t = setInterval(() => setTick((n) => n + 1), 15000);
-    return () => clearInterval(t);
+    // Refresh when the tab comes back to the foreground, plus a slow safety
+    // net. A 15s timer refetched both feeds continuously, which burns the
+    // Supabase quota and shows the provider a stale list anyway - the window
+    // most providers check this screen in is idle.
+    const refresh = () => setTick((n) => n + 1);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', refresh);
+    const t = setInterval(refresh, 60000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', refresh);
+      clearInterval(t);
+    };
   }, [professional?.id]);
 
   const myId = professional?.id;
