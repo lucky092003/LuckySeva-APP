@@ -10,6 +10,8 @@ import { inr, formatRelativeDay, slugToLabel } from '@/utils/format';
 import { haversineKm } from '@/services/location';
 import type { Booking } from '@/types';
 
+const MINUTE_MS = 60000;
+
 const SORTS = [
   { key: 'nearest', label: 'Nearest first' },
   { key: 'newest', label: 'Newest first' },
@@ -284,6 +286,25 @@ const ACTIVE_STATUS: Record<string, { label: string; chip: string; icon: 'check'
   started: { label: 'In service', chip: 'bg-emerald-50 text-emerald-600', icon: 'tool' },
 };
 
+const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!deadline) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  if (!deadline) return null;
+  const end = new Date(deadline).getTime();
+  if (isNaN(end)) return null;
+  if (end <= now) return null;
+  const mins = Math.ceil((end - now) / MINUTE_MS);
+  return (
+    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+      Expires in {mins}m
+    </span>
+  );
+};
+
 const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => void }) => {
   const meta = ACTIVE_STATUS[booking.status] ?? ACTIVE_STATUS.assigned;
   return (
@@ -297,11 +318,12 @@ const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => 
           <Icons.ClipboardCheck size={18} />
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.chip}`}>{meta.label}</span>
-        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
+            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">NEW</span>
+            <ExpiryBanner deadline={booking.accept_deadline} />
+          </div>
         <p className="truncate text-[11px] text-gray-500">
           {booking.customer_name} · {formatRelativeDay(booking.scheduled_date)}, {booking.scheduled_time}
         </p>

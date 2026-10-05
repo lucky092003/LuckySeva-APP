@@ -17,6 +17,7 @@ import { Logo } from '@/components/Logo';
 import { DevOtpHint } from '@/components/DevOtpHint';
 import { useApp } from '@/context/app-context';
 import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
+import { registerPush } from '@/services/push';
 import { fetchCurrentLocation } from '@/services/location';
 
 // Auth accent, kept on the same emerald ramp the rest of the app uses
@@ -256,6 +257,7 @@ export const AuthScreen = () => {
         email: profile?.email || email || '',
         location: profile?.location || location || '',
       });
+      registerPush((body) => api.customer.deviceToken(body.token, body.platform));
       navigate({ name: 'home' });
     } catch (e) {
       if (!isSignup && isSignupRequired(e)) {

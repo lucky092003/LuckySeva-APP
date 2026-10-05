@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { api, getApiToken, setApiToken } from '@/services/api';
+import { registerPush } from '@/services/push';
 
 export type Role = 'customer' | 'provider' | 'admin';
 
@@ -52,7 +53,11 @@ export type Screen =
   | { name: 'admin-providers' }
   | { name: 'admin-services' }
   | { name: 'admin-bookings' }
-  | { name: 'admin-profile' };
+  | { name: 'admin-profile' }
+  | { name: 'admin-coupons' }
+  | { name: 'admin-payouts' }
+  | { name: 'admin-refunds' }
+  | { name: 'admin-disputes' };
 
 export type Customer = {
   name: string;
@@ -138,6 +143,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (res.role === 'provider' && res.professional) {
           setProviderId(res.professional.id);
           if (!initialProviderId) setStack([{ name: 'provider-home' }]);
+          registerPush((body) => api.provider.deviceToken(body.token, body.platform));
         } else if (res.role === 'admin') {
           setAdminAuthed(true);
           if (!initialAdminAuthed) setStack([{ name: 'admin-dashboard' }]);
@@ -149,6 +155,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             location: res.profile.location || '',
           });
           if (!initialCustomer) setStack([{ name: 'home' }]);
+          registerPush((body) => api.customer.deviceToken(body.token, body.platform));
         } else {
           resetToAuth();
         }

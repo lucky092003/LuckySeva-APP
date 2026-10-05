@@ -19,6 +19,7 @@ import { Logo } from '@/components/Logo';
 import { DevOtpHint } from '@/components/DevOtpHint';
 import { useApp } from '@/context/app-context';
 import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
+import { registerPush } from '@/services/push';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 
 // Auth accent, kept on the same emerald ramp the rest of the app uses
@@ -181,6 +182,7 @@ export const ProviderAuthScreen = () => {
       });
       setApiToken(res.access_token);
       setProviderId(res.professional_id || null);
+      registerPush((body) => api.provider.deviceToken(body.token, body.platform));
       navigate({ name: 'provider-home' });
     } catch (e) {
       if (!isSignup && isSignupRequired(e)) {

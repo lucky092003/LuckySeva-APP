@@ -69,7 +69,7 @@ export const Badge = ({
   className = '',
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'success' | 'warning' | 'info';
+  tone?: 'neutral' | 'success' | 'warning' | 'info' | 'danger';
   className?: string;
 }) => {
   const tones: Record<string, string> = {
@@ -77,6 +77,7 @@ export const Badge = ({
     success: 'bg-emerald-50 text-emerald-700',
     warning: 'bg-amber-50 text-amber-700',
     info: 'bg-sky-50 text-sky-700',
+    danger: 'bg-red-50 text-red-700',
   };
   return (
     <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}>
@@ -105,6 +106,7 @@ export const Button = ({
   className = '',
   disabled,
   type = 'button',
+  size = 'md',
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -112,6 +114,7 @@ export const Button = ({
   className?: string;
   disabled?: boolean;
   type?: 'button' | 'submit';
+  size?: 'sm' | 'md' | 'lg';
 }) => {
   const variants: Record<string, string> = {
     primary: 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-sm shadow-emerald-500/30',
@@ -120,12 +123,17 @@ export const Button = ({
     outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white',
     danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm shadow-red-500/30',
   };
+  const sizes: Record<string, string> = {
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-4 py-3 text-sm',
+    lg: 'px-5 py-3.5 text-base',
+  };
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
     </button>
@@ -173,6 +181,34 @@ export const SearchBar = ({
       </button>
     )}
   </div>
+);
+
+export const Input = ({
+  value,
+  onChange,
+  placeholder = '',
+  type = 'text',
+  className = '',
+  disabled,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  type?: 'text' | 'number' | 'email' | 'password' | 'date' | 'tel';
+  className?: string;
+  disabled?: boolean;
+  autoFocus?: boolean;
+}) => (
+  <input
+    autoFocus={autoFocus}
+    type={type}
+    value={value}
+    onChange={onChange}
+    disabled={disabled}
+    placeholder={placeholder}
+    className={`w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none ${className}`}
+  />
 );
 
 const AVATAR_TONES = [
