@@ -29,6 +29,17 @@ DEFAULT_PRIORITY_FEE = 99.0
 DEFAULT_PRIORITY_TOP_N = 5
 
 
+def _as_str(value) -> str:
+    """Coerce a client string field, treating an explicit null as absent.
+
+    `body.get(key, "")` only falls back when the key is *missing*, so a client
+    that sends `"notes": null` passed the null straight through. The column is
+    NOT NULL, so PostgREST rejected the insert and the booking died as an
+    unhandled 500 rather than the blank value the client actually meant.
+    """
+    return value.strip() if isinstance(value, str) else ""
+
+
 def _setting_float(client, key: str, fallback: float) -> float:
     """Read a numeric platform setting, ignoring junk rather than 500-ing.
 
@@ -356,7 +367,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     profile = one(client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute())
     service_id = body.get("service_id") if isinstance(body.get("service_id"), str) else None
     base = 0.0
-    service_name = body.get("service_name", "")
+    service_name = _as_str(body.get("service_name"))
     if service_id:
         svc = one(client.table("services").select("*").eq("id", service_id).maybe_single().execute())
         if svc:
@@ -452,7 +463,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
             {
                 "customer_name": name,
                 "customer_phone": customer_phone(claims),
-                "customer_address": body.get("customer_address", ""),
+                "customer_address": _as_str(body.get("customer_address")),
                 "address_id": address_id,
                 "service_id": service_id,
                 "service_name": service_name,
@@ -460,7 +471,7 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
                 "professional_name": professional_name if isinstance(professional_name, str) else "Auto-assign",
                 "scheduled_date": scheduled_date.isoformat(),
                 "scheduled_time": scheduled_time,
-                "notes": body.get("notes", ""),
+                "notes": _as_str(body.get("notes")),
                 "base_price": base,
                 "visit_fee": visit_fee,
                 "priority_fee": priority_fee,

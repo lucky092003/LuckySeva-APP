@@ -53,7 +53,7 @@ export const ProviderProfileScreen = () => {
     if (sheet === 'bank') {
       api.provider
         .payoutAccount()
-        .then((a) => setBank({ bank_account_number: a.bank_account_number || '', bank_ifsc: a.bank_ifsc || '', upi_id: a.upi_id || '' }))
+.then((a) => setBank({ bank_account_number: a.bank_account || '', bank_ifsc: '', upi_id: a.bank_upi_id || '' }))
         .catch(() => setBank({ bank_account_number: '', bank_ifsc: '', upi_id: '' }));
     }
   }, [sheet]);
