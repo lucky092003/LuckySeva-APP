@@ -335,6 +335,27 @@ def register_device_token(body: dict, claims: dict = Depends(require_provider)):
     return {"registered": bool(res.data is not None)}
 
 
+@router.get("/payout-account")
+def get_payout_account(claims: dict = Depends(require_provider)):
+    """Where this provider's settlements currently go.
+
+    The save form needs to show what is already on file, and there was no read
+    side to it - only the PUT below - so opening the sheet always came back
+    blank and re-saving looked like it wiped the account.
+    """
+    res = (
+        db().table("professionals")
+        .select("id, bank_upi_id, bank_account")
+        .eq("id", provider_id(claims))
+        .maybe_single()
+        .execute()
+    )
+    row = one(res)
+    if not row:
+        raise ApiError(404, "Professional not found")
+    return row
+
+
 @router.put("/payout-account")
 def set_payout_account(body: dict, claims: dict = Depends(require_provider)):
     """Where settlements should be sent. Recorded for admin to verify."""

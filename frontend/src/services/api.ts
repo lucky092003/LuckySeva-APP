@@ -37,6 +37,30 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A Render free-tier cold start can sit idle for the better part of a minute, so
+ * this is deliberately generous: the point is to convert a request that hangs
+ * forever into a named failure, not to cut a slow-but-working backend off.
+ */
+const TIMEOUT_MS = 60_000;
+
+/**
+ * A rejected `fetch` never reached the API, so there is no status for a caller to
+ * branch on. Every screen used to answer that with a single generic string, which
+ * made an unreachable backend, a CORS rejection and a dead connection look
+ * identical. Naming the case turns those into a fixable report.
+ */
+const networkError = (url: string, method: string, err: unknown): ApiError => {
+  const timedOut = err instanceof DOMException && err.name === 'AbortError';
+  const message = timedOut
+    ? 'The server took too long to respond. Please try again.'
+    : typeof navigator !== 'undefined' && navigator.onLine === false
+      ? 'You appear to be offline. Reconnect and try again.'
+      : `Could not reach the server at ${BASE}. Please try again.`;
+  console.error(`[api] ${method} ${url} failed`, err);
+  return new ApiError(message, 0, timedOut ? 'timeout' : 'network');
+};
+
 async function request<T>(
   fn: string,
   path: string,
@@ -47,18 +71,53 @@ async function request<T>(
     console.error(MISSING_BASE);
     throw new ApiError(MISSING_BASE, 0);
   }
+  const url = `${BASE}/${fn}${path}`;
   const token = getApiToken();
-  const res = await fetch(`${BASE}/${fn}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const data = (await res.json().catch(() => null)) as (T & { error?: string; code?: string }) | null;
-  if (!res.ok) throw new ApiError(data?.error || `API ${res.status}`, res.status, data?.code);
-  return data as T;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      throw networkError(url, method, err);
+    }
+    // Read the body as text first. A platform or proxy error page is HTML, not
+    // the API's JSON error shape, and parsing it away left the caller with a bare
+    // `API 500` and nothing in the console to act on.
+    const raw = await res.text().catch(() => '');
+    const data = (raw ? safeJsonParse(raw) : null) as (T & { error?: string; code?: string }) | null;
+    if (!res.ok) {
+      if (!data) {
+        console.error(`[api] ${method} ${url} -> ${res.status} ${res.statusText}`, raw.slice(0, 300));
+        throw new ApiError(
+          `The server returned an error (${res.status}${res.statusText ? ` ${res.statusText}` : ''}). Please try again.`,
+          res.status,
+          'server_error'
+        );
+      }
+      throw new ApiError(data.error || `API ${res.status}`, res.status, data.code);
+    }
+    return data as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function safeJsonParse(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 const STALE_BACKEND_HINT =
@@ -133,7 +192,7 @@ export const api = {
     createBooking: (b: Partial<Booking>) => request<Booking>('customer', '/bookings', 'POST', b),
     cancelBooking: (id: string) => request<Booking>('customer', `/bookings/${id}/cancel`, 'PUT'),
     payBooking: (id: string, patch: { payment_method: string; payment_status: 'cash' | 'paid' | 'pending' }) =>
-      request<Booking>('customer', `/bookings/${id}/payment`, 'PUT', patch),
+      request<{ booking: Booking; payment: { id: string; status: string; amount: number; method: string } }>('customer', `/bookings/${id}/payment`, 'PUT', patch),
     tickets: () => request<SupportTicket[]>('customer', '/tickets'),
     addTicket: (message: string) => request<SupportTicket>('customer', '/tickets', 'POST', { message }),
     favourites: () => request<Professional[]>('customer', '/favourites'),
@@ -147,9 +206,27 @@ export const api = {
     coupons: () => request<{ code: string; discount_pct: number; min_amount: number; expires_at: string | null }[]>('customer', '/coupons'),
     quote: (service_id: string, address_id?: string) =>
       request<{ base_price: number; visit_fee: number; discount_amount: number; coupon_code: string | null; total: number }>('customer', '/quote', 'POST', { service_id, address_id }),
-    createPaymentOrder: (booking_id: string) => request<{ order_id: string; amount: number; currency: string; key_id: string }>('/payments', '/customer/orders', 'POST', { booking_id }),
+    // The backend mounts these at /payments/order and /payments/verify with
+    // booking_id as a query parameter. The old '/payments/customer/orders' path
+    // matched no route at all, so every UPI/card/net-banking payment 404'd.
+    createPaymentOrder: (booking_id: string, method: string) =>
+      request<{ payment_id: string; order_id: string; amount: number; currency: string; key_id: string }>(
+        'payments',
+        `/order?booking_id=${encodeURIComponent(booking_id)}`,
+        'POST',
+        { method }
+      ),
     verifyPayment: (payload: { booking_id: string; order_id: string; payment_id: string; signature: string }) =>
-      request<{ ok: boolean; booking: Booking }>('/payments', '/customer/verify', 'POST', payload),
+      request<{ ok: boolean; already_paid?: boolean; booking: Booking }>(
+        'payments',
+        `/verify?booking_id=${encodeURIComponent(payload.booking_id)}`,
+        'POST',
+        {
+          razorpay_order_id: payload.order_id,
+          razorpay_payment_id: payload.payment_id,
+          razorpay_signature: payload.signature,
+        }
+      ),
     reviews: () => request<Review[]>('customer', '/reviews'),
     addReview: (r: { booking_id?: string | null; professional_id: string; rating: number; comment?: string }) =>
       request<Review>('customer', '/reviews', 'POST', r),
@@ -161,7 +238,7 @@ export const api = {
       request<Professional>('provider', '/me', 'PUT', patch),
     bookings: () => request<Booking[]>('provider', '/bookings'),
     updateAvailability: (payload: { status?: string; latitude?: number; longitude?: number }) =>
-      request<{ ok: boolean }>('provider', '/availability', 'POST', payload),
+      request<{ ok: boolean }>('provider', '/availability', 'PUT', payload),
     heartbeat: () => request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST'),
     deviceToken: (token: string, platform = 'web') =>
       request<{ registered: boolean }>('provider', '/device-token', 'POST', { token, platform }),
@@ -182,9 +259,16 @@ export const api = {
     updateStatus: (id: string, status: string) =>
       request<Booking>('provider', `/bookings/${id}/status`, 'PUT', { status }),
     earnings: () => request<{ total_earnings: number; by_date: Record<string, number>; payouts: Payout[]; available: number }>('provider', '/earnings'),
-    payoutAccount: () => request<{ bank_account_number: string | null; bank_ifsc: string | null; upi_id: string | null }>('/ledger', '/provider/payout-account'),
+    // The backend stores these on `professionals` as bank_account / bank_upi_id.
+    // There is no IFSC column, so it reads back null and is not persisted.
+    payoutAccount: () => request<{ bank_account: string | null; bank_upi_id: string | null }>('provider', '/payout-account'),
     savePayoutAccount: (a: { bank_account_number?: string; bank_ifsc?: string; upi_id?: string }) =>
-      request<{ ok: boolean }>('/ledger', '/provider/payout-account', 'POST', a),
+      request<{ id: string; bank_account: string | null; bank_upi_id: string | null }>(
+        'provider',
+        '/payout-account',
+        'PUT',
+        { bank_account: a.bank_account_number, upi_id: a.upi_id }
+      ),
     dashboard: () => request<{ active: number; completed_jobs: number; today_earnings: number; total_earnings: number }>('provider', '/dashboard'),
     requestPayout: (amount: number) => request<Payout>('provider', '/payouts', 'POST', { amount }),
     submitKyc: (input: { doc_type: string; doc_number: string }) =>
@@ -217,15 +301,14 @@ export const api = {
     updateCoupon: (id: string, c: { discount_pct?: number; min_amount?: number; expires_at?: string | null; active?: boolean }) =>
       request<unknown>('admin', `/coupons/${id}`, 'PUT', c),
     deleteCoupon: (id: string) => request<{ ok: boolean }>('admin', `/coupons/${id}`, 'DELETE'),
-    payouts: () => request<Payout[]>('/ledger', '/admin/payouts'),
-    settlePayout: (id: string, s: { status: string; note?: string; settlement_ref?: string }) =>
-      request<Payout>('/ledger', `/admin/payouts/${id}`, 'PUT', s),
-    refunds: () => request<Refund[]>('/ledger', '/admin/refunds'),
-    createRefund: (r: { booking_id?: string | null; amount: number; reason: string; note?: string }) =>
-      request<Refund>('/ledger', '/admin/refunds', 'POST', r),
-    settleRefund: (id: string, s: { status: string; note?: string }) => request<Refund>('/ledger', `/admin/refunds/${id}`, 'PUT', s),
-    disputes: () => request<unknown[]>('/ledger', '/admin/disputes'),
-    settleDispute: (id: string, s: { status: string; note?: string }) => request<unknown>('/ledger', `/admin/disputes/${id}`, 'PUT', s),
+    // These live under /admin and /provider. They were pointed at a '/ledger'
+    // prefix that is not a mounted router, so every one of them 404'd.
+    payouts: () => request<Payout[]>('admin', '/payouts'),
+    settlePayout: (id: string, s: { status: string; note?: string; reference?: string }) =>
+      request<Payout>('admin', `/payouts/${id}`, 'PUT', s),
+    refunds: () => request<Refund[]>('admin', '/refunds'),
+    settleRefund: (id: string, s: { status: string; note?: string }) => request<Refund>('admin', `/refunds/${id}`, 'PUT', s),
+    disputes: () => request<unknown[]>('admin', '/disputes'),
   },
 };
 
