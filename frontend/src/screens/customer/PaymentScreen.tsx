@@ -65,7 +65,7 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
         return;
       }
       // Online: create Razorpay order
-      const order = await api.customer.createPaymentOrder(bookingId);
+      const order = await api.customer.createPaymentOrder(bookingId, method);
       if (!window.Razorpay) {
         throw new Error('Razorpay SDK not loaded');
       }

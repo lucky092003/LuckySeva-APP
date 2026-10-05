@@ -156,7 +156,10 @@ def settle_payout(payout_id: str, *, status: str, reference: str = "", note: str
 def record_payment(booking: dict, method: str, amount: float, *, status: str) -> dict:
     client = db()
     online = gateway.is_online(method)
-    row = one(
+    # `insert()` returns a query builder, not a select builder, so `maybe_single()`
+    # does not exist on it - the "record a payment" flow raised AttributeError on
+    # every call. Read the inserted row off the response like every other insert.
+    res = (
         client.table("payments")
         .insert(
             {
@@ -170,9 +173,9 @@ def record_payment(booking: dict, method: str, amount: float, *, status: str) ->
             }
         )
         .select("*")
-        .maybe_single()
         .execute()
     )
+    row = (res.data or [None])[0]
     if not row:
         raise ApiError(400, "Could not record payment")
     return row

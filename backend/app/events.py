@@ -80,12 +80,13 @@ def sweep_expired_requests(client) -> int:
             client.table("bookings")
             .select("id, customer_phone, service_name, scheduled_date, scheduled_time, professional_id")
             .eq("status", "confirmed")
-            .is_("accept_deadline", "not.null")
-        )
-        if hasattr(pending, "is_"):
-            pending = pending.is_("accept_expired_at", None)
-        pending = (
-            pending.lt("accept_deadline", now_iso())
+            # `not_.is_(..., "null")` is the NOT NULL form. Passing "not.null" as
+            # the value rendered the literal filter `is.not.null`, which PostgREST
+            # rejects with PGRST100 - so the sweep below never read a single row
+            # and every unaccepted request sat in the provider feed forever.
+            .not_.is_("accept_deadline", "null")
+            .is_("accept_expired_at", None)
+            .lt("accept_deadline", now_iso())
             .execute()
         )
     except Exception as exc:
