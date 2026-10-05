@@ -1,6 +1,7 @@
-fastapi
+﻿fastapi
 uvicorn[standard]
 pydantic
 supabase==2.31.0
 PyJWT
 python-dotenv
+firebase-admin

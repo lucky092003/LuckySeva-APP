@@ -8,6 +8,8 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking, BookingStatus } from '@/types';
 
+const MINUTE_MS = 60000;
+
 const NEXT_STATUS: Record<BookingStatus, BookingStatus | null> = {
   confirmed: 'assigned',
   assigned: 'on_the_way',
@@ -15,6 +17,21 @@ const NEXT_STATUS: Record<BookingStatus, BookingStatus | null> = {
   started: 'completed',
   completed: null,
   cancelled: null,
+};
+
+const ExpiryTimer = ({ deadline }: { deadline: string | null | undefined }) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!deadline) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  if (!deadline) return null;
+  const end = new Date(deadline).getTime();
+  if (isNaN(end)) return null;
+  if (end <= now) return <span className="text-[11px] font-semibold text-red-600">Expired</span>;
+  const mins = Math.ceil((end - now) / MINUTE_MS);
+  return <span className="text-[11px] font-semibold text-emerald-700">Expires in {mins}m</span>;
 };
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -94,6 +111,12 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
         {/* Customer info */}
         <Card className="mb-3 p-4">
           <h3 className="mb-3 text-sm font-bold text-gray-900">Customer Details</h3>
+          {booking.status === 'confirmed' && (
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[11px] text-gray-500">Accept window</span>
+              <ExpiryTimer deadline={booking.accept_deadline} />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600">
               {booking.customer_name[0]}

@@ -3,10 +3,10 @@ import { ReactNode, useEffect, useState } from 'react';
 import { api, setApiToken } from '@/services/api';
 import { useApp, ADMIN_CREDENTIALS } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
-import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge, Avatar } from '@/components/ui';
+import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge, Avatar, Input } from '@/components/ui';
 import { inr, formatDate, slugToLabel } from '@/utils/format';
 import { isVerified, kycStatus, KYC_STATUS_LABEL, kycDocLabel } from '@/utils/kyc';
-import type { Booking, Professional, Category, Service } from '@/types';
+import type { Booking, Professional, Category, Service, Payout, Refund } from '@/types';
 
 const AdminHeader = ({
   title,
@@ -874,7 +874,116 @@ const ToggleRow = ({ label, value, onChange }: { label: string; value: boolean; 
       onClick={onChange}
       className={`relative h-6 w-12 rounded-full transition-colors ${value ? 'bg-gray-300' : 'bg-emerald-500'}`}
     >
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${value ? 'left-0.5' : 'left-[26px]'}`} />
+    <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${value ? 'left-0.5' : 'left-[26px]'}`} />
     </button>
   </div>
 );
+
+export const AdminCoupons = () => {
+  const [coupons, setCoupons] = useState<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ code: '', discount_pct: '10', min_amount: '0', expires_at: '', active: true });
+
+  const load = () => {
+    setLoading(true);
+    api.admin.coupons().then((c) => { setCoupons(c || []); setLoading(false); }).catch(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <AdminHeader title="Coupons" subtitle={`${coupons.length} coupons`} />
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
+        <Card className="p-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+          <Input value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value.toUpperCase() }))} placeholder="CODE" />
+          <Input type="number" value={form.discount_pct} onChange={(e) => setForm((s) => ({ ...s, discount_pct: e.target.value }))} placeholder="% Discount" />
+          <Input type="number" value={form.min_amount} onChange={(e) => setForm((s) => ({ ...s, min_amount: e.target.value }))} placeholder="Min Amount" />
+          <Input type="date" value={form.expires_at} onChange={(e) => setForm((s) => ({ ...s, expires_at: e.target.value }))} />
+          <Button onClick={async () => { await api.admin.createCoupon({ code: form.code, discount_pct: Number(form.discount_pct), min_amount: Number(form.min_amount), expires_at: form.expires_at || null }); load(); setForm({ code: '', discount_pct: '10', min_amount: '0', expires_at: '', active: true }); }} disabled={!form.code}>Add</Button>
+        </Card>
+        <Card className="overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Code</th><th className="px-5 py-3">Discount</th><th className="px-5 py-3">Min</th><th className="px-5 py-3">Expires</th><th className="px-5 py-3">Active</th></tr></thead>
+            <tbody>{coupons.map((c) => (<tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono">{c.code}</td><td className="px-5 py-3">{c.discount_pct}%</td><td className="px-5 py-3">{inr(c.min_amount)}</td><td className="px-5 py-3">{c.expires_at ? formatDate(c.expires_at) : '—'}</td><td className="px-5 py-3">{c.active ? 'Yes' : 'No'}</td></tr>))}</tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export const AdminPayouts = () => {
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [note, setNote] = useState<Record<string, string>>({});
+  const [ref, setRef] = useState<Record<string, string>>({});
+
+  const load = () => { setLoading(true); api.admin.payouts().then((p) => { setPayouts(p || []); setLoading(false); }).catch(() => setLoading(false)); };
+  useEffect(load, []);
+
+  if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <AdminHeader title="Payouts" subtitle={`${payouts.length} payouts`} />
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+        <Card className="overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Provider</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Note/Ref</th><th className="px-5 py-3">Actions</th></tr></thead>
+            <tbody>{payouts.map((p) => (<tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3">{p.professional_id}</td><td className="px-5 py-3 font-semibold">{inr(p.amount)}</td><td className="px-5 py-3"><Badge tone={p.status === 'completed' ? 'success' : p.status === 'rejected' ? 'danger' : 'warning'}>{p.status}</Badge></td><td className="px-5 py-3 space-y-1"><Input placeholder="Note" value={note[p.id]||''} onChange={(e)=>setNote((s)=>({...s,[p.id]:e.target.value}))}/><Input placeholder="Settlement Ref" value={ref[p.id]||''} onChange={(e)=>setRef((s)=>({...s,[p.id]:e.target.value}))}/></td><td className="px-5 py-3 flex gap-2"><Button size="sm" onClick={async ()=>{await api.admin.settlePayout(p.id,{status:'completed',note:note[p.id]||undefined,settlement_ref:ref[p.id]||undefined}); load();}}>Approve</Button><Button size="sm" variant="danger" onClick={async ()=>{await api.admin.settlePayout(p.id,{status:'rejected',note:note[p.id]||undefined}); load();}}>Reject</Button></td></tr>))}</tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export const AdminRefunds = () => {
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => { setLoading(true); api.admin.refunds().then((r) => { setRefunds(r || []); setLoading(false); }).catch(() => setLoading(false)); };
+  useEffect(load, []);
+
+  if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <AdminHeader title="Refunds" subtitle={`${refunds.length} refunds`} />
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+        <Card className="overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">ID</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Reason</th></tr></thead>
+            <tbody>{refunds.map((r) => (<tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono text-xs">{r.id.slice(0,8)}</td><td className="px-5 py-3">{inr(r.amount)}</td><td className="px-5 py-3"><Badge tone={r.status==='completed'?'success':r.status==='failed'?'danger':'warning'}>{r.status}</Badge></td><td className="px-5 py-3 text-xs">{r.reason||'—'}</td></tr>))}</tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export const AdminDisputes = () => {
+  const [disputes, setDisputes] = useState<unknown[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => { setLoading(true); api.admin.disputes().then((d) => { setDisputes(d || []); setLoading(false); }).catch(() => setLoading(false)); };
+  useEffect(load, []);
+
+  if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <AdminHeader title="Disputes" subtitle={`${disputes.length} disputes`} />
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+        <Card className="overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">ID</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Note</th></tr></thead>
+            <tbody>{disputes.map((d: unknown) => { const dd = d as { id?: string; status?: string; note?: string }; return (<tr key={dd.id||''} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono text-xs">{dd.id?.slice(0,8)}</td><td className="px-5 py-3">{dd.status||'—'}</td><td className="px-5 py-3 text-xs">{dd.note||'—'}</td></tr>); })}</tbody>
+          </table>
+        </Card>
+      </div>
+    </div>
+  );
+};
