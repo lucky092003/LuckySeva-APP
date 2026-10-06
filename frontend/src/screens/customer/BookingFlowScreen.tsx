@@ -68,6 +68,10 @@ const PAYMENT_METHODS = [
   { key: 'netbanking', label: 'Net Banking', icon: 'Landmark', desc: 'All major banks supported' },
 ] as const;
 
+/** Default address first so the one the customer actually uses sits at the top. */
+const sortSavedAddresses = (list: AddressRow[]) =>
+  [...list].sort((a, b) => Number(b.is_default) - Number(a.is_default));
+
 export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: string; professionalId?: string }) => {
   const { navigate, customer } = useApp();
   const coords = useCustomerCoords();
@@ -138,7 +142,7 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     }
     api.customer
       .addresses()
-      .then((data) => setSavedAddrs(data || []))
+      .then((data) => setSavedAddrs(sortSavedAddresses(data || [])))
       .catch(() => setSavedAddrs([]));
   }, [step]);
 
@@ -619,12 +623,15 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
 
         {step === ADDR_STEP && (
           <div className="space-y-5">
-            {savedAddrs.length > 0 && (
-              <div>
-                <div className="mb-2 flex items-baseline justify-between">
-                  <h3 className="text-sm font-bold text-gray-900">Saved Addresses</h3>
-                  <span className="text-[11px] text-gray-400">Tap one to use it</span>
-                </div>
+            <div>
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-bold text-gray-900">Service Address</h3>
+                <span className="text-[11px] text-gray-400">
+                  {selectedAddressId ? 'Editing deselects the saved address' : 'Tap a saved one or add new'}
+                </span>
+              </div>
+
+              {savedAddrs.length > 0 && (
                 <div className="space-y-2">
                   {savedAddrs.map((a) => {
                     const selected = selectedAddressId === a.id;
@@ -675,16 +682,16 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                     );
                   })}
                 </div>
-              </div>
-            )}
+              )}
 
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="text-sm font-bold text-gray-900">Service Address</h3>
-                {selectedAddressId ? (
-                  <span className="text-[11px] font-medium text-gray-400">Editing deselects the saved address</span>
-                ) : null}
-              </div>
+              {savedAddrs.length > 0 && (
+                <div className="my-3 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-gray-200" />
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Or add a new address</span>
+                  <span className="h-px flex-1 bg-gray-200" />
+                </div>
+              )}
+
               <AddressForm
                 value={addr}
                 onChange={updateAddr}
