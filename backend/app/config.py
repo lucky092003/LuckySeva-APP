@@ -35,6 +35,17 @@ OTP_DEBUG = _flag("OTP_DEBUG")
 # Dev only escape hatch: accept any well-formed code and skip OTP checks entirely.
 OTP_BYPASS = _flag("OTP_BYPASS")
 
+# --- API docs (Swagger UI / ReDoc / openapi.json) -----------------------------
+# Hidden in production so the full API surface is not browsable by anyone who
+# finds the URL. Render sets RENDER=true; ENV=production is the generic form.
+# API_DOCS_ENABLED overrides both ways (set it to true on a prod box if you
+# ever need to inspect the schema there).
+IS_PRODUCTION = _flag("RENDER") or os.getenv("ENV", "").strip().lower() in {
+    "production",
+    "prod",
+}
+DOCS_ENABLED = _flag("API_DOCS_ENABLED", "false" if IS_PRODUCTION else "true")
+
 # --- Payments (Razorpay) ---------------------------------------------------
 # Keys come from the Razorpay dashboard. Everything stays off until
 # PAYMENTS_ENABLED is set *and* both keys are present, so a deploy that forgets

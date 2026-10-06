@@ -134,6 +134,10 @@ py -m uvicorn app.main:app --reload
 
 Interactive API docs: `http://localhost:8000/docs`.
 
+> **Production:** `/docs`, `/redoc` and `/openapi.json` are **disabled in production**
+> (detected via Render's `RENDER` var or `ENV=production`) so the API surface is not
+> browsable. Set `API_DOCS_ENABLED=true` to force them on, `false` to force them off.
+
 > **JWT note:** the backend mints and verifies its own JWTs using `SUPABASE_JWT_SECRET`
 > (same secret Supabase uses), so tokens are valid for the API only.
 
@@ -271,7 +275,8 @@ use **New → Blueprint** and pick this repo to deploy with zero manual config.
 
 ## API reference
 
-The backend exposes these endpoint groups (full docs at `/docs` when it's running):
+The backend exposes these endpoint groups (full docs at `/docs` when it's running locally;
+the docs endpoints return 404 in production):
 
 | Prefix | Auth      | Purpose |
 |--------|-----------|---------|

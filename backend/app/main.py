@@ -4,15 +4,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .config import DOCS_ENABLED
 from .exceptions import ApiError
 from .routers import auth, catalog, customer, payments, provider, admin
 
 logger = logging.getLogger(__name__)
 
+# None means the route is never registered: /docs, /redoc and /openapi.json all
+# 404 in production, so there is no browsable schema to leak the API surface.
+# /health and every real route are unaffected.
 app = FastAPI(
     title="LuckySeva API",
     version="1.0.0",
     description="Service marketplace API — app + website use this.",
+    docs_url="/docs" if DOCS_ENABLED else None,
+    redoc_url="/redoc" if DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if DOCS_ENABLED else None,
 )
 
 app.add_middleware(
