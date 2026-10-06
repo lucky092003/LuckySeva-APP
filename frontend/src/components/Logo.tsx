@@ -22,8 +22,9 @@ export const LogoMark = ({ size = 40 }: { size?: number }) => (
   />
 );
 
+// Brand rule: "Seva" is always orange-500 in the LuckySeva wordmark. Never recolour it.
 export const Wordmark = ({ className = 'text-black' }: { className?: string }) => (
   <span className={`text-xl font-extrabold tracking-tight ${className}`}>
-    Lucky<span className="text-emerald-500">Seva</span>
+    Lucky<span className="text-orange-500">Seva</span>
   </span>
 );

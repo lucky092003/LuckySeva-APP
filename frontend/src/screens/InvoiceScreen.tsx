@@ -75,8 +75,9 @@ export const InvoiceScreen = ({ bookingId }: { bookingId: string }) => {
             <div className="flex items-center gap-3">
               <Logo size={42} />
               <div>
+                {/* Brand rule: "Seva" is always orange-500 in the LuckySeva wordmark. Never recolour it. */}
                 <p className="text-lg font-extrabold tracking-tight text-gray-900">
-                  Lucky<span className="text-emerald-500">Seva</span>
+                  Lucky<span className="text-orange-500">Seva</span>
                 </p>
                 <p className="text-[11px] text-gray-500">{FIRM.tagline}</p>
               </div>

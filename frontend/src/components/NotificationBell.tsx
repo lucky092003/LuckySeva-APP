@@ -56,7 +56,7 @@ export const NotificationBell = () => {
         aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
         aria-expanded={open}
         className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-          open ? 'bg-white/20 text-white' : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+          open ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-emerald-50/60 hover:text-emerald-700'
         }`}
       >
         <Icons.Bell size={18} />
