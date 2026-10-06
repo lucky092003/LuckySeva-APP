@@ -350,6 +350,12 @@ password `"admin123"`.
 
 ### 5.7 Complete route table (64 app routes + 4 framework)
 
+The 4 framework routes are the docs surface — `/openapi.json`, `/docs`, `/redoc`,
+`/docs/oauth2-redirect`. They are registered **only when `config.DOCS_ENABLED` is true**:
+`main.py` passes `docs_url` / `redoc_url` / `openapi_url` as `None` otherwise, so in
+production all four 404 (Render sets `RENDER=true`, or `ENV=production`;
+`API_DOCS_ENABLED` overrides). `app.openapi()` still builds the schema in tests either way.
+
 `GET /health` -> `{"ok": true}`, no DB access, so it stays green with bad credentials.
 
 ```
@@ -671,7 +677,8 @@ intentionally do **not** include lint/test packages, so Render stays lean).
 
 **There is no way to run the two halves together in one command, and there is no integration
 test.** The backend tests never touch the network. If you change a contract, you are the
-integration test — verify by hand against a live API at `http://localhost:8000/docs`.
+integration test — verify by hand against a live API at `http://localhost:8000/docs`
+(local only; production 404s the docs routes, see 5.7).
 
 Dependency pinning style: only `supabase==2.31.0` is pinned in `requirements.txt`; the rest are
 unpinned. All four `requirements-dev.txt` entries are pinned. Note `httpx2` there is a
