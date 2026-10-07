@@ -99,6 +99,23 @@ and `mine` gets captured by the path parameter. Same hazard in `customer.py`:
 `/customer/notifications/read-all` is a literal path that must not be shadowed by an
 `/{notification_id}` pattern.
 
+### 1.7 Nobody pushes to `master` directly
+
+Every change lands on a **descriptive branch** and goes in through a pull request. Direct
+commits or `git push` to `master` are forbidden for humans and agents alike — including
+trivial edits, docs, and "just one line".
+
+- Branch naming: `fix/…`, `feat/…`, `style/…`, `chore/…` describing the change
+  (`fix/booking-saved-address-on-top`).
+- Workflow: `git checkout -b <branch>` -> commit -> `git push -u origin <branch>` -> open a PR
+  -> merge the PR. Never `git push` while on `master`.
+- Why it is load-bearing: CI, the PR review bot and the changelog (§12) only run on pull
+  requests. A push to `master` skips review, skips the changelog entry, and fires the whole
+  pipeline (three Vercel deploys + Render) on unreviewed code.
+- `master` is protected by convention, not by a branch rule — nothing in GitHub stops you, so
+  the discipline lives here. If you find yourself on `master`, `git checkout -b <branch>` first.
+- Run the §9 verification on the branch **before** pushing.
+
 ---
 
 ## 2. Request lifecycle, end to end
