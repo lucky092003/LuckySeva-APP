@@ -58,7 +58,8 @@ export type Screen =
   | { name: 'admin-coupons' }
   | { name: 'admin-payouts' }
   | { name: 'admin-refunds' }
-  | { name: 'admin-disputes' };
+  | { name: 'admin-disputes' }
+  | { name: 'admin-notifications' };
 
 export type Customer = {
   name: string;

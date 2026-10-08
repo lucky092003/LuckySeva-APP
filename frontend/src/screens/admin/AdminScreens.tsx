@@ -6,7 +6,7 @@ import { Logo } from '@/components/Logo';
 import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge, Avatar, Input } from '@/components/ui';
 import { inr, formatDate, slugToLabel } from '@/utils/format';
 import { isVerified, kycStatus, KYC_STATUS_LABEL, kycDocLabel } from '@/utils/kyc';
-import type { Booking, Professional, Category, Service, Payout, Refund } from '@/types';
+import type { Booking, Professional, Category, Service, Payout, Refund, Notification } from '@/types';
 
 const AdminHeader = ({
   title,
@@ -1015,6 +1015,75 @@ export const AdminDisputes = () => {
             <tbody>{disputes.map((d: unknown) => { const dd = d as { id?: string; status?: string; note?: string }; return (<tr key={dd.id||''} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono text-xs">{dd.id?.slice(0,8)}</td><td className="px-5 py-3">{dd.status||'—'}</td><td className="px-5 py-3 text-xs">{dd.note||'—'}</td></tr>); })}</tbody>
           </table>
         </Card>
+      </div>
+    </div>
+  );
+};
+
+export const AdminNotifications = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+
+  const load = () => {
+    setLoading(true);
+    api.admin.notifications(filter === 'all' ? undefined : filter)
+      .then((d) => setNotifications(d || []))
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [filter]);
+
+  const unread = notifications.filter((n) => !n.read).length;
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <AdminHeader
+        title="Notifications"
+        subtitle={`${unread} unread · ${notifications.length} total`}
+      />
+      <div className="flex shrink-0 gap-1 border-b border-gray-200 bg-white px-6">
+        {(['all', 'unread', 'read'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`relative py-3 pr-4 text-xs font-semibold capitalize transition-colors ${filter === f ? 'text-emerald-600' : 'text-gray-400'}`}
+          >
+            {f}
+            {f === 'unread' && unread > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{unread}</span>
+            )}
+            {filter === f && <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-emerald-500" />}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+        {loading ? (
+          <div className="flex flex-1 items-center justify-center"><Spinner /></div>
+        ) : notifications.length === 0 ? (
+          <EmptyState icon={<Icons.Bell size={28} />} title="No notifications" subtitle={filter === 'unread' ? 'All notifications have been read' : 'No notifications yet'} />
+        ) : (
+          <div className="space-y-3">
+            {notifications.map((n) => (
+              <Card key={n.id} className={`p-4 ${!n.read ? 'border-l-4 border-l-emerald-500' : ''}`}>
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${n.read ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                    <Icons.Bell size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-gray-900">{n.title}</p>
+                      {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-600">{n.message}</p>
+                    <p className="mt-1 text-[10px] text-gray-400">{formatDate(n.created_at)}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
