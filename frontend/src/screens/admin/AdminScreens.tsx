@@ -32,7 +32,7 @@ const AdminHeader = ({
   </header>
 );
 
-const AdminNotificationBell = () => {
+export const AdminNotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);

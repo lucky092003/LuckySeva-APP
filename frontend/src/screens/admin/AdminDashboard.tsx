@@ -4,6 +4,7 @@ import { api } from '@/services/api';
 import { useApp } from '@/context/app-context';
 import { Card, Spinner, Badge, Avatar } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
+import { AdminNotificationBell } from './AdminScreens';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -146,6 +147,7 @@ export const AdminDashboard = () => {
           >
             <Icons.Plus size={14} /> View Bookings
           </button>
+          <AdminNotificationBell />
         </div>
       </header>
 
