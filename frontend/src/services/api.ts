@@ -230,6 +230,9 @@ export const api = {
     reviews: () => request<Review[]>('customer', '/reviews'),
     addReview: (r: { booking_id?: string | null; professional_id: string; rating: number; comment?: string }) =>
       request<Review>('customer', '/reviews', 'POST', r),
+    refunds: () => request<Refund[]>('customer', '/refunds'),
+    requestRefund: (bookingId: string, reason: string) =>
+      request<Refund>('customer', `/bookings/${bookingId}/refund-request`, 'POST', { reason }),
   },
 
   provider: {

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, getApiToken } from '@/services/api';
-import type { Notification, Professional, SupportTicket } from '@/types';
+import type { Notification, Professional, Refund, SupportTicket } from '@/types';
 
 const COORDS_KEY = 'luckyseva.coords';
 
@@ -145,4 +145,19 @@ export const useSupportTickets = (_customerPhone: string | null) => {
   }, []);
   useEffect(load, [load]);
   return { tickets: data, loading, reload: load };
+};
+
+export const useRefunds = () => {
+  const [data, setData] = useState<Refund[]>([]);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(() => {
+    setLoading(true);
+    api.customer
+      .refunds()
+      .then((d) => setData(d))
+      .catch(() => setData([]))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(load, [load]);
+  return { refunds: data, loading, reload: load };
 };

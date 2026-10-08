@@ -145,6 +145,7 @@ export const AdminProviders = () => {
   const [reviewing, setReviewing] = useState<Professional | null>(null);
   const [reviewNote, setReviewNote] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
+  const [kycFilter, setKycFilter] = useState<'all' | 'pending'>('all');
 
   const load = () => {
     Promise.all([api.admin.professionals(), api.admin.categories()])
@@ -182,21 +183,51 @@ export const AdminProviders = () => {
   };
 
   const available = pros.filter((p) => p.status === 'available').length;
+  const pendingKyc = pros.filter((p) => kycStatus(p) === 'pending').length;
+  const filteredPros = kycFilter === 'pending' ? pros.filter((p) => kycStatus(p) === 'pending') : pros;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <AdminHeader
         title="Service Providers"
-        subtitle={`${pros.length} professionals · ${available} available`}
+        subtitle={`${pros.length} professionals · ${available} available · ${pendingKyc} pending KYC`}
         right={
           <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600">
             <Icons.Plus size={14} /> Add Provider
           </button>
         }
       />
+      {/* KYC Filter */}
+      <div className="flex shrink-0 gap-1 border-b border-gray-200 bg-white px-6">
+        <button
+          onClick={() => setKycFilter('all')}
+          className={`relative py-3 pr-4 text-xs font-semibold transition-colors ${kycFilter === 'all' ? 'text-emerald-600' : 'text-gray-400'}`}
+        >
+          All
+          {kycFilter === 'all' && <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-emerald-500" />}
+        </button>
+        <button
+          onClick={() => setKycFilter('pending')}
+          className={`relative py-3 pr-4 text-xs font-semibold transition-colors ${kycFilter === 'pending' ? 'text-emerald-600' : 'text-gray-400'}`}
+        >
+          Pending KYC
+          {pendingKyc > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">{pendingKyc}</span>
+          )}
+          {kycFilter === 'pending' && <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-emerald-500" />}
+        </button>
+      </div>
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
-          {pros.map((p) => (
+        {filteredPros.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Icons.ShieldCheck size={40} className="text-gray-200" />
+            <p className="mt-3 text-sm font-semibold text-gray-500">
+              {kycFilter === 'pending' ? 'No providers with pending KYC' : 'No providers found'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+            {filteredPros.map((p) => (
             <Card key={p.id} className="p-4">
               <div className="flex items-center gap-3">
                 <Avatar src={p.avatar_url} name={p.name} className="h-12 w-12 rounded-xl text-sm" />
@@ -265,6 +296,7 @@ export const AdminProviders = () => {
             </Card>
           ))}
         </div>
+        )}
       </div>
 
       {showAdd && (

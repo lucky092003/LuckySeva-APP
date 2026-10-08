@@ -23,6 +23,7 @@ import { MyBookingsScreen } from '@/screens/customer/MyBookingsScreen';
 import { ReviewScreen } from '@/screens/customer/ReviewScreen';
 import { ProfileScreen } from '@/screens/customer/ProfileScreen';
 import { HelpScreen } from '@/screens/customer/HelpScreen';
+import { RefundsScreen } from '@/screens/customer/RefundsScreen';
 import { AddressesScreen } from '@/screens/customer/AddressesScreen';
 import { FavouritesScreen } from '@/screens/customer/FavouritesScreen';
 
@@ -101,6 +102,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'reviews': return <ReviewScreen bookingId={screen.bookingId} />;
     case 'profile': return <ProfileScreen />;
     case 'help': return <HelpScreen />;
+    case 'refunds': return <RefundsScreen />;
     case 'addresses': return <AddressesScreen detected={screen.detected} />;
     case 'favourites': return <FavouritesScreen />;
     default: return <HomeScreen />;
