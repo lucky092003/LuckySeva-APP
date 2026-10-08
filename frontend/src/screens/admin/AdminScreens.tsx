@@ -25,9 +25,83 @@ const AdminHeader = ({
         <p className="text-xs text-gray-500">{subtitle}</p>
       </div>
     </div>
-    {right}
+    <div className="flex items-center gap-3">
+      {right}
+      <AdminNotificationBell />
+    </div>
   </header>
 );
+
+const AdminNotificationBell = () => {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    api.admin.notifications('unread')
+      .then((d) => setNotifications(d || []))
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
+  };
+
+  const unread = notifications.length;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setOpen(!open); if (!open && unread === 0) load(); }}
+        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+      >
+        <Icons.Bell size={20} />
+        {unread > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-2xl border border-gray-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <p className="text-sm font-bold text-gray-900">Notifications</p>
+              <button onClick={load} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
+                Refresh
+              </button>
+            </div>
+            <div className="max-h-80 overflow-y-auto no-scrollbar">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Spinner />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Icons.BellOff size={32} className="text-gray-200" />
+                  <p className="mt-2 text-sm text-gray-500">No unread notifications</p>
+                </div>
+              ) : (
+                notifications.slice(0, 10).map((n) => (
+                  <div key={n.id} className="border-b border-gray-50 px-4 py-3 last:border-0">
+                    <p className="text-xs font-semibold text-gray-900">{n.title}</p>
+                    <p className="mt-0.5 text-xs text-gray-600 line-clamp-2">{n.message}</p>
+                    <p className="mt-1 text-[10px] text-gray-400">{formatDate(n.created_at)}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            {notifications.length > 0 && (
+              <div className="border-t border-gray-100 px-4 py-2.5 text-center">
+                <p className="text-xs text-gray-400">{notifications.length} unread notification{notifications.length !== 1 ? 's' : ''}</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Modal = ({
   title,
