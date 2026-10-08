@@ -17,12 +17,12 @@ const AdminHeader = ({
   subtitle: string;
   right?: ReactNode;
 }) => (
-  <header className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+  <header style={{ backgroundColor: 'var(--admin-surface)', borderColor: 'var(--admin-border)' }} className="flex shrink-0 items-center justify-between border-b px-6 py-4">
     <div className="flex items-center gap-3">
       <Logo size={30} />
       <div>
-        <h1 className="text-xl font-extrabold text-gray-900">{title}</h1>
-        <p className="text-xs text-gray-500">{subtitle}</p>
+        <h1 className="text-xl font-extrabold" style={{ color: 'var(--admin-text)' }}>{title}</h1>
+        <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>{subtitle}</p>
       </div>
     </div>
     <div className="flex items-center gap-3">
@@ -51,7 +51,8 @@ export const AdminNotificationBell = () => {
     <div className="relative">
       <button
         onClick={() => { setOpen(!open); if (!open && unread === 0) load(); }}
-        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+        className="relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors"
+        style={{ color: 'var(--admin-text-muted)' }}
       >
         <Icons.Bell size={20} />
         {unread > 0 && (
@@ -64,9 +65,9 @@ export const AdminNotificationBell = () => {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-2xl border border-gray-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-              <p className="text-sm font-bold text-gray-900">Notifications</p>
+          <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-2xl shadow-2xl" style={{ backgroundColor: 'var(--admin-surface)', borderColor: 'var(--admin-border)', borderWidth: 1 }}>
+            <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: 'var(--admin-border)' }}>
+              <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Notifications</p>
               <button onClick={load} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
                 Refresh
               </button>
@@ -78,22 +79,22 @@ export const AdminNotificationBell = () => {
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Icons.BellOff size={32} className="text-gray-200" />
-                  <p className="mt-2 text-sm text-gray-500">No unread notifications</p>
+                  <Icons.BellOff size={32} style={{ color: 'var(--admin-border)' }} />
+                  <p className="mt-2 text-sm" style={{ color: 'var(--admin-text-muted)' }}>No unread notifications</p>
                 </div>
               ) : (
                 notifications.slice(0, 10).map((n) => (
-                  <div key={n.id} className="border-b border-gray-50 px-4 py-3 last:border-0">
-                    <p className="text-xs font-semibold text-gray-900">{n.title}</p>
-                    <p className="mt-0.5 text-xs text-gray-600 line-clamp-2">{n.message}</p>
-                    <p className="mt-1 text-[10px] text-gray-400">{formatDate(n.created_at)}</p>
+                  <div key={n.id} className="border-b px-4 py-3 last:border-0" style={{ borderColor: 'var(--admin-border)' }}>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--admin-text)' }}>{n.title}</p>
+                    <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'var(--admin-text-muted)' }}>{n.message}</p>
+                    <p className="mt-1 text-[10px]" style={{ color: 'var(--admin-text-muted)', opacity: 0.7 }}>{formatDate(n.created_at)}</p>
                   </div>
                 ))
               )}
             </div>
             {notifications.length > 0 && (
-              <div className="border-t border-gray-100 px-4 py-2.5 text-center">
-                <p className="text-xs text-gray-400">{notifications.length} unread notification{notifications.length !== 1 ? 's' : ''}</p>
+              <div className="border-t px-4 py-2.5 text-center" style={{ borderColor: 'var(--admin-border)' }}>
+                <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>{notifications.length} unread notification{notifications.length !== 1 ? 's' : ''}</p>
               </div>
             )}
           </div>
@@ -113,10 +114,10 @@ const Modal = ({
   onClose: () => void;
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-    <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <h3 className="text-base font-bold text-gray-900">{title}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icons.X size={20} /></button>
+    <div className="w-full max-w-md overflow-hidden rounded-2xl shadow-2xl" style={{ backgroundColor: 'var(--admin-surface)' }} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--admin-border)' }}>
+        <h3 className="text-base font-bold" style={{ color: 'var(--admin-text)' }}>{title}</h3>
+        <button onClick={onClose} style={{ color: 'var(--admin-text-muted)' }}><Icons.X size={20} /></button>
       </div>
       <div className="max-h-[70vh] space-y-3 overflow-y-auto no-scrollbar p-5">{children}</div>
     </div>
@@ -150,7 +151,7 @@ export const AdminCustomers = () => {
   const totalSpent = customers.reduce((s, c) => s + c.spent, 0);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="Customers"
         subtitle={`${customers.length} registered customers`}
@@ -261,7 +262,7 @@ export const AdminProviders = () => {
   const filteredPros = kycFilter === 'pending' ? pros.filter((p) => kycStatus(p) === 'pending') : pros;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="Service Providers"
         subtitle={`${pros.length} professionals · ${available} available · ${pendingKyc} pending KYC`}
@@ -521,7 +522,7 @@ export const AdminServices = () => {
   const filtered = activeCat ? services.filter((s) => s.category_id === activeCat) : services;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="Services & Categories"
         subtitle={`${cats.length} categories · ${services.length} services`}
@@ -648,7 +649,7 @@ export const AdminBookings = () => {
   const totalRevenue = filtered.filter((b) => b.status !== 'cancelled' && b.payment_status !== 'pending').reduce((s, b) => s + Number(b.total_amount), 0);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="All Bookings"
         subtitle={`${bookings.length} total bookings`}
@@ -817,7 +818,7 @@ export const AdminProfile = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader title="Admin Profile" subtitle="Account & platform settings" />
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -999,7 +1000,7 @@ export const AdminCoupons = () => {
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader title="Coupons" subtitle={`${coupons.length} coupons`} />
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
         <Card className="p-4 grid grid-cols-1 gap-3 md:grid-cols-5">
@@ -1032,7 +1033,7 @@ export const AdminPayouts = () => {
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader title="Payouts" subtitle={`${payouts.length} payouts`} />
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <Card className="overflow-hidden">
@@ -1056,7 +1057,7 @@ export const AdminRefunds = () => {
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader title="Refunds" subtitle={`${refunds.length} refunds`} />
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <Card className="overflow-hidden">
@@ -1080,7 +1081,7 @@ export const AdminDisputes = () => {
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader title="Disputes" subtitle={`${disputes.length} disputes`} />
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <Card className="overflow-hidden">
@@ -1112,7 +1113,7 @@ export const AdminNotifications = () => {
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="Notifications"
         subtitle={`${unread} unread · ${notifications.length} total`}

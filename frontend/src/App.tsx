@@ -1,4 +1,5 @@
 import { AppProvider, useApp } from '@/context/app-context';
+import { AdminThemeProvider } from '@/context/AdminThemeContext';
 import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
 import { WebTopNav } from '@/components/WebTopNav';
@@ -61,12 +62,14 @@ function Router() {
     }
 
     return (
-      <div className="flex h-screen min-h-screen overflow-hidden bg-gray-50">
-        <AdminSidebar />
-        <div key={screen.name} className="flex flex-1 flex-col overflow-hidden screen-enter">
-          {renderAdmin(screen)}
+      <AdminThemeProvider>
+        <div className="flex h-screen min-h-screen overflow-hidden">
+          <AdminSidebar />
+          <div key={screen.name} className="flex flex-1 flex-col overflow-hidden screen-enter">
+            {renderAdmin(screen)}
+          </div>
         </div>
-      </div>
+      </AdminThemeProvider>
     );
   }
 
