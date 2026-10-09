@@ -1,13 +1,11 @@
 import * as Icons from 'lucide-react';
-import { useState } from 'react';
-import { useApp } from '@/context/app-context';
 import { useRefunds } from '@/hooks';
 import { TopBar } from '@/components/PhoneShell';
-import { Card, Spinner, EmptyState, Badge, Button } from '@/components/ui';
+import { Card, Spinner, EmptyState, Badge } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
 
 export const RefundsScreen = () => {
-  const { refunds, loading, reload } = useRefunds();
+  const { refunds, loading } = useRefunds();
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
