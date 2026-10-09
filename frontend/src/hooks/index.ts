@@ -21,6 +21,7 @@ export {
   useIsFavourite,
   toggleFavourite,
   useSupportTickets,
+  useRefunds,
   useCustomerCoords,
   cacheCoords,
 } from './useCustomer';

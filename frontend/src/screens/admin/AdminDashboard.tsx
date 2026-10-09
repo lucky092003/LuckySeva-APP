@@ -4,6 +4,7 @@ import { api } from '@/services/api';
 import { useApp } from '@/context/app-context';
 import { Card, Spinner, Badge, Avatar } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
+import { AdminNotificationBell } from './AdminScreens';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
 const WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -130,14 +131,14 @@ export const AdminDashboard = () => {
   ];
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <header className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+    <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
+      <header style={{ backgroundColor: 'var(--admin-surface)', borderColor: 'var(--admin-border)' }} className="flex shrink-0 items-center justify-between border-b px-6 py-4">
         <div>
-          <h1 className="text-xl font-extrabold text-gray-900">Dashboard</h1>
-          <p className="text-xs text-gray-500">{today}</p>
+          <h1 className="text-xl font-extrabold" style={{ color: 'var(--admin-text)' }}>Dashboard</h1>
+          <p className="text-xs" style={{ color: 'var(--admin-text-muted)' }}>{today}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50">
+          <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-colors hover:opacity-90" style={{ backgroundColor: 'var(--admin-surface)', color: 'var(--admin-text)', borderColor: 'var(--admin-border)', borderWidth: 1 }}>
             <Icons.Download size={14} /> Export
           </button>
           <button
@@ -146,6 +147,7 @@ export const AdminDashboard = () => {
           >
             <Icons.Plus size={14} /> View Bookings
           </button>
+          <AdminNotificationBell />
         </div>
       </header>
 

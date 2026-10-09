@@ -21,6 +21,10 @@ export const MyBookingsScreen = () => {
   const [tab, setTab] = useState<BookingFilter>('upcoming');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancel, setPendingCancel] = useState<Booking | null>(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
+  const [refundError, setRefundError] = useState('');
+  const [requestingRefund, setRequestingRefund] = useState(false);
   const { bookings, loading, reload } = useBookings(tab, customer?.phone || undefined);
 
   const cancel = async () => {
@@ -33,9 +37,29 @@ export const MyBookingsScreen = () => {
     if (ok) reload();
   };
 
+  const requestRefund = async () => {
+    if (!refundBooking || !refundReason.trim()) return;
+    setRequestingRefund(true);
+    setRefundError('');
+    try {
+      await api.customer.requestRefund(refundBooking.id, refundReason.trim());
+      setRefundBooking(null);
+      setRefundReason('');
+      reload();
+    } catch (e) {
+      setRefundError(e instanceof Error ? e.message : 'Could not submit refund request');
+    } finally {
+      setRequestingRefund(false);
+    }
+  };
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar title="My Bookings" showBack={false} />
+      <TopBar title="My Bookings" showBack={false} right={
+        <button onClick={() => navigate({ name: 'refunds' })} className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+          <Icons.Undo2 size={14} /> Refunds
+        </button>
+      } />
       {/* Tabs */}
       <div className="flex shrink-0 gap-1 border-b border-gray-100 bg-white px-3">
         {TABS.map((t) => (
@@ -62,7 +86,16 @@ export const MyBookingsScreen = () => {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onTrack={() => navigate({ name: 'tracking', bookingId: b.id })} onReview={() => navigate({ name: 'reviews', bookingId: b.id })} onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })} onCancel={() => setPendingCancel(b)} cancelling={cancellingId === b.id} />
+              <BookingCard
+                key={b.id}
+                booking={b}
+                onTrack={() => navigate({ name: 'tracking', bookingId: b.id })}
+                onReview={() => navigate({ name: 'reviews', bookingId: b.id })}
+                onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })}
+                onCancel={() => setPendingCancel(b)}
+                cancelling={cancellingId === b.id}
+                onRefund={() => { setRefundBooking(b); setRefundReason(''); setRefundError(''); }}
+              />
             ))}
           </div>
         )}
@@ -78,11 +111,38 @@ export const MyBookingsScreen = () => {
         onConfirm={cancel}
         onCancel={() => setPendingCancel(null)}
       />
+
+      <ConfirmDialog
+        open={!!refundBooking}
+        busy={requestingRefund}
+        title="Request Refund"
+        message={
+          refundBooking
+            ? `Tell us what went wrong with your ${refundBooking.service_name} booking.\n\nRefund amount: ${inr(refundBooking.total_amount)}\n\nReason for refund:`
+            : ''
+        }
+        confirmLabel="Submit Request"
+        cancelLabel="Cancel"
+        onConfirm={requestRefund}
+        onCancel={() => setRefundBooking(null)}
+        extra={
+          <div className="mt-3">
+            <textarea
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              placeholder="Describe the issue (e.g. service not completed, quality issues)..."
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+            {refundError && <p className="mt-1.5 text-xs text-red-500">{refundError}</p>}
+          </div>
+        }
+      />
     </div>
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean }) => {
+const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void }) => {
   const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info',
     assigned: 'info',
@@ -122,6 +182,9 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
             </Button>
             <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onInvoice}>
               <Icons.Receipt size={14} /> Invoice
+            </Button>
+            <Button variant="outline" className="flex-1 py-2 text-xs text-amber-600" onClick={onRefund}>
+              <Icons.Undo2 size={14} /> Refund
             </Button>
           </>
         ) : booking.status === 'cancelled' ? null : (

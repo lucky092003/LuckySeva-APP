@@ -47,6 +47,21 @@ def stats():
     }
 
 
+@router.get("/notifications")
+def admin_notifications(status: str | None = None):
+    client = db()
+    q = (
+        client.table("notifications")
+        .select("*")
+        .order("created_at", desc=True)
+    )
+    if status == "unread":
+        q = q.eq("read", False)
+    elif status == "read":
+        q = q.eq("read", True)
+    return q.limit(200).execute().data or []
+
+
 @router.get("/revenue")
 def revenue_summary_endpoint(days: int = Query(default=30, le=365)):
     """The number that actually matters: platform fee collected, not GMV.

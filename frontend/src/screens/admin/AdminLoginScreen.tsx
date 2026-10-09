@@ -10,13 +10,13 @@ export const AdminLoginScreen = () => {
 
   if (adminAuthed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-        <div className="w-full max-w-sm rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-xl">
+      <div className="flex min-h-screen items-center justify-center px-4" style={{ backgroundColor: 'var(--admin-bg)' }}>
+        <div className="w-full max-w-sm rounded-3xl p-8 text-center shadow-xl" style={{ backgroundColor: 'var(--admin-surface)', borderColor: 'var(--admin-border)', borderWidth: 1 }}>
           <div className="mb-4 flex justify-center">
             <Logo size={64} />
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Admin signed in</h1>
-          <p className="mt-1 text-sm text-gray-500">You have full access to the LuckySeva platform.</p>
+          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--admin-text)' }}>Admin signed in</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--admin-text-muted)' }}>You have full access to the LuckySeva platform.</p>
           <Button
             onClick={() => {
               setApiToken(null);
@@ -72,8 +72,8 @@ const AdminLoginForm = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4 py-10">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-2">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10" style={{ backgroundColor: 'var(--admin-bg)' }}>
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl shadow-2xl lg:grid-cols-2" style={{ backgroundColor: 'var(--admin-surface)' }}>
         {/* Brand panel */}
         <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-teal-700 p-10 text-white lg:flex">
           <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10" />
@@ -108,8 +108,8 @@ const AdminLoginForm = () => {
               <Wordmark />
             </div>
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-900">Admin Login</h2>
-          <p className="mt-1 text-sm text-gray-500">Restricted access · LuckySeva platform</p>
+          <h2 className="text-2xl font-extrabold" style={{ color: 'var(--admin-text)' }}>Admin Login</h2>
+          <p className="mt-1 text-sm" style={{ color: 'var(--admin-text-muted)' }}>Restricted access · LuckySeva platform</p>
 
           <div className="mt-8 space-y-4">
             <Field
@@ -165,15 +165,16 @@ const Field = ({
   right?: React.ReactNode;
   onEnter?: () => void;
 }) => (
-  <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3.5 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100">
-    <span className="text-gray-400">{icon}</span>
+  <div className="flex items-center gap-3 rounded-xl border px-4 py-3.5 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100" style={{ borderColor: 'var(--admin-border)', backgroundColor: 'var(--admin-surface)' }}>
+    <span style={{ color: 'var(--admin-text-muted)' }}>{icon}</span>
     <input
       type={type}
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
-      className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+      className="flex-1 bg-transparent text-sm placeholder:text-gray-400 focus:outline-none"
+      style={{ color: 'var(--admin-text)' }}
     />
     {right}
   </div>

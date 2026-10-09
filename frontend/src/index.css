@@ -50,6 +50,29 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Admin dark mode CSS variables */
+:root {
+  --admin-bg: #f9fafb;
+  --admin-surface: #ffffff;
+  --admin-border: #e5e7eb;
+  --admin-text: #111827;
+  --admin-text-muted: #6b7280;
+  --admin-nav-bg: #111827;
+  --admin-nav-text: #9ca3af;
+  --admin-nav-active-bg: #059669;
+}
+
+html.dark {
+  --admin-bg: #030712;
+  --admin-surface: #111827;
+  --admin-border: #1f2937;
+  --admin-text: #f9fafb;
+  --admin-text-muted: #9ca3af;
+  --admin-nav-bg: #000000;
+  --admin-nav-text: #6b7280;
+  --admin-nav-active-bg: #059669;
+}
+
 /* Native app: respect status bar / home indicator insets */
 body {
   padding-top: env(safe-area-inset-top);

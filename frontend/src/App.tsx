@@ -1,4 +1,5 @@
 import { AppProvider, useApp } from '@/context/app-context';
+import { AdminThemeProvider } from '@/context/AdminThemeContext';
 import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
 import { WebTopNav } from '@/components/WebTopNav';
@@ -23,6 +24,7 @@ import { MyBookingsScreen } from '@/screens/customer/MyBookingsScreen';
 import { ReviewScreen } from '@/screens/customer/ReviewScreen';
 import { ProfileScreen } from '@/screens/customer/ProfileScreen';
 import { HelpScreen } from '@/screens/customer/HelpScreen';
+import { RefundsScreen } from '@/screens/customer/RefundsScreen';
 import { AddressesScreen } from '@/screens/customer/AddressesScreen';
 import { FavouritesScreen } from '@/screens/customer/FavouritesScreen';
 
@@ -60,12 +62,14 @@ function Router() {
     }
 
     return (
-      <div className="flex h-screen min-h-screen overflow-hidden bg-gray-50">
-        <AdminSidebar />
-        <div key={screen.name} className="flex flex-1 flex-col overflow-hidden screen-enter">
-          {renderAdmin(screen)}
+      <AdminThemeProvider>
+        <div className="flex h-screen min-h-screen overflow-hidden">
+          <AdminSidebar />
+          <div key={screen.name} className="flex flex-1 flex-col overflow-hidden screen-enter">
+            {renderAdmin(screen)}
+          </div>
         </div>
-      </div>
+      </AdminThemeProvider>
     );
   }
 
@@ -101,6 +105,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'reviews': return <ReviewScreen bookingId={screen.bookingId} />;
     case 'profile': return <ProfileScreen />;
     case 'help': return <HelpScreen />;
+    case 'refunds': return <RefundsScreen />;
     case 'addresses': return <AddressesScreen detected={screen.detected} />;
     case 'favourites': return <FavouritesScreen />;
     default: return <HomeScreen />;

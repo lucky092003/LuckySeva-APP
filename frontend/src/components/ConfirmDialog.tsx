@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { Button } from './ui';
+import type { ReactNode } from 'react';
 
 /**
  * In-app replacement for `window.confirm`.
@@ -18,15 +19,17 @@ export const ConfirmDialog = ({
   busy = false,
   onConfirm,
   onCancel,
+  extra,
 }: {
   open: boolean;
   title: string;
-  message: string;
+  message?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  extra?: ReactNode;
 }) => {
   if (!open) return null;
   return (
@@ -36,7 +39,8 @@ export const ConfirmDialog = ({
           <AlertTriangle size={20} />
         </div>
         <h2 className="mt-3 text-base font-bold text-gray-900">{title}</h2>
-        <p className="mt-1 text-xs leading-relaxed text-gray-500">{message}</p>
+        {message && <p className="mt-1 text-xs leading-relaxed text-gray-500 whitespace-pre-wrap">{message}</p>}
+        {extra && <div className="mt-3">{extra}</div>}
         <div className="mt-5 flex gap-2">
           <Button variant="outline" onClick={onCancel} disabled={busy} className="flex-1 py-2.5 text-xs">
             {cancelLabel}

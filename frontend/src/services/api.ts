@@ -230,6 +230,9 @@ export const api = {
     reviews: () => request<Review[]>('customer', '/reviews'),
     addReview: (r: { booking_id?: string | null; professional_id: string; rating: number; comment?: string }) =>
       request<Review>('customer', '/reviews', 'POST', r),
+    refunds: () => request<Refund[]>('customer', '/refunds'),
+    requestRefund: (bookingId: string, reason: string) =>
+      request<Refund>('customer', `/bookings/${bookingId}/refund-request`, 'POST', { reason }),
   },
 
   provider: {
@@ -295,6 +298,8 @@ export const api = {
     reviewKyc: (professionalId: string, decision: 'approved' | 'rejected', note?: string) =>
       request<Professional>('admin', `/kyc/${professionalId}`, 'PUT', { decision, note }),
     addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
+    notifications: (status?: 'all' | 'unread' | 'read') =>
+      request<Notification[]>('admin', `/notifications${status && status !== 'all' ? `?status=${status}` : ''}`),
     coupons: () => request<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>('admin', '/coupons'),
     createCoupon: (c: { code: string; discount_pct: number; min_amount?: number; expires_at?: string | null }) =>
       request<unknown>('admin', '/coupons', 'POST', c),

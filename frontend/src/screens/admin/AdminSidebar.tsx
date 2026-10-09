@@ -1,6 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useApp, Screen } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
+import { useAdminTheme } from '@/context/AdminThemeContext';
 
 type NavItem = { label: string; icon: typeof Icons.Home; screen: Screen };
 
@@ -26,11 +27,11 @@ const AdminNavItem = ({ item, active }: { item: NavItem; active: boolean }) => {
   return (
     <button
       onClick={() => navigate(item.screen)}
-      className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-        active
-          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
-          : 'text-gray-400 hover:bg-white/5 hover:text-white'
-      }`}
+      className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all"
+      style={{
+        backgroundColor: active ? 'var(--admin-nav-active-bg)' : 'transparent',
+        color: active ? 'white' : 'var(--admin-nav-text)',
+      }}
     >
       <Icon size={18} strokeWidth={active ? 2.4 : 2} />
       <span className="flex-1 text-left">{item.label}</span>
@@ -41,6 +42,7 @@ const AdminNavItem = ({ item, active }: { item: NavItem; active: boolean }) => {
 
 export const AdminSidebar = () => {
   const { screen, setAdminAuthed, navigate } = useApp();
+  const { theme, toggleTheme } = useAdminTheme();
 
   const logout = () => {
     setAdminAuthed(false);
@@ -50,20 +52,30 @@ export const AdminSidebar = () => {
   const isActive = (s: Screen) => screen.name === s.name;
 
   return (
-    <div className="flex w-64 shrink-0 flex-col bg-gray-900 text-gray-400">
-      <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-        <Logo size={38} />
-        <div>
-          <p className="text-base font-bold text-white">LuckySeva</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-emerald-400">
-            Admin Console
-          </p>
+    <div style={{ backgroundColor: 'var(--admin-nav-bg)', color: 'var(--admin-nav-text)' }} className="flex w-64 shrink-0 flex-col border-r border-white/10">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <Logo size={38} />
+          <div>
+            <p className="text-base font-bold text-white">LuckySeva</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-emerald-400">
+              Admin Console
+            </p>
+          </div>
         </div>
+        <button
+          onClick={toggleTheme}
+          style={{ color: 'var(--admin-nav-text)' }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Icons.Sun size={16} /> : <Icons.Moon size={16} />}
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto no-scrollbar space-y-6 px-3 py-5">
         <div>
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-nav-text)', opacity: 0.6 }}>
             Main
           </p>
           {MAIN.map((item) => (
@@ -71,7 +83,7 @@ export const AdminSidebar = () => {
           ))}
         </div>
         <div>
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--admin-nav-text)', opacity: 0.6 }}>
             Account
           </p>
           {ACCOUNT.map((item) => (
@@ -81,19 +93,20 @@ export const AdminSidebar = () => {
       </nav>
 
       <div className="border-t border-white/10 p-4">
-        <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/5 p-3">
+        <div className="mb-3 flex items-center gap-3 rounded-xl p-3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 text-xs font-bold text-white">
             @
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-white">@{'admin'}</p>
-            <p className="truncate text-[10px] text-gray-500">Administrator</p>
+            <p className="truncate text-[10px]" style={{ color: 'var(--admin-nav-text)' }}>Administrator</p>
           </div>
           <span className="h-2 w-2 rounded-full bg-emerald-400" title="Online" />
         </div>
         <button
           onClick={logout}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-xs font-semibold text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-xs font-semibold transition-colors hover:bg-white/5"
+          style={{ color: 'var(--admin-nav-text)', borderColor: 'rgba(255,255,255,0.1)' }}
         >
           <Icons.LogOut size={14} /> Logout
         </button>
