@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-03
+**Last updated:** 2026-10-10
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-10
+
+### Changed
+- **Provider Earnings** redesigned the earnings bar chart
+  (`frontend/src/screens/provider/ProviderEarningsScreen.tsx`):
+  - Bars are green gradient columns that rise from the baseline with a staggered
+    animation (new `barRise` keyframe in `frontend/src/index.css`); today's bar is
+    highlighted with a stronger gradient and glow, and the best-earning bar gets a
+    teal tint.
+  - The three tabs now show per-day bars for **Week**, per-date bars for the full
+    **Month** (31 columns, today always labelled), and per-month bars for **Year**.
+    Bar columns are centred exactly above their day/date label.
+  - All `₹` labels were removed from the Y-axis and every horizontal grid line is
+    gone — the plot is just bars, labels and a solid baseline. Hover tooltips above
+    each bar show the amount (with the date in the Month view).
+  - The card header shows the period total plus a **+X% / -X% vs prev
+    week/month/year** badge computed from the previous period's completed bookings,
+    and the footer shows the best day and the average earning per day/month.
 
 ## 2026-10-03
 
