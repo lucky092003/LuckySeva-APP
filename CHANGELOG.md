@@ -22,8 +22,28 @@ matches the newest dated section.
   endpoint accepts only one server-side status, so the tab filters client-side on the
   full list, while Completed/Cancelled keep the server-side fetch and All shows
   everything. Rows, badges and styles are unchanged.
+- **Provider Requests dashboard** (`frontend/src/screens/provider/ProviderHomeScreen.tsx`) —
+  the screen a provider lands on by default — was polished to a marketplace-grade feed:
+  - The earnings snapshot (Today's Earnings / Jobs Done / This Week) returned for
+    everyone, responsive by design: a compact 3-up white strip on phones/tablets and
+    the gradient + white stat cards on desktop.
+  - Request cards were rebuilt: gradient service icon, pulsing-dot **NEW** badge,
+    earnings amount chip, an expiry chip (`5m left`) that turns red with a fast pulse
+    in the final 3 minutes, a green accent edge on requests inside the provider's
+    radius, and hover micro-animations on desktop. The Accept button is now an
+    emerald→teal gradient.
+  - Active-job cards gained a status ring icon, a status chip (Accepted / On the way /
+    In service) beside the amount, and hover chevron motion.
+  - The flat spinner was replaced with skeleton cards shaped like the feed, and the
+    "No new requests" state became a compact card with a **Check again** refresh
+    button instead of the tall shared `EmptyState`.
+  - Section headings carry colored count pills (sky for Active, emerald for New
+    Requests) and the sort chips are a segmented control matching the earnings
+    screen's tabs. On phones the vertical rhythm was tightened so the New Requests
+    section — and its Check again button — is visible without scrolling.
+  - All logic is unchanged: hooks, accept/decline flows, radius filtering and sorting.
 - **Provider Earnings** redesigned the earnings bar chart
-  (`frontend/src/screens/provider/ProviderEarningsScreen.tsx`):
+  (already shipped as PR #63; noted here for the same date):
   - Bars are green gradient columns that rise from the baseline with a staggered
     animation (new `barRise` keyframe in `frontend/src/index.css`); today's bar is
     highlighted with a stronger gradient and glow, and the best-earning bar gets a
