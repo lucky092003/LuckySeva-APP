@@ -8,18 +8,27 @@ import { inr, formatRelativeDay, formatDate } from '@/utils/format';
 import type { Booking, BookingStatus } from '@/types';
 
 const TABS: { key: string; label: string }[] = [
-  { key: 'all', label: 'All' },
+  { key: 'upcoming', label: 'Upcoming' },
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
+  { key: 'all', label: 'All' },
 ];
 
 export const ProviderBookingsScreen = () => {
   const { navigate, providerId } = useApp();
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState('upcoming');
   const { professional } = useProfessionalWithFallback(providerId);
 
-  const status = tab === 'all' ? undefined : tab;
+  // `mine` accepts a single server-side status value; Upcoming collects every
+  // not-yet-finished job (confirmed/assigned/on_the_way/started), so it filters
+  // client-side on the full list instead.
+  const status = tab === 'upcoming' || tab === 'all' ? undefined : tab;
   const { bookings, loading } = useProviderBookings(professional?.id || null, status);
+
+  const shown =
+    tab === 'upcoming'
+      ? bookings.filter((b) => b.status !== 'completed' && b.status !== 'cancelled')
+      : bookings;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -39,11 +48,15 @@ export const ProviderBookingsScreen = () => {
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
         {loading ? (
           <Spinner className="py-16" />
-        ) : bookings.length === 0 ? (
-          <EmptyState icon={<Icons.CalendarCheck size={28} />} title="No bookings" subtitle="Your bookings will appear here." />
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={<Icons.CalendarCheck size={28} />}
+            title={tab === 'upcoming' ? 'No upcoming bookings' : 'No bookings'}
+            subtitle={tab === 'upcoming' ? 'Accepted jobs will appear here.' : 'Your bookings will appear here.'}
+          />
         ) : (
           <div className="space-y-3">
-            {bookings.map((b) => (
+            {shown.map((b) => (
               <BookingRow key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />
             ))}
           </div>
