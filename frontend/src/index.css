@@ -36,6 +36,16 @@
   animation: screenIn 0.25s ease-out;
 }
 
+/* Chart bar grow-up animation (transform-origin bottom set in .bar-rise) */
+@keyframes barRise {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.bar-rise {
+  transform-origin: bottom;
+  animation: barRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
 /* Hide scrollbar but keep scroll */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
