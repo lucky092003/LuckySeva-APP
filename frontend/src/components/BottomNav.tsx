@@ -26,7 +26,7 @@ export const BottomNav = () => {
   const hideOnDesktop = isNative ? '' : ' md:hidden';
 
   return (
-    <div className={`flex shrink-0 items-stretch justify-around border-t border-gray-100 bg-white px-[max(0.5rem,env(safe-area-inset-left))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5${hideOnDesktop}`}>
+    <div className={`flex shrink-0 items-stretch justify-around border-t border-gray-100 bg-white px-[max(0.5rem,env(safe-area-inset-left))] pt-2 pb-[max(1rem,calc(env(safe-area-inset-bottom)+1rem))]${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
