@@ -14,6 +14,14 @@ matches the newest dated section.
 ## 2026-10-10
 
 ### Changed
+- **Provider My Bookings** (`frontend/src/screens/provider/ProviderBookingsScreen.tsx`) tab
+  order was re-worked to match how a provider actually uses the screen: the former
+  `All | Completed | Cancelled` order is now **`Upcoming | Completed | Cancelled | All`**,
+  and the screen opens on **Upcoming** instead of All. Upcoming collects every
+  not-yet-finished job (`confirmed`/`assigned`/`on_the_way`/`started`) — the `mine`
+  endpoint accepts only one server-side status, so the tab filters client-side on the
+  full list, while Completed/Cancelled keep the server-side fetch and All shows
+  everything. Rows, badges and styles are unchanged.
 - **Provider Requests dashboard** (`frontend/src/screens/provider/ProviderHomeScreen.tsx`) —
   the screen a provider lands on by default — was polished to a marketplace-grade feed:
   - The earnings snapshot (Today's Earnings / Jobs Done / This Week) returned for
