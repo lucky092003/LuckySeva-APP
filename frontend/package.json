@@ -10,7 +10,11 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "build:customer": "cross-env-shell VITE_APP_ROLE=customer VITE_API_URL=https://luckyseva-app-gbjw.onrender.com \"vite build && cap sync android\"",
+    "build:partner": "cross-env-shell VITE_APP_ROLE=provider VITE_API_URL=https://luckyseva-app-gbjw.onrender.com \"vite build && cap sync android\"",
+    "apk:customer": "npm run build:customer && cd ../android && gradlew.bat assembleRelease",
+    "apk:partner": "npm run build:partner && cd ../android && gradlew.bat assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -28,6 +32,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "cross-env": "^10.1.0",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",

@@ -29,3 +29,6 @@ __pycache__/
 venv/
 .env/
 backend/.env
+
+# Staged release APKs (uploaded to GitHub Releases, not committed)
+releases/
