@@ -1,0 +1,102 @@
+name: Android APKs
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: android-apks
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      # Debug builds when signing secrets are not configured (installable via "unknown sources" but not store-worthy)
+      BUILD_TYPE: ${{ secrets.ANDROID_KEYSTORE_BASE64 && 'release' || 'debug' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/build.gradle', 'android/**/variables.gradle') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Write frontend .env
+        working-directory: frontend
+        run: |
+          cat > .env <<EOF
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_PHONE_MOCKUP=false
+          EOF
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Decode signing keystore
+        if: env.BUILD_TYPE == 'release'
+        working-directory: android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
+          cat > keystore.properties <<EOF
+          storeFile=app/release.keystore
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build customer APK
+        run: |
+          cd frontend
+          VITE_APP_ROLE=customer npm run build
+          VITE_APP_ROLE=customer npx cap sync android
+          cd ../android
+          ./gradlew assemble${BUILD_TYPE^} --no-daemon
+          VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
+          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-$VERSION.apk"
+
+      - name: Build provider APK
+        run: |
+          cd frontend
+          VITE_APP_ROLE=provider npm run build
+          VITE_APP_ROLE=provider npx cap sync android
+          cd ../android
+          ./gradlew assemble${BUILD_TYPE^} --no-daemon
+          VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
+          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-Partner-$VERSION.apk"
+
+      - name: Update latest release assets
+        if: env.BUILD_TYPE == 'release'
+        working-directory: releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |          
+          LATEST_TAG=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name)
+          gh release upload "$LATEST_TAG" LuckySeva-*.apk --clobber --repo "${{ github.repository }}"
+          echo "Updated release $LATEST_TAG with fresh APKs from ${{ github.sha }}"
+
+      - name: Upload artifacts (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: apks-${{ github.run_number }}
+          path: releases/*.apk
+          if-no-files-found: error
