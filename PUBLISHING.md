@@ -62,8 +62,11 @@ Only `customer` and `provider` produce native apps. If you build with
 ## Web (Vercel) — three separate sites
 
 Create **three Vercel projects** from this repo; each gets its own `VITE_APP_ROLE`
-environment variable (plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` /
-`VITE_API_URL` — the deployed FastAPI base URL):
+environment variable and `VITE_API_URL` — the deployed FastAPI base URL:
+
+> `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are **not needed** — the
+> frontend never talks to Supabase directly; the backend holds the service-role
+> key.
 
 1. Customer site → `VITE_APP_ROLE=customer`
 2. Partner site → `VITE_APP_ROLE=provider`
@@ -78,6 +81,15 @@ build `npm run build`, output `dist`, plus the SPA rewrite. Every push to the
 connected branch auto-deploys.
 
 ## Android (Play Store) — do this on any machine
+
+**Automatic build option:** `.github/workflows/android-apks.yml` builds both
+APKs on every merge to `master` and refreshes the assets on the latest GitHub
+release, so users can download an up-to-date APK without any local tooling
+(signing needs the repo secrets documented in
+[docs/RELEASE.md](RELEASE.md); without them it produces debug APKs as
+workflow artifacts). Bump `android/version.properties` for store releases.
+
+Manual build below (Android Studio / signed bundle for Play Store).
 
 Requires: Windows/macOS/Linux + **Android Studio**.
 

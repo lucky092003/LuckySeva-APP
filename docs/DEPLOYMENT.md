@@ -47,7 +47,7 @@
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **Node.js** | v18+ (v20 recommended) | Frontend build |
+| **Node.js** | v22+ (required for Capacitor CLI; frontend build itself works on 20+) | Frontend + Android web bundle build |
 | **Python** | 3.11+ | Backend development |
 | **npm** | Latest | Package management |
 | **Git** | Latest | Version control |
@@ -56,6 +56,7 @@
 
 | Tool | Purpose |
 |------|---------|
+| **JDK 21** | Required to compile the Android app (Capacitor uses Java source release 21) |
 | **Android Studio** | Android app build |
 | **Xcode** (macOS only) | iOS app build |
 | **Capacitor** | Native wrapper CLI |
@@ -151,10 +152,12 @@ Create separate Vercel projects for each role:
 **Environment Variables:**
 ```
 VITE_APP_ROLE=customer
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_API_URL=https://luckyseva-app-xxxx.onrender.com
 ```
+
+> `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are **not required** — the
+> frontend never talks to Supabase directly (the backend holds the service-role
+> key, see `frontend/.env` comments). Setting them is harmless but unused.
 
 **Project 2: Partner**
 Same config, but:
@@ -206,8 +209,16 @@ npx cap sync
 
 1. Open `android/` in Android Studio
 2. Set signing config (for release)
-3. Build → Generate Signed APK/Bundle
+3. Build �+' Generate Signed APK/Bundle
 4. Upload to Google Play Console
+
+**Automatic:** every push to `master` triggers `.github/workflows/android-apks.yml`,
+which builds both APKs (customer + partner) and refreshes the assets on the
+latest GitHub release. It needs the repo secrets documented in
+[docs/RELEASE.md](RELEASE.md) (`VITE_API_URL`, `ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`);
+without the signing secrets it produces `debug` APKs as artifacts only.
+Version bumps still go through `android/version.properties`.
 
 ### 6.3 iOS (macOS only)
 
@@ -256,6 +267,14 @@ Runs on every push/PR to `master`:
 | **Migrations** | Apply all migrations to Postgres (twice) → Check for destructive SQL |
 | **Edge Functions** | deno fmt → lint → check → tests |
 
+**Separate workflows:**
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `codeql.yml` | push/PR | Security scanning (Python, JS/TS, Java/Kotlin, Swift, Actions) |
+| `label.yml` | pull_request_target | Auto-labels PRs from the labeler config |
+| `android-apks.yml` | push to `master` + manual dispatch | Builds both Android APKs (customer + partner) and refreshes the assets on the latest GitHub release (signed release requires the secrets listed in [docs/RELEASE.md](RELEASE.md); without signing secrets it falls back to `debug` APKs as artifacts only) |
+
 ### 7.2 Dependabot
 
 Weekly dependency updates for:
@@ -290,15 +309,16 @@ OTP_DEBUG=false                         # Set true for dev mode (returns OTP in 
 ### 8.2 Frontend (`frontend/.env`)
 
 ```bash
-# Supabase
+# Supabase (optional/unused — kept only for future refactoring; the frontend
+# never talks to Supabase directly)
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...          # Public key, safe to expose
 
-# API
+# API (required — the only data path)
 VITE_API_URL=http://localhost:8000     # Development
 VITE_API_URL=https://api.luckyseva.com  # Production
 
-# Build-time
+# Build-time (required — locks the build to one role)
 VITE_APP_ROLE=customer                  # customer | provider | admin
 ```
 

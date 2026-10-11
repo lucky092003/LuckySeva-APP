@@ -80,9 +80,9 @@ and navigation.
 
 ## 📋 Prerequisites
 
-- **Node.js** v18+ (v20 recommended) and npm
+- **Node.js** v22+ (required for the Capacitor CLI) and npm
 - **Python 3.11+** (for the FastAPI backend)
-- (Optional) **Android Studio** — to build/run the Android app
+- (Optional) **JDK 21 + Android Studio** — to build/run the Android app
 - (Optional) **Xcode** on macOS — to build/run the iOS app
 - [Supabase](https://supabase.com) project — the database (required)
 
@@ -346,6 +346,12 @@ Edge function checks (run from `backend/supabase/functions/`, needs [Deno](https
 
 CodeQL security scanning ([`codeql.yml`](.github/workflows/codeql.yml)) runs separately
 across Python, JavaScript/TypeScript, Java/Kotlin, Swift and Actions.
+
+**Android releases:** [`android-apks.yml`](.github/workflows/android-apks.yml) runs on
+every push to `master` — it builds both APKs (customer + partner) and refreshes the
+assets on the latest GitHub release with the version from `android/version.properties`
+(signed builds need the secrets listed in [docs/RELEASE.md](docs/RELEASE.md); without
+them it falls back to debug APKs as artifacts).
 
 Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) watches the whole repo:
 
