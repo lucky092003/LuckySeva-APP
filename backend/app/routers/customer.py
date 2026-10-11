@@ -611,7 +611,7 @@ def list_coupons(claims: dict = Depends(require_customer)):
 
 
 @router.put("/bookings/{booking_id}/cancel")
-def cancel_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+def cancel_booking(booking_id: str, body: dict | None = None, claims: dict = Depends(require_customer)):
     """Cancel a booking and, if money was taken, start the refund.
 
     Cancelling used to set `payment_status: cancelled` on a booking that may
@@ -637,7 +637,8 @@ def cancel_booking(booking_id: str, body: dict, claims: dict = Depends(require_c
     if existing["status"] in {"on_the_way", "started"}:
         raise ApiError(400, "Your professional has already started. Please contact support.")
 
-    reason = body.get("reason") if isinstance(body.get("reason"), str) else "Cancelled by customer"
+    payload = body if isinstance(body, dict) else {}
+    reason = payload.get("reason") if isinstance(payload.get("reason"), str) and payload.get("reason").strip() else "Cancelled by customer"
     refund_note = ""
     payment = ledger.successful_payment(client, booking_id)
     if payment:
