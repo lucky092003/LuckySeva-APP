@@ -57,34 +57,36 @@ distance, and only in-radius professionals see the request.
 ## Project layout
 
 ```
-frontend/                 React + Vite + TypeScript app (Vercel)
-  src/
-    components/           Shared UI (Logo, PhoneShell, BottomNav, ui)
-    context/              APP_ROLE, navigation stack, session
-    hooks/                Data hooks (catalog, bookings, customer, provider)
-    screens/              customer/ · provider/ · admin/
-    services/             API client + geolocation/geocoding
-    types/                Shared DTO types
-    utils/                Formatting, invoice, KYC labels, platform checks
-  capacitor.config.ts     Role-aware app id/name
-  vercel.json             Build settings + SPA rewrites
-backend/                  FastAPI API (Render)
-  app/
-    main.py               App + CORS + routers
-    security.py           JWT sign/verify (PyJWT)
-    dependencies.py       Role guards (customer/provider/admin)
-    db.py                 Supabase client (service role)
-    routers/              auth, catalog, customer, provider, admin
-  tests/                  Smoke tests (health, routing, auth guards)
-  supabase/
-    migrations/           SQL schema + seed data
-    functions/            Deno edge functions (PR review bot)
-  requirements.txt        Runtime deps
-  requirements-dev.txt    Lint + test tooling (CI only)
-android/                  Capacitor Android native project
-ios/                      Capacitor iOS native project
-docs/                     Feature, API and deployment documentation
-.github/workflows/        CI, CodeQL, PR labeler, Android APK release
+LuckySeva-APP/
+├── frontend/                  # React + Vite + TypeScript app (Vercel)
+│   ├── src/
+│   │   ├── components/        # Shared UI (Logo, PhoneShell, BottomNav, ui)
+│   │   ├── context/           # APP_ROLE, navigation stack, session
+│   │   ├── hooks/             # Data hooks (catalog, bookings, customer, provider)
+│   │   ├── screens/           # customer/ · provider/ · admin/
+│   │   ├── services/          # API client + geolocation/geocoding
+│   │   ├── types/             # Shared DTO types
+│   │   └── utils/             # Formatting, invoice, KYC labels, platform checks
+│   ├── capacitor.config.ts    # Role-aware app id/name
+│   ├── vercel.json            # Build settings + SPA rewrites
+│   └── package.json           # Frontend dependencies & scripts
+├── backend/                   # FastAPI API (Render)
+│   ├── app/
+│   │   ├── main.py            # App + CORS + routers
+│   │   ├── security.py        # JWT sign/verify (PyJWT)
+│   │   ├── dependencies.py    # Role guards (customer/provider/admin)
+│   │   ├── db.py              # Supabase client (service role)
+│   │   └── routers/           # auth, catalog, customer, provider, admin
+│   ├── tests/                 # Smoke tests (health, routing, auth guards)
+│   ├── supabase/
+│   │   ├── migrations/        # SQL schema + seed data
+│   │   └── functions/         # Deno edge functions (PR review bot)
+│   ├── requirements.txt       # Runtime deps
+│   └── requirements-dev.txt   # Lint + test tooling (CI only)
+├── android/                   # Capacitor Android native project
+├── ios/                       # Capacitor iOS native project
+├── docs/                      # Feature, API and deployment documentation
+└── .github/workflows/         # CI, CodeQL, PR labeler, Android APK release
 ```
 
 ## Getting started
