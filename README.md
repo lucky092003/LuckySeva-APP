@@ -286,6 +286,7 @@ Edge functions (run from `backend/supabase/functions/`, needs [Deno](https://den
 
 | Document | Contents |
 |----------|----------|
+| [docs/SETUP.md](docs/SETUP.md) | Fresh-machine setup: database, backend, frontend, Android |
 | [docs/FEATURES.md](docs/FEATURES.md) | Data model, booking lifecycle, radius matching, geocoding |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep architecture notes |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Full deployment guide with checklists and troubleshooting |
