@@ -75,6 +75,7 @@ jobs:
           cd ../android
           ./gradlew assemble${BUILD_TYPE^} --no-daemon
           VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
+          mkdir -p "${GITHUB_WORKSPACE}/releases"
           cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-$VERSION.apk"
 
       - name: Build provider APK
@@ -85,6 +86,7 @@ jobs:
           cd ../android
           ./gradlew assemble${BUILD_TYPE^} --no-daemon
           VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
+          mkdir -p "${GITHUB_WORKSPACE}/releases"
           cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-Partner-$VERSION.apk"
 
       - name: Update latest release assets
