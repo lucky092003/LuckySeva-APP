@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends
 
@@ -671,6 +671,88 @@ def cancel_booking(booking_id: str, body: dict, claims: dict = Depends(require_c
         "alert",
         "Booking Cancelled",
         refund_note or f"Your {existing.get('service_name')} booking has been cancelled.",
+        booking_id,
+    )
+    return res.data[0]
+
+
+@router.put("/bookings/{booking_id}/reschedule")
+def reschedule_booking(booking_id: str, body: dict, claims: dict = Depends(require_customer)):
+    """Move a not-yet-started booking to a new date/time.
+
+    Only the owner can reschedule, only before the professional is on the way,
+    and never into the past. The assigned professional is notified so their
+    calendar does not silently go stale.
+    """
+    client = db()
+    existing = one(
+        client.table("bookings")
+        .select("*")
+        .eq("id", booking_id)
+        .eq("customer_phone", customer_phone(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not existing:
+        raise ApiError(404, "Booking not found")
+    if existing["status"] in {"on_the_way", "started", "completed"}:
+        raise ApiError(400, "This booking is already in progress and cannot be rescheduled")
+    if existing["status"] == "cancelled":
+        raise ApiError(400, "This booking was cancelled")
+
+    today = datetime.now(timezone.utc).date()
+    try:
+        current_date = date.fromisoformat(existing["scheduled_date"])
+    except (ValueError, TypeError):
+        current_date = None
+    if current_date is not None and current_date < today:
+        raise ApiError(400, "Past bookings cannot be rescheduled")
+
+    raw_date = body.get("scheduled_date")
+    try:
+        new_date = date.fromisoformat(raw_date) if isinstance(raw_date, str) else None
+    except ValueError:
+        new_date = None
+    if new_date is None:
+        raise ApiError(400, "scheduled_date must be an ISO date (YYYY-MM-DD)")
+    if new_date < today:
+        raise ApiError(400, "New date cannot be in the past")
+
+    raw_time = body.get("scheduled_time")
+    if not isinstance(raw_time, str) or not raw_time.strip():
+        raise ApiError(400, "scheduled_time is required")
+    new_time = raw_time.strip()
+
+    if new_date == current_date and new_time == existing.get("scheduled_time"):
+        raise ApiError(400, "The booking is already scheduled for this date and time")
+
+    res = (
+        client.table("bookings")
+        .update({"scheduled_date": new_date.isoformat(), "scheduled_time": new_time})
+        .eq("id", booking_id)
+        .neq("status", "on_the_way")
+        .neq("status", "started")
+        .neq("status", "completed")
+        .neq("status", "cancelled")
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(400, "Could not reschedule booking", "status_changed")
+
+    if existing.get("professional_id"):
+        notify(
+            "provider",
+            existing["professional_id"],
+            "Booking rescheduled",
+            f"The {existing.get('service_name')} booking was moved to {new_date.isoformat()} {new_time} by the customer.",
+            {"booking_id": booking_id},
+        )
+    insert_notification(
+        customer_phone(claims),
+        "success",
+        "Booking Rescheduled",
+        f"Your {existing.get('service_name')} booking is now scheduled for {new_date.isoformat()} at {new_time}.",
         booking_id,
     )
     return res.data[0]

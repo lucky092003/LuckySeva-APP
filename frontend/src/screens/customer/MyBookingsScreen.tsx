@@ -25,7 +25,40 @@ export const MyBookingsScreen = () => {
   const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
   const [refundError, setRefundError] = useState('');
   const [requestingRefund, setRequestingRefund] = useState(false);
+  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleError, setRescheduleError] = useState('');
+  const [rescheduling, setRescheduling] = useState(false);
   const { bookings, loading, reload } = useBookings(tab, customer?.phone || undefined);
+
+  const openReschedule = (b: Booking) => {
+    setRescheduleBooking(b);
+    setRescheduleDate(b.scheduled_date);
+    setRescheduleTime(b.scheduled_time);
+    setRescheduleError('');
+  };
+
+  const reschedule = async () => {
+    if (!rescheduleBooking || !rescheduleDate || !rescheduleTime.trim()) {
+      setRescheduleError('Pick a new date and time');
+      return;
+    }
+    setRescheduling(true);
+    setRescheduleError('');
+    try {
+      await api.customer.rescheduleBooking(rescheduleBooking.id, {
+        scheduled_date: rescheduleDate,
+        scheduled_time: rescheduleTime.trim(),
+      });
+      setRescheduleBooking(null);
+      reload();
+    } catch (e) {
+      setRescheduleError(e instanceof Error ? e.message : 'Could not reschedule booking');
+    } finally {
+      setRescheduling(false);
+    }
+  };
 
   const cancel = async () => {
     if (!pendingCancel) return;
@@ -95,6 +128,7 @@ export const MyBookingsScreen = () => {
                 onCancel={() => setPendingCancel(b)}
                 cancelling={cancellingId === b.id}
                 onRefund={() => { setRefundBooking(b); setRefundReason(''); setRefundError(''); }}
+                onReschedule={() => openReschedule(b)}
               />
             ))}
           </div>
@@ -105,7 +139,15 @@ export const MyBookingsScreen = () => {
         open={!!pendingCancel}
         busy={!!pendingCancel && cancellingId === pendingCancel.id}
         title="Cancel this booking?"
-        message={pendingCancel ? `Your ${pendingCancel.service_name} booking will be cancelled and the professional will be informed.` : ''}
+        message={
+          pendingCancel
+            ? `Your ${pendingCancel.service_name} booking will be cancelled and the professional will be informed.${
+                ['paid', 'cash', 'refund_pending'].includes(pendingCancel.payment_status)
+                  ? `\nA refund of ${inr(pendingCancel.total_amount)} has been paid and will be returned.`
+                  : ''
+              }`
+            : ''
+        }
         confirmLabel="Cancel booking"
         cancelLabel="Keep booking"
         onConfirm={cancel}
@@ -138,11 +180,41 @@ export const MyBookingsScreen = () => {
           </div>
         }
       />
+      <ConfirmDialog
+        open={!!rescheduleBooking}
+        busy={rescheduling}
+        title="Reschedule Booking"
+        message={rescheduleBooking ? `Pick a new date and time for your ${rescheduleBooking.service_name} booking.` : ''}
+        confirmLabel="Reschedule"
+        cancelLabel="Keep as is"
+        onConfirm={reschedule}
+        onCancel={() => setRescheduleBooking(null)}
+        extra={
+          <div className="mt-3 space-y-2">
+            <label className="block text-xs font-semibold text-gray-500">New date</label>
+            <input
+              type="date"
+              value={rescheduleDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setRescheduleDate(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+            <label className="block text-xs font-semibold text-gray-500">New time</label>
+            <input
+              type="time"
+              value={rescheduleTime}
+              onChange={(e) => setRescheduleTime(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+            {rescheduleError && <p className="text-xs text-red-500">{rescheduleError}</p>}
+          </div>
+        }
+      />
     </div>
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void }) => {
+const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund, onReschedule }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void; onReschedule: () => void }) => {
   const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info',
     assigned: 'info',
@@ -160,6 +232,15 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
     cancelled: 'Cancelled',
   };
 
+  const REFUND_LABEL: Record<string, { label: string; tone: 'success' | 'warning' }> = {
+    refund_pending: { label: 'Refund pending', tone: 'warning' },
+    refunded: { label: 'Refunded', tone: 'success' },
+    partially_refunded: { label: 'Partially refunded', tone: 'success' },
+  };
+  const refundInfo = booking.status === 'cancelled' || booking.status === 'completed'
+    ? REFUND_LABEL[booking.payment_status]
+    : undefined;
+
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between">
@@ -167,7 +248,10 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
           <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
           <p className="text-[11px] text-gray-500">{booking.professional_name}</p>
         </div>
-        <Badge tone={statusTone[booking.status]}>{statusLabel[booking.status]}</Badge>
+        <div className="flex flex-col items-end gap-1">
+          <Badge tone={statusTone[booking.status]}>{statusLabel[booking.status]}</Badge>
+          {refundInfo && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${refundInfo.tone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{refundInfo.label}</span>}
+        </div>
       </div>
       <div className="mt-3 flex items-center gap-4 text-[11px] text-gray-500">
         <span className="flex items-center gap-1"><Icons.Calendar size={12} />{formatRelativeDay(booking.scheduled_date)}</span>
@@ -187,7 +271,13 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
               <Icons.Undo2 size={14} /> Refund
             </Button>
           </>
-        ) : booking.status === 'cancelled' ? null : (
+        ) : booking.status === 'cancelled' ? (
+          ['paid', 'cash'].includes(booking.payment_status) ? (
+            <Button variant="outline" className="flex-1 py-2 text-xs text-amber-600" onClick={onRefund}>
+              <Icons.Undo2 size={14} /> Request Refund
+            </Button>
+          ) : null
+        ) : (
           <>
             <Button
               variant="outline"
@@ -197,8 +287,13 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
             >
               {cancelling ? 'Cancelling...' : <><Icons.X size={14} /> Cancel</>}
             </Button>
+            {['confirmed', 'assigned'].includes(booking.status) ? (
+              <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onReschedule}>
+                <Icons.CalendarClock size={14} /> Reschedule
+              </Button>
+            ) : null}
             <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onTrack}>
-              <Icons.Navigation size={14} /> Track Booking
+              <Icons.Navigation size={14} /> Track
             </Button>
           </>
         )}
