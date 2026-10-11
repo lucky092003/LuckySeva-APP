@@ -309,7 +309,7 @@ export const ProviderAuthScreen = () => {
       </div>
 
       {/* White sheet (mobile) / Form column (desktop) */}
-      <div className="relative flex w-full flex-1 flex-col rounded-t-[28px] bg-white pb-8 pt-8 shadow-[0_-12px_32px_rgba(0,0,0,0.18)] md:rounded-none md:shadow-none">
+      <div className="relative flex w-full flex-1 flex-col rounded-t-[28px] bg-white dark:bg-gray-950 pb-8 pt-8 shadow-[0_-12px_32px_rgba(0,0,0,0.18)] md:rounded-none md:shadow-none">
         <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-6 md:justify-center md:py-10">
 
       {step === 'phone' ? (
@@ -339,8 +339,8 @@ export const ProviderAuthScreen = () => {
           </div>
 
           <div className="mb-7">
-            <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900">Welcome Back</h1>
-            <p className="mt-1.5 text-[15px] text-gray-500">
+            <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-100">Welcome Back</h1>
+            <p className="mt-1.5 text-[15px] text-gray-500 dark:text-gray-400">
               Sign in to manage your jobs and earnings
             </p>
           </div>
@@ -351,9 +351,9 @@ export const ProviderAuthScreen = () => {
             error={badPhone}
             errorText={badPhone ? 'Enter a valid 10-digit Indian mobile number' : undefined}
           >
-            <span className="flex shrink-0 items-center gap-1.5 text-[15px] font-semibold text-gray-900">
+            <span className="flex shrink-0 items-center gap-1.5 text-[15px] font-semibold text-gray-900 dark:text-gray-100">
               +91
-              <span className="h-4 w-px bg-gray-300" />
+              <span className="h-4 w-px bg-gray-300 dark:bg-gray-600" />
             </span>
             <input
               type="tel"
@@ -362,7 +362,7 @@ export const ProviderAuthScreen = () => {
               autoFocus
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-medium tracking-wide text-gray-900 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400 focus:outline-none"
+              className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-medium tracking-wide text-gray-900 dark:text-gray-100 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
             />
           </Field>
 
@@ -374,7 +374,7 @@ export const ProviderAuthScreen = () => {
             </PrimaryButton>
           </div>
 
-          <p className="mt-5 text-center text-sm text-gray-500">
+          <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
             Don't have an account?{' '}
             <button
               type="button"
@@ -422,7 +422,7 @@ export const ProviderAuthScreen = () => {
           </div>
 
           <div className="mb-5">
-            <h1 className="text-center text-[24px] font-extrabold leading-tight tracking-tight text-gray-800">
+            <h1 className="text-center text-[24px] font-extrabold leading-tight tracking-tight text-gray-800 dark:text-gray-100">
               Become a{' '}
               <span
                 className="bg-clip-text text-transparent"
@@ -434,7 +434,7 @@ export const ProviderAuthScreen = () => {
                 Partner
               </span>
             </h1>
-            <p className="mt-1 text-center text-[14px] text-gray-400">
+            <p className="mt-1 text-center text-[14px] text-gray-400 dark:text-gray-500">
               Register to start earning with LuckySeva
             </p>
           </div>
@@ -454,7 +454,7 @@ export const ProviderAuthScreen = () => {
                 value={form.name}
                 onBlur={() => setNameTouched(true)}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
 
@@ -472,7 +472,7 @@ export const ProviderAuthScreen = () => {
                 placeholder="Email Address"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
 
@@ -490,7 +490,7 @@ export const ProviderAuthScreen = () => {
                 placeholder="Mobile Number"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] tracking-wide text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] tracking-wide text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
 
@@ -508,7 +508,7 @@ export const ProviderAuthScreen = () => {
                 onBlur={() => setProfessionTouched(true)}
                 value={form.profession}
                 onChange={(e) => setForm({ ...form, profession: e.target.value })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
 
@@ -524,7 +524,7 @@ export const ProviderAuthScreen = () => {
                 placeholder="Years of Experience"
                 value={form.experience}
                 onChange={(e) => setForm({ ...form, experience: e.target.value.replace(/\D/g, '').slice(0, 2) })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
 
@@ -552,7 +552,7 @@ export const ProviderAuthScreen = () => {
                 placeholder="Enter or Select Service Area"
                 value={form.serviceArea}
                 onChange={(e) => setForm({ ...form, serviceArea: e.target.value })}
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 placeholder:text-gray-400 focus:outline-none"
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
             </Field>
           </div>
@@ -573,7 +573,7 @@ export const ProviderAuthScreen = () => {
             </PrimaryButton>
           </div>
 
-          <p className="mt-3.5 text-center text-sm text-gray-500">
+          <p className="mt-3.5 text-center text-sm text-gray-500 dark:text-gray-400">
             Already have an account?{' '}
             <button
               type="button"
@@ -593,10 +593,10 @@ export const ProviderAuthScreen = () => {
 
           <div className="mt-4 flex-1" />
 
-          <p className="relative text-center text-xs leading-relaxed text-gray-400">
+          <p className="relative text-center text-xs leading-relaxed text-gray-400 dark:text-gray-500">
             By creating an account, you agree to our{' '}
-            <span className="font-semibold text-gray-600">Terms</span> &{' '}
-            <span className="font-semibold text-gray-600">Privacy Policy</span>
+            <span className="font-semibold text-gray-600 dark:text-gray-300">Terms</span> &{' '}
+            <span className="font-semibold text-gray-600 dark:text-gray-300">Privacy Policy</span>
           </p>
         </div>
       ) : (
@@ -604,12 +604,12 @@ export const ProviderAuthScreen = () => {
           <BackBtn onClick={leaveOtpStep} />
 
           <div className="mb-7">
-            <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900">
+            <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-100">
               Verify your number
             </h1>
-            <p className="mt-1.5 text-[15px] text-gray-500">
+            <p className="mt-1.5 text-[15px] text-gray-500 dark:text-gray-400">
               We've sent a 6-digit OTP to{' '}
-              <span className="whitespace-nowrap font-bold text-gray-900">+91 {prettyPhone}</span>
+              <span className="whitespace-nowrap font-bold text-gray-900 dark:text-gray-100">+91 {prettyPhone}</span>
             </p>
           </div>
 
@@ -635,12 +635,12 @@ export const ProviderAuthScreen = () => {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 aria-label={`OTP digit ${i + 1}`}
-                className={`h-14 w-full min-w-0 rounded-[16px] border-2 text-center text-xl font-extrabold text-gray-900 transition-all duration-150 focus:outline-none focus:ring-4 ${
+                className={`h-14 w-full min-w-0 rounded-[16px] border-2 text-center text-xl font-extrabold text-gray-900 dark:text-gray-100 transition-all duration-150 focus:outline-none focus:ring-4 ${
                   error
-                    ? 'border-red-400 bg-red-50/50 focus:ring-red-100'
+                    ? 'border-red-400 bg-red-50/50 dark:border-red-500/60 dark:bg-red-900/20 focus:ring-red-100'
                     : d
-                      ? 'bg-white focus:border-emerald-500 focus:ring-emerald-500/10'
-                      : 'bg-[#FAFAFA] focus:border-emerald-500 focus:ring-emerald-500/10'
+                      ? 'bg-white dark:bg-gray-900 focus:border-emerald-500 focus:ring-emerald-500/10'
+                      : 'bg-[#FAFAFA] dark:bg-gray-900 focus:border-emerald-500 focus:ring-emerald-500/10'
                 }`}
                 style={{
                   borderColor: !error && d ? GREEN : undefined,
@@ -650,11 +650,11 @@ export const ProviderAuthScreen = () => {
           </div>
           {error && <p className="mt-3 text-center text-sm font-medium text-red-500">{error}</p>}
 
-          <div className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
             {timer > 0 ? (
               <p>
                 Resend OTP in{' '}
-                <span className="font-semibold tabular-nums text-gray-900">
+                <span className="font-semibold tabular-nums text-gray-900 dark:text-gray-100">
                   00:{String(timer).padStart(2, '0')}
                 </span>
               </p>
@@ -685,7 +685,7 @@ export const ProviderAuthScreen = () => {
           <button
             type="button"
             onClick={leaveOtpStep}
-            className="mx-auto flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-800"
+            className="mx-auto flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-800 dark:hover:text-gray-200"
           >
             <Pencil size={13} /> Change mobile number
           </button>
@@ -750,15 +750,15 @@ const Field = ({
   <div>
     {!hideLabel && (
       <div className="mb-1.5 flex items-center justify-between">
-        <label className="text-[13px] font-semibold text-gray-700">{label}</label>
+        <label className="text-[13px] font-semibold text-gray-700 dark:text-gray-200">{label}</label>
       </div>
     )}
     <div
-      className={`flex items-center gap-3 rounded-[16px] border bg-[#FAFAFA] px-4 transition-all duration-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 ${
+      className={`flex items-center gap-3 rounded-[16px] border bg-[#FAFAFA] dark:bg-gray-900 px-4 transition-all duration-200 focus-within:bg-white dark:focus-within:bg-gray-900 focus-within:ring-4 focus-within:ring-emerald-500/10 ${
         compact ? 'h-12' : 'h-[54px]'
-      } ${error ? 'border-red-400' : 'border-gray-200 focus-within:border-emerald-500'}`}
+      } ${error ? 'border-red-400 dark:border-red-500/60' : 'border-gray-200 dark:border-gray-700 focus-within:border-emerald-500'}`}
     >
-      <span className="shrink-0 text-gray-500">{icon}</span>
+      <span className="shrink-0 text-gray-500 dark:text-gray-400">{icon}</span>
       {children}
       {right}
     </div>
@@ -784,7 +784,7 @@ const TrustFooter = () => (
         >
           <Icon size={15} strokeWidth={2.2} style={{ color: GREEN }} />
         </span>
-        <span className="text-[9px] font-semibold leading-tight text-gray-600">{label}</span>
+        <span className="text-[9px] font-semibold leading-tight text-gray-600 dark:text-gray-300">{label}</span>
       </div>
     ))}
   </div>
@@ -794,7 +794,7 @@ const BackBtn = ({ onClick }: { onClick: () => void }) => (
   <button
     type="button"
     onClick={onClick}
-    className="-ml-2 mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#FAFAFA] text-gray-700 transition-colors hover:bg-gray-100"
+    className="-ml-2 mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#FAFAFA] dark:bg-gray-900 text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
     aria-label="Back"
   >
     <ArrowLeft size={20} />
@@ -804,7 +804,7 @@ const BackBtn = ({ onClick }: { onClick: () => void }) => (
 const ErrorNote = ({ children }: { children: React.ReactNode }) => (
   <p
     role="alert"
-    className="mt-4 rounded-[14px] border border-red-200 bg-red-50 px-4 py-2.5 text-center text-[13px] font-medium leading-snug text-red-600"
+    className="mt-4 rounded-[14px] border border-red-200 dark:border-red-500/40 bg-red-50 dark:bg-red-900/20 px-4 py-2.5 text-center text-[13px] font-medium leading-snug text-red-600 dark:text-red-400"
   >
     {children}
   </p>

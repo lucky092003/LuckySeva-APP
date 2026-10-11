@@ -99,7 +99,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const showPhone = Boolean(booking.customer_phone) && (booking.status !== 'confirmed' || booking.professional_id === providerId);
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <TopBar title="Booking Details" />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {/* Status */}
@@ -110,21 +110,21 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
         {/* Customer info */}
         <Card className="mb-3 p-4">
-          <h3 className="mb-3 text-sm font-bold text-gray-900">Customer Details</h3>
+          <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-gray-100">Customer Details</h3>
           {booking.status === 'confirmed' && (
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[11px] text-gray-500">Accept window</span>
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">Accept window</span>
               <ExpiryTimer deadline={booking.accept_deadline} />
             </div>
           )}
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-bold text-gray-600 dark:text-gray-300">
               {booking.customer_name[0]}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-gray-900">{booking.customer_name}</p>
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.customer_name}</p>
               {showPhone ? (
-                <p className="text-[11px] text-gray-500">{booking.customer_phone}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">{booking.customer_phone}</p>
               ) : (
                 <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
                   <Icons.Lock size={11} /> Number unlocks after you accept
@@ -132,17 +132,17 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
               )}
             </div>
             {showPhone ? (
-              <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <a href={`tel:${booking.customer_phone}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
                 <Icons.Phone size={18} />
               </a>
             ) : (
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-300">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600">
                 <Icons.Lock size={16} />
               </span>
             )}
           </div>
           {!showPhone && (
-            <p className="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+            <p className="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-3 text-[11px] leading-relaxed text-amber-800 dark:text-amber-400">
               <Icons.Lock size={13} className="mt-0.5 shrink-0" />
               <span>
                 The customer's number is hidden while this request is open. Accept the job to see
@@ -163,19 +163,19 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
         {/* Payment */}
         <Card className="p-4">
-          <h3 className="mb-2 text-sm font-bold text-gray-900">Payment</h3>
+          <h3 className="mb-2 text-sm font-bold text-gray-900 dark:text-gray-100">Payment</h3>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Method</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Method</span>
             <Badge tone="info">{booking.payment_method.toUpperCase()}</Badge>
           </div>
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-xs text-gray-500">Status</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Status</span>
             <Badge tone={booking.payment_status === 'paid' ? 'success' : 'warning'}>
               {booking.payment_status === 'paid' ? 'Paid online' : booking.payment_status === 'cash' ? 'Cash on service' : 'Pending'}
             </Badge>
           </div>
-          <div className="mt-2 flex items-center justify-between border-t border-gray-50 pt-2">
-            <span className="text-sm font-bold text-gray-900">Total Earnings</span>
+          <div className="mt-2 flex items-center justify-between border-t border-gray-50 dark:border-gray-800 pt-2">
+            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total Earnings</span>
             <span className="text-base font-bold text-emerald-600">{inr(booking.total_amount)}</span>
           </div>
         </Card>
@@ -183,7 +183,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
       {/* Actions */}
       {!isCancelled && !isCompleted && (
-        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
+        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
           {booking.status === 'confirmed' && (
             <Button variant="outline" onClick={() => setShowReject(true)} disabled={updating} className="text-red-500">
               Reject
@@ -195,7 +195,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
         </div>
       )}
       {isCompleted && (
-        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 bg-white p-3">
+        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
           <Button onClick={() => navigate({ name: 'invoice', bookingId })} className="flex-1">
             <Icons.Receipt size={16} /> Generate Invoice
           </Button>
@@ -218,10 +218,10 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
 const Detail = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <div className="flex items-start gap-2">
-    <span className="mt-0.5 text-gray-400">{icon}</span>
+    <span className="mt-0.5 text-gray-400 dark:text-gray-500">{icon}</span>
     <div className="min-w-0 flex-1">
-      <p className="text-[11px] text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-gray-700">{value}</p>
+      <p className="text-[11px] text-gray-400 dark:text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{value}</p>
     </div>
   </div>
 );

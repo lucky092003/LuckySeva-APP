@@ -31,14 +31,14 @@ export const ProviderBookingsScreen = () => {
       : bookings;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <TopBar title="My Bookings" showBack={false} />
-      <div className="flex shrink-0 gap-1 border-b border-gray-100 bg-white px-3">
+      <div className="flex shrink-0 gap-1 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-3">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`relative flex-1 py-3 text-xs font-semibold ${tab === t.key ? 'text-emerald-600' : 'text-gray-400'}`}
+            className={`relative flex-1 py-3 text-xs font-semibold ${tab === t.key ? 'text-emerald-600' : 'text-gray-400 dark:text-gray-500'}`}
           >
             {t.label}
             {tab === t.key && <div className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-emerald-500" />}
@@ -77,17 +77,17 @@ const BookingRow = ({ booking, onClick }: { booking: Booking; onClick: () => voi
     <Card onClick={onClick} className="p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
-          <p className="text-[11px] text-gray-500">{booking.customer_name}</p>
+          <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.service_name}</p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">{booking.customer_name}</p>
         </div>
         <Badge tone={tone[booking.status]}>{label[booking.status]}</Badge>
       </div>
-      <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
+      <div className="mt-2 flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1"><Icons.Calendar size={11} />{formatRelativeDay(booking.scheduled_date)}</span>
         <span className="flex items-center gap-1"><Icons.Clock size={11} />{booking.scheduled_time}</span>
       </div>
-      <div className="mt-2 flex items-center justify-between border-t border-gray-50 pt-2">
-        <span className="text-[11px] text-gray-400">{formatDate(booking.scheduled_date)}</span>
+      <div className="mt-2 flex items-center justify-between border-t border-gray-50 dark:border-gray-800 pt-2">
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(booking.scheduled_date)}</span>
         <span className="text-sm font-bold text-emerald-600">{inr(booking.total_amount)}</span>
       </div>
     </Card>

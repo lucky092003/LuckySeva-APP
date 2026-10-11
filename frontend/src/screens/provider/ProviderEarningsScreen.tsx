@@ -171,13 +171,13 @@ export const ProviderEarningsScreen = () => {
   ];
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <TopBar
         title="Earnings"
         showBack={false}
         right={
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-gray-400 lg:block">{today}</span>
+            <span className="hidden text-xs text-gray-400 dark:text-gray-500 lg:block">{today}</span>
             <Button variant="outline" onClick={() => setShowStatement(true)} className="gap-1.5 px-2 py-1 text-xs">
               <Icons.FileText size={13} />
             </Button>
@@ -213,13 +213,13 @@ export const ProviderEarningsScreen = () => {
               return (
                 <Card key={s.label} className={`group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.highlight ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25' : 'shadow-md hover:shadow-lg'}`}>
                   {/* Decorative circle */}
-                  <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-gray-50'} transition-transform duration-300 group-hover:scale-110`} />
+                  <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'} transition-transform duration-300 group-hover:scale-110`} />
                   <div className="relative">
                     <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${s.grad} text-white shadow-lg shadow-gray-200/50`}>
                       <Icon size={20} />
                     </div>
-                    <p className={`mt-4 text-2xl font-bold tracking-tight ${s.highlight ? 'text-white' : 'text-gray-900'}`}>{s.value}</p>
-                    <p className={`mt-0.5 text-xs font-medium ${s.highlight ? 'text-white/75' : 'text-gray-400'}`}>{s.label}</p>
+                    <p className={`mt-4 text-2xl font-bold tracking-tight ${s.highlight ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{s.value}</p>
+                    <p className={`mt-0.5 text-xs font-medium ${s.highlight ? 'text-white/75' : 'text-gray-400 dark:text-gray-500'}`}>{s.label}</p>
                   </div>
                 </Card>
               );
@@ -233,12 +233,12 @@ export const ProviderEarningsScreen = () => {
           <Card className="relative overflow-hidden p-4 shadow-md transition-all duration-300 hover:shadow-lg lg:col-span-5">
             <div className="mb-3 flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-bold text-gray-900">Earnings Overview</h3>
-                <p className="text-[10px] text-gray-400">{periodLabel}</p>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Earnings Overview</h3>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{periodLabel}</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-extrabold leading-tight tracking-tight text-gray-900">{inr(periodTotal)}</p>
-                <p className="text-[9px] font-medium text-gray-400">
+                <p className="text-lg font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-100">{inr(periodTotal)}</p>
+                <p className="text-[9px] font-medium text-gray-400 dark:text-gray-500">
                   {trendPct === null ? (
                     'no data to compare'
                   ) : (
@@ -252,13 +252,13 @@ export const ProviderEarningsScreen = () => {
             </div>
 
             {/* Period Tabs */}
-            <div className="mb-4 flex rounded-xl bg-gray-100 p-1">
+            <div className="mb-4 flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
               {(['week', 'month', 'year'] as Period[]).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold capitalize transition-all ${
-                    period === p ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    period === p ? 'bg-white dark:bg-gray-900 text-emerald-600 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
                   {p}
@@ -287,7 +287,7 @@ export const ProviderEarningsScreen = () => {
                           {/* Tooltip, floats above the bar top */}
                           <div
                             style={{ bottom: `calc(${heightPct}% + 6px)` }}
-                            className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[9px] font-bold text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/bar:opacity-100"
+                            className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-700 px-2 py-1 text-[9px] font-bold text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/bar:opacity-100"
                           >
                             {period === 'month' ? `${MONTH_KEYS[todayMonth]} ${label} · ` : ''}
                             {inr(amount)}
@@ -329,7 +329,7 @@ export const ProviderEarningsScreen = () => {
                       <span
                         key={label}
                         className={`min-w-0 flex-1 truncate text-center text-[8px] leading-none ${
-                          isToday ? 'font-bold text-emerald-600' : 'text-gray-400'
+                          isToday ? 'font-bold text-emerald-600' : 'text-gray-400 dark:text-gray-500'
                         }`}
                       >
                         {showLabel ? label : ''}
@@ -341,40 +341,40 @@ export const ProviderEarningsScreen = () => {
             </div>
 
             {/* Chart footer: best day & daily average */}
-            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-2.5 text-[10px]">
-              <span className="text-gray-400">
+            <div className="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-2.5 text-[10px]">
+              <span className="text-gray-400 dark:text-gray-500">
                 <span className="font-bold text-emerald-600">
                   {period === 'month' ? `Day ${bestBar.label}` : bestBar.label}
                 </span>{' '}
                 earned the most
               </span>
-              <span className="text-gray-400">
-                Avg <span className="font-bold text-gray-900">{inr(avgPerBar)}</span>/{period === 'year' ? 'mo' : 'day'}
+              <span className="text-gray-400 dark:text-gray-500">
+                Avg <span className="font-bold text-gray-900 dark:text-gray-100">{inr(avgPerBar)}</span>/{period === 'year' ? 'mo' : 'day'}
               </span>
             </div>
           </Card>
 
           {/* Quick Stats - 40% */}
           <Card className="relative overflow-hidden p-4 shadow-md transition-all duration-300 hover:shadow-lg lg:col-span-3">
-            <h3 className="text-sm font-bold text-gray-900">Performance</h3>
-            <p className="text-[10px] text-gray-400">Key metrics</p>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Performance</h3>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500">Key metrics</p>
             <div className="mt-4 space-y-2">
               {[
-                { icon: Icons.CheckCircle2, label: 'Jobs Completed', value: completed.length, bg: 'bg-emerald-50', text: 'text-emerald-600' },
-                { icon: Icons.Star, label: 'Avg. Rating', value: avgRating ? avgRating.toFixed(1) : '—', bg: 'bg-amber-50', text: 'text-amber-600' },
-                { icon: Icons.ArrowDownToLine, label: 'Withdrawn', value: inr(withdrawn), bg: 'bg-violet-50', text: 'text-violet-600' },
-                { icon: Icons.Wallet, label: 'Available', value: inr(available), bg: 'bg-sky-50', text: 'text-sky-600' },
+                { icon: Icons.CheckCircle2, label: 'Jobs Completed', value: completed.length, bg: 'bg-emerald-50 dark:bg-emerald-900/30', text: 'text-emerald-600' },
+                { icon: Icons.Star, label: 'Avg. Rating', value: avgRating ? avgRating.toFixed(1) : '—', bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600' },
+                { icon: Icons.ArrowDownToLine, label: 'Withdrawn', value: inr(withdrawn), bg: 'bg-violet-50 dark:bg-violet-900/30', text: 'text-violet-600' },
+                { icon: Icons.Wallet, label: 'Available', value: inr(available), bg: 'bg-sky-50 dark:bg-sky-900/30', text: 'text-sky-600' },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.label} className="group flex items-center justify-between rounded-lg p-2.5 transition-colors hover:bg-gray-50">
+                  <div key={item.label} className="group flex items-center justify-between rounded-lg p-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                     <div className="flex items-center gap-2.5">
                       <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${item.bg}`}>
                         <Icon size={16} className={item.text} />
                       </div>
-                      <span className="text-xs font-medium text-gray-600">{item.label}</span>
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-900">{item.value}</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{item.value}</span>
                   </div>
                 );
               })}
@@ -384,7 +384,7 @@ export const ProviderEarningsScreen = () => {
 
         {/* Transaction History */}
         <div className="mt-4 lg:mt-6">
-          <h3 className="mb-3 text-sm font-bold text-gray-900 lg:text-base">Recent Transactions</h3>
+          <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-gray-100 lg:text-base">Recent Transactions</h3>
           {loading ? (
             <Spinner className="py-8" />
           ) : completed.length === 0 ? (
@@ -396,7 +396,7 @@ export const ProviderEarningsScreen = () => {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] uppercase tracking-wider text-gray-400">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500">
                       <th className="px-5 py-3.5 font-semibold">Service</th>
                       <th className="px-5 py-3.5 font-semibold">Customer</th>
                       <th className="px-5 py-3.5 font-semibold hidden md:table-cell">Date</th>
@@ -405,14 +405,14 @@ export const ProviderEarningsScreen = () => {
                   </thead>
                   <tbody>
                     {completed.slice(0, 10).map((b, i) => (
-                      <tr key={b.id} className={`group transition-colors hover:bg-emerald-50/30 ${i !== completed.slice(0, 10).length - 1 ? 'border-b border-gray-50' : ''}`}>
+                      <tr key={b.id} className={`group transition-colors hover:bg-emerald-50/30 dark:hover:bg-emerald-900/30 ${i !== completed.slice(0, 10).length - 1 ? 'border-b border-gray-50 dark:border-gray-800' : ''}`}>
                         <td className="px-5 py-4">
-                          <p className="font-semibold text-gray-900">{b.service_name}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{b.service_name}</p>
                         </td>
-                        <td className="px-5 py-4 text-gray-500">{b.customer_name}</td>
-                        <td className="px-5 py-4 text-gray-400 hidden md:table-cell">{formatDate(b.scheduled_date)}</td>
+                        <td className="px-5 py-4 text-gray-500 dark:text-gray-400">{b.customer_name}</td>
+                        <td className="px-5 py-4 text-gray-400 dark:text-gray-500 hidden md:table-cell">{formatDate(b.scheduled_date)}</td>
                         <td className="whitespace-nowrap px-5 py-4">
-                          <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-600">+{inr(b.total_amount)}</span>
+                          <span className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-bold text-emerald-600">+{inr(b.total_amount)}</span>
                         </td>
                       </tr>
                     ))}
@@ -425,49 +425,49 @@ export const ProviderEarningsScreen = () => {
       </div>
 
       {showStatement && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-gray-50">
-          <div className="flex items-center gap-3 border-b border-gray-100 bg-white p-3">
-            <button onClick={() => setShowStatement(false)} className="text-gray-400"><Icons.X size={22} /></button>
-            <p className="flex-1 text-base font-bold text-gray-900">Statement</p>
+        <div className="absolute inset-0 z-40 flex flex-col bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <button onClick={() => setShowStatement(false)} className="text-gray-400 dark:text-gray-500"><Icons.X size={22} /></button>
+            <p className="flex-1 text-base font-bold text-gray-900 dark:text-gray-100">Statement</p>
           </div>
           <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar space-y-2 p-4">
             {payouts.length > 0 && (
               <>
-                <h3 className="text-sm font-bold text-gray-900">Withdrawals</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Withdrawals</h3>
                 {payouts.map((p) => (
                   <Card key={p.id} className="flex items-center gap-3 p-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${p.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : p.status === 'failed' ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${p.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : p.status === 'failed' ? 'bg-red-50 dark:bg-red-900/30 text-red-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600'}`}>
                       <Icons.ArrowDownToLine size={16} />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm font-semibold capitalize text-gray-900`}>{p.status}</p>
-                      <p className="text-[11px] text-gray-400">{formatDate(p.created_at)}</p>
+                      <p className={`text-sm font-semibold capitalize text-gray-900 dark:text-gray-100`}>{p.status}</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(p.created_at)}</p>
                     </div>
-                    <span className="text-sm font-bold text-gray-900">-{inr(p.amount)}</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">-{inr(p.amount)}</span>
                   </Card>
                 ))}
-                <div className="h-px bg-gray-200" />
+                <div className="h-px bg-gray-200 dark:bg-gray-700" />
               </>
             )}
-            <h3 className="text-sm font-bold text-gray-900">Earnings</h3>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Earnings</h3>
             {completed.length === 0 ? (
               <EmptyState icon={<Icons.Wallet size={26} />} title="No earnings yet" subtitle="Complete jobs to start earning." />
             ) : (
               completed.map((b: Booking) => (
                 <Card key={b.id} className="flex items-center gap-3 p-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
                     <Icons.Wallet size={16} />
                   </div>
                   <div className="flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900">{b.service_name}</p>
-                    <p className="text-[11px] text-gray-400">{formatDate(b.scheduled_date)} · {b.customer_name}</p>
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{b.service_name}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(b.scheduled_date)} · {b.customer_name}</p>
                   </div>
                   <span className="text-sm font-bold text-emerald-600">+{inr(b.total_amount)}</span>
                 </Card>
               ))
             )}
-            <div className="mt-1 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm">
-              <span className="text-sm font-bold text-gray-900">Total earned</span>
+            <div className="mt-1 flex items-center justify-between rounded-xl bg-white dark:bg-gray-900 p-4 shadow-sm">
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total earned</span>
               <span className="text-base font-bold text-emerald-600">{inr(totalEarnings)}</span>
             </div>
           </div>
