@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-11
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-11
+
+### Fixed
+- ** Booking cancellation couldn't be called.** The customer cancel endpoint
+  declared `body: dict` as a *required* FastAPI body, while the app sent the PUT
+  with no body at all — every request failed with `422 Field required` before any
+  cancel logic ran. The body is now optional
+  (`backend/app/routers/customer.py`), a blank/missing `reason` falls back to
+  "Cancelled by customer", and the client sends `{}` with the PUT
+  (`frontend/src/services/api.ts`).
+
+### Added
+- **Booking rescheduling** — customers can move a not-yet-started booking:
+  - New `PUT /customer/bookings/{id}/reschedule` (`backend/app/routers/customer.py`):
+    owner-only, validates the new `scheduled_date`/`scheduled_time`, rejects past
+    dates and past/in-progress bookings, and applies the update with a
+    status-guarded chain (`neq` on `on_the_way`/`started`/`completed`/`cancelled`)
+    so a concurrent provider action can't be overwritten. The assigned
+    professional and the customer are both notified.
+  - New **Reschedule** button on Upcoming (`confirmed`/`assigned`) booking cards in
+    My Bookings (`frontend/src/screens/customer/MyBookingsScreen.tsx`) with a
+    date-picker + time-picker dialog; date is floored to today and errors from the
+    API are shown inline.
+- **Refund visibility on cancelled bookings**
+  (`frontend/src/screens/customer/MyBookingsScreen.tsx`):
+  - Cancelled (and completed) bookings whose payment was taken now show a refund
+    badge on the card — **Refund pending** (amber) / **Refunded** /
+    **Partially refunded** (green) — driven by `payment_status`.
+  - A cancelled booking that was actually paid (`payment_status` `paid`/`cash`)
+    gets a **Request Refund** button, so a paid booking no longer refunds
+    only via the admin console silently.
+  - The cancel confirmation dialog now tells the customer that the money they
+    paid will be returned.
+
+### Tests
+- New `backend/tests/test_booking_reschedule.py` (8 cases): happy path, past-date
+  rejection, same-schedule rejection, late statuses (`on_the_way`/`started`/
+  `completed`/`cancelled`) refusal, blank time, malformed date.
 
 ## 2026-10-10
 

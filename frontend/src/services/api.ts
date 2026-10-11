@@ -191,6 +191,8 @@ export const api = {
     booking: (id: string) => request<Booking>('customer', `/bookings/${id}`),
     createBooking: (b: Partial<Booking>) => request<Booking>('customer', '/bookings', 'POST', b),
     cancelBooking: (id: string) => request<Booking>('customer', `/bookings/${id}/cancel`, 'PUT', {}),
+    rescheduleBooking: (id: string, payload: { scheduled_date: string; scheduled_time: string }) =>
+      request<Booking>('customer', `/bookings/${id}/reschedule`, 'PUT', payload),
     payBooking: (id: string, patch: { payment_method: string; payment_status: 'cash' | 'paid' | 'pending' }) =>
       request<{ booking: Booking; payment: { id: string; status: string; amount: number; method: string } }>('customer', `/bookings/${id}/payment`, 'PUT', patch),
     tickets: () => request<SupportTicket[]>('customer', '/tickets'),
