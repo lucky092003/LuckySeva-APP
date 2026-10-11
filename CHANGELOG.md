@@ -13,16 +13,27 @@ matches the newest dated section.
 
 ## 2026-10-11
 
-### Fixed
-- ** Booking cancellation couldn't be called.** The customer cancel endpoint
-  declared `body: dict` as a *required* FastAPI body, while the app sent the PUT
-  with no body at all — every request failed with `422 Field required` before any
-  cancel logic ran. The body is now optional
-  (`backend/app/routers/customer.py`), a blank/missing `reason` falls back to
-  "Cancelled by customer", and the client sends `{}` with the PUT
-  (`frontend/src/services/api.ts`).
-
 ### Added
+- **Provider dark/light theme** (`frontend/src/screens/provider/*`) — the same
+  Moon/Sun toggle was added to the **provider Profile** top bar, and the
+  provider experience is now fully dark-aware: Auth (signup/OTP inputs), Home
+  requests feed (earnings strip, stat cards, request/active-job cards, pills,
+  skeletons), Bookings (tabs + rows), Earnings (statement, period tabs,
+  overview chart & tooltip, tables), Profile (header, stats, availability,
+  KYC card, radius chips, menu rows, all sheets — services/pricing/reviews/
+  bank) and the booking detail screen. Emerald/gradient accents and white-on-
+  gradient text are untouched.
+- **Customer dark/light theme** — new `CustomerThemeProvider`
+  (`frontend/src/context/ThemeContext.tsx`) toggles the `dark` class on
+  `<html>` and persists the choice in `localStorage` (`luckyseva.theme`).
+  Class-based `dark:` variant enabled via `@custom-variant` in
+  `frontend/src/index.css`. A round Moon/Sun toggle button was added to the
+  **Profile** top bar (right side); the menu does not duplicate it. Dark
+  styling covers the whole Profile screen (profile card, edit inputs, location
+  card, menu items, refer banner, payment/settings sheets, logout) plus the
+  shared chrome it sits on — `TopBar`, `BottomNav`, `Card`, and
+  outline/ghost `Button` variants. Colors, icons, labels and routes are
+  unchanged; light mode is byte-identical to before.
 - **Booking rescheduling** — customers can move a not-yet-started booking:
   - New `PUT /customer/bookings/{id}/reschedule` (`backend/app/routers/customer.py`):
     owner-only, validates the new `scheduled_date`/`scheduled_time`, rejects past
@@ -44,6 +55,25 @@ matches the newest dated section.
     only via the admin console silently.
   - The cancel confirmation dialog now tells the customer that the money they
     paid will be returned.
+
+### Fixed
+- **Bottom navigation stability on all phone sizes** — app shells in
+  `PhoneShell.tsx` now use `h-screen` with a `supports-[height:100dvh]:h-dvh`
+  upgrade, so older Android WebViews that lack `dvh` no longer collapse the
+  layout and push `BottomNav` off-screen. `BottomNav` gained `z-10`, a
+  `min-h-[calc(3.75rem+env(safe-area-inset-bottom))]` guard and 48px+ touch
+  targets per tab, keeping it always visible, evenly spaced and clear of
+  Android gesture/3-button navigation on small, medium and large screens.
+  Page-level scroll is locked (`html, body, #root { height: 100%; overflow:
+  hidden }` in `index.css`) so the nav never shifts while screens scroll
+  internally.
+- ** Booking cancellation couldn't be called.** The customer cancel endpoint
+  declared `body: dict` as a *required* FastAPI body, while the app sent the PUT
+  with no body at all — every request failed with `422 Field required` before any
+  cancel logic ran. The body is now optional
+  (`backend/app/routers/customer.py`), a blank/missing `reason` falls back to
+  "Cancelled by customer", and the client sends `{}` with the PUT
+  (`frontend/src/services/api.ts`).
 
 ### Tests
 - New `backend/tests/test_booking_reschedule.py` (8 cases): happy path, past-date

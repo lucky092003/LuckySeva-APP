@@ -26,7 +26,7 @@ export const BottomNav = () => {
   const hideOnDesktop = isNative ? '' : ' md:hidden';
 
   return (
-    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] px-[max(0.5rem,env(safe-area-inset-left))] pt-1.5 pb-[max(1.5vh,calc(env(safe-area-inset-bottom)+0.75rem))] min-h-[calc(3.75rem+env(safe-area-inset-bottom))]${hideOnDesktop}`}>
+    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] px-[max(0.5rem,env(safe-area-inset-left))] pt-1.5 pb-[max(1.5vh,calc(env(safe-area-inset-bottom)+0.75rem))] min-h-[calc(3.75rem+env(safe-area-inset-bottom))]${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
@@ -38,10 +38,10 @@ export const BottomNav = () => {
           >
             <Icon
               size={22}
-              className={`shrink-0 ${isActive ? 'text-emerald-500' : 'text-gray-400'}`}
+              className={`shrink-0 ${isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}
               strokeWidth={isActive ? 2.4 : 2}
             />
-            <span className={`max-w-full truncate text-[min(2.8vw,11px)] leading-tight font-semibold ${isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
+            <span className={`max-w-full truncate text-[min(2.8vw,11px)] leading-tight font-semibold ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
               {tab.label}
             </span>
           </button>

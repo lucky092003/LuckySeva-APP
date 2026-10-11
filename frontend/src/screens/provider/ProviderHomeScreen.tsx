@@ -173,12 +173,12 @@ export const ProviderHomeScreen = () => {
 
   if (!proLoading && !professional) {
     return (
-      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
         <TopBar title="Requests" showBack={false} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-          <Icons.UserPlus size={40} className="text-gray-300" />
-          <p className="text-sm font-semibold text-gray-800">No provider account found</p>
-          <p className="text-xs text-gray-500">Sign in or create a provider account to receive booking requests.</p>
+          <Icons.UserPlus size={40} className="text-gray-300 dark:text-gray-600" />
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">No provider account found</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Sign in or create a provider account to receive booking requests.</p>
           <Button onClick={() => navigate({ name: 'provider-auth' })}>Sign in as provider</Button>
         </div>
       </div>
@@ -186,7 +186,7 @@ export const ProviderHomeScreen = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <TopBar
         title="Requests"
         showBack={false}
@@ -194,7 +194,7 @@ export const ProviderHomeScreen = () => {
           <button
             onClick={() => setTick((n) => n + 1)}
             aria-label="Refresh requests"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
           >
             <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -204,11 +204,11 @@ export const ProviderHomeScreen = () => {
         {/* Earnings snapshot — compact strip on phone, stat cards on desktop */}
         <div className="mb-3 lg:mb-6">
           {/* Phone / tablet: compact 3-up strip */}
-          <div className="grid grid-cols-3 divide-x divide-gray-100 rounded-2xl bg-white p-2.5 shadow-sm ring-1 ring-gray-100 lg:hidden">
+          <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-800 rounded-2xl bg-white dark:bg-gray-900 p-2.5 shadow-sm ring-1 ring-gray-100 lg:hidden">
             {[
-              { label: "Today's Earnings", value: inr(todayEarnings), icon: Icons.Wallet, text: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Jobs Done', value: `${todayCompleted.length}`, icon: Icons.CheckCircle2, text: 'text-sky-600', bg: 'bg-sky-50' },
-              { label: 'This Week', value: `${weekCompletedCount}`, icon: Icons.Calendar, text: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: "Today's Earnings", value: inr(todayEarnings), icon: Icons.Wallet, text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
+              { label: 'Jobs Done', value: `${todayCompleted.length}`, icon: Icons.CheckCircle2, text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-900/30' },
+              { label: 'This Week', value: `${weekCompletedCount}`, icon: Icons.Calendar, text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -216,8 +216,8 @@ export const ProviderHomeScreen = () => {
                   <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-lg ${s.bg}`}>
                     <Icon size={14} className={s.text} />
                   </div>
-                  <p className="mt-1 truncate text-sm font-bold text-gray-900">{s.value}</p>
-                  <p className="mt-0.5 truncate text-[9px] font-medium text-gray-400">{s.label}</p>
+                  <p className="mt-1 truncate text-sm font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
+                  <p className="mt-0.5 truncate text-[9px] font-medium text-gray-400 dark:text-gray-500">{s.label}</p>
                 </div>
               );
             })}
@@ -240,18 +240,18 @@ export const ProviderHomeScreen = () => {
                 value: `${todayCompleted.length}`,
                 icon: Icons.CheckCircle2,
                 highlight: false,
-                iconBg: 'bg-emerald-100',
+                iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
                 iconText: 'text-emerald-600',
-                labelClass: 'text-gray-500',
+                labelClass: 'text-gray-500 dark:text-gray-400',
               },
               {
                 label: 'This Week',
                 value: `${weekCompletedCount}`,
                 icon: Icons.Calendar,
                 highlight: false,
-                iconBg: 'bg-amber-100',
+                iconBg: 'bg-amber-100 dark:bg-amber-900/30',
                 iconText: 'text-amber-600',
-                labelClass: 'text-gray-500',
+                labelClass: 'text-gray-500 dark:text-gray-400',
               },
             ].map((s) => (
               <div
@@ -259,11 +259,11 @@ export const ProviderHomeScreen = () => {
                 className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group ${
                   s.highlight
                     ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30'
-                    : 'bg-white text-gray-900 shadow-lg ring-1 ring-gray-200 hover:shadow-xl'
+                    : 'bg-white text-gray-900 shadow-lg ring-1 ring-gray-200 hover:shadow-xl dark:bg-gray-900 dark:text-gray-100'
                 }`}
               >
-                <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-100'}`} />
-                <div className={`absolute -bottom-6 -left-6 h-32 w-32 rounded-full ${s.highlight ? 'bg-white/5' : 'bg-teal-50'}`} />
+                <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-100 dark:bg-emerald-900/30'}`} />
+                <div className={`absolute -bottom-6 -left-6 h-32 w-32 rounded-full ${s.highlight ? 'bg-white/5' : 'bg-teal-50 dark:bg-teal-900/20'}`} />
                 <div className="relative">
                   <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 ${s.highlight ? s.iconBg : s.iconBg.replace('shadow-lg', 'shadow-sm')}`}>
                     <s.icon size={28} className={s.iconText} />
@@ -279,7 +279,7 @@ export const ProviderHomeScreen = () => {
         {/* Section: Active Jobs */}
         <SectionHeading title="Active Jobs" count={active.length} tone="sky" />
         {active.length === 0 ? (
-          <p className="mb-4 rounded-xl border border-dashed border-gray-200 bg-white/60 px-4 py-3 text-center text-[11px] text-gray-400">
+          <p className="mb-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 px-4 py-3 text-center text-[11px] text-gray-400 dark:text-gray-500">
             Nothing in progress. Accept a request below to start a job.
           </p>
         ) : (
@@ -292,13 +292,13 @@ export const ProviderHomeScreen = () => {
 
         {/* Section: New Requests */}
         <SectionHeading title="New Requests" count={newRequests.length} tone="emerald" hint={feedScope} />
-        <div className="mb-3 flex rounded-xl bg-gray-100 p-1 lg:w-fit">
+        <div className="mb-3 flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 lg:w-fit">
           {SORTS.map((s) => (
             <button
               key={s.key}
               onClick={() => setSort(s.key)}
               className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                sort === s.key ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                sort === s.key ? 'bg-white text-emerald-600 shadow-sm dark:bg-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
             >
               {s.label}
@@ -315,11 +315,11 @@ export const ProviderHomeScreen = () => {
         ) : orderedRequests.length === 0 ? (
           <Card className="px-5 py-2 text-center shadow-sm">
             <div className="flex flex-col items-center py-2 text-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
                 <Icons.Inbox size={22} />
               </div>
-              <p className="mt-2 text-sm font-semibold text-gray-800">No new requests</p>
-              <p className="mt-0.5 max-w-xs text-[11px] leading-snug text-gray-500">
+              <p className="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">No new requests</p>
+              <p className="mt-0.5 max-w-xs text-[11px] leading-snug text-gray-500 dark:text-gray-400">
                 New {field || 'service'} requests {feedScope} will show up here automatically.
               </p>
             </div>
@@ -375,47 +375,47 @@ const SectionHeading = ({
 }) => (
   <div className="mb-2.5 flex items-center justify-between gap-3">
     <div className="flex shrink-0 items-center gap-2">
-      <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+      <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
       <span
         className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-          tone === 'emerald' ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'
+          tone === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
         }`}
       >
         {count}
       </span>
     </div>
-    {hint && <span className="truncate text-[10px] font-medium text-gray-400">{hint}</span>}
+    {hint && <span className="truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">{hint}</span>}
   </div>
 );
 
 /* Placeholder shown while the request feed is loading */
 const SkeletonCard = () => (
-  <div className="animate-pulse rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+  <div className="animate-pulse rounded-2xl bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-gray-100">
     <div className="flex items-center gap-3">
-      <div className="h-11 w-11 shrink-0 rounded-xl bg-gray-100" />
+      <div className="h-11 w-11 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800" />
       <div className="min-w-0 flex-1 space-y-2">
-        <div className="h-3 w-1/3 rounded bg-gray-100" />
-        <div className="h-2.5 w-1/4 rounded bg-gray-100" />
+        <div className="h-3 w-1/3 rounded bg-gray-100 dark:bg-gray-800" />
+        <div className="h-2.5 w-1/4 rounded bg-gray-100 dark:bg-gray-800" />
       </div>
       <div className="h-6 w-14 shrink-0 rounded-lg bg-emerald-100/70" />
     </div>
     <div className="mt-4 space-y-2">
-      <div className="h-2.5 w-3/4 rounded bg-gray-100" />
-      <div className="h-2.5 w-2/3 rounded bg-gray-100" />
+      <div className="h-2.5 w-3/4 rounded bg-gray-100 dark:bg-gray-800" />
+      <div className="h-2.5 w-2/3 rounded bg-gray-100 dark:bg-gray-800" />
     </div>
     <div className="mt-4 flex gap-2">
-      <div className="h-9 flex-1 rounded-lg bg-gray-100" />
+      <div className="h-9 flex-1 rounded-lg bg-gray-100 dark:bg-gray-800" />
       <div className="h-9 flex-1 rounded-lg bg-emerald-100" />
     </div>
   </div>
 );
 
-const PILL = 'inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-600';
+const PILL = 'inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300';
 
 const ACTIVE_STATUS: Record<string, { label: string; chip: string; icon: 'check' | 'nav' | 'tool' }> = {
-  assigned: { label: 'Accepted', chip: 'bg-sky-50 text-sky-600', icon: 'check' },
-  on_the_way: { label: 'On the way', chip: 'bg-amber-50 text-amber-600', icon: 'nav' },
-  started: { label: 'In service', chip: 'bg-emerald-50 text-emerald-600', icon: 'tool' },
+  assigned: { label: 'Accepted', chip: 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400', icon: 'check' },
+  on_the_way: { label: 'On the way', chip: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400', icon: 'nav' },
+  started: { label: 'In service', chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', icon: 'tool' },
 };
 
 const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => {
@@ -434,7 +434,7 @@ const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => 
   return (
     <span
       className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-        urgent ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'
+        urgent ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
       }`}
     >
       <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${urgent ? 'bg-red-500' : 'bg-emerald-500'}`} />
@@ -460,8 +460,8 @@ const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => 
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
-        <p className="truncate text-[11px] text-gray-500">
+        <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.service_name}</p>
+        <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
           {booking.customer_name} · {formatRelativeDay(booking.scheduled_date)}, {booking.scheduled_time}
         </p>
       </div>
@@ -469,7 +469,7 @@ const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => 
         <span className="text-sm font-bold text-emerald-600">{inr(booking.total_amount)}</span>
         <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${meta.chip}`}>{meta.label}</span>
       </div>
-      <Icons.ChevronRight size={16} className="shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5" />
+      <Icons.ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-0.5" />
     </Card>
   );
 };
@@ -503,16 +503,16 @@ const RequestCard = ({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">
+            <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.service_name}</p>
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
               <span className="h-1 w-1 animate-pulse rounded-full bg-amber-500" /> NEW
             </span>
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-gray-500">{booking.customer_name}</p>
+          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{booking.customer_name}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <ExpiryBanner deadline={booking.accept_deadline} />
-          <span className="shrink-0 rounded-lg bg-emerald-50 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700">
+          <span className="shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
             {inr(booking.total_amount)}
           </span>
         </div>
@@ -540,21 +540,21 @@ const RequestCard = ({
       </div>
 
       {/* Address */}
-      <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-gray-500">
+      <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
         <Icons.MapPin size={12} className="mt-0.5 shrink-0" />
         <span className="line-clamp-2">{booking.customer_address}</span>
       </p>
 
       {/* Job notes */}
       {booking.notes && (
-        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-[11px] leading-relaxed text-amber-800">
+        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 p-2 text-[11px] leading-relaxed text-amber-800 dark:text-amber-400">
           <Icons.StickyNote size={12} className="mt-0.5 shrink-0" />
           <span className="line-clamp-2">{booking.notes}</span>
         </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-50 pt-3">
-        <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400">
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-50 dark:border-gray-800 pt-3">
+        <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-gray-500">
           <Icons.Lock size={11} /> Phone unlocks after you accept
         </span>
         <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-emerald-600 transition-transform group-hover:translate-x-0.5">
@@ -564,8 +564,8 @@ const RequestCard = ({
     </button>
 
     {/* Actions */}
-    <div className="flex gap-2 border-t border-gray-100 bg-gray-50/70 p-3 pl-5">
-      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50">
+    <div className="flex gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/70 p-3 pl-5">
+      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
         Decline
       </Button>
       <Button

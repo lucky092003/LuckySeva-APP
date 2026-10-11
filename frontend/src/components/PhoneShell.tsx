@@ -50,24 +50,27 @@ export const TopBar = ({
   showBack = true,
   right,
   onBack,
+  alignRight = false,
 }: {
   title: string;
   showBack?: boolean;
   right?: ReactNode;
   onBack?: () => void;
+  alignRight?: boolean;
 }) => {
   const { back } = useApp();
   return (
-    <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-3">
+    <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-3 dark:border-gray-800 dark:bg-gray-900">
+      {alignRight && <div className="flex-1" />}
       {showBack && (
         <button
           onClick={onBack || back}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
         >
           <ChevronLeft size={22} />
         </button>
       )}
-      <h1 className="flex-1 truncate text-lg font-bold text-gray-900">{title}</h1>
+      <h1 className={`${alignRight ? 'text-right' : 'flex-1'} truncate text-lg font-bold text-gray-900 dark:text-gray-100`}>{title}</h1>
       {right}
     </div>
   );

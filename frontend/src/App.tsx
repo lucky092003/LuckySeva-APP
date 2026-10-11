@@ -1,4 +1,5 @@
 import { AppProvider, useApp } from '@/context/app-context';
+import { CustomerThemeProvider } from '@/context/ThemeContext';
 import { AdminThemeProvider } from '@/context/AdminThemeContext';
 import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
@@ -145,8 +146,10 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Router />
-    </AppProvider>
+    <CustomerThemeProvider>
+      <AppProvider>
+        <Router />
+      </AppProvider>
+    </CustomerThemeProvider>
   );
 }

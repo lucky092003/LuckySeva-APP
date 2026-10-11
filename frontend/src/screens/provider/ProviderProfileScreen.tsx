@@ -7,6 +7,7 @@ import { fetchCurrentLocation, areaFrom } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Card, Spinner, Button, Stars, EmptyState, VerifiedBadge, Avatar } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
 import { inr, formatDate } from '@/utils/format';
 import { kycStatus, kycDocLabel, KYC_STATUS_LABEL } from '@/utils/kyc';
 import type { Category, Professional, Service } from '@/types';
@@ -26,6 +27,7 @@ const servicesErrorMessage = (e: unknown) => {
 
 export const ProviderProfileScreen = () => {
   const { setProviderId, navigate, providerId } = useApp();
+  const { theme, setTheme } = useTheme();
   const { professional: pro, loading, reload } = useProfessionalWithFallback(providerId);
   const { reviews, loading: revLoading } = useReviews(pro?.id || null);
   const { reload: reloadPayouts } = usePayouts(pro?.id || null);
@@ -122,15 +124,15 @@ export const ProviderProfileScreen = () => {
     pickTrade(slug);
   };
 
-  if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Profile" showBack={false} /><Spinner className="py-20" /></div>;
+  if (loading) return <div className="flex flex-1 flex-col bg-gray-50 dark:bg-gray-950"><TopBar title="Profile" showBack={false} /><Spinner className="py-20" /></div>;
   if (!pro)
     return (
-      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
         <TopBar title="My Profile" showBack={false} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-          <Icons.UserPlus size={40} className="text-gray-300" />
-          <p className="text-sm font-semibold text-gray-800">No provider account found</p>
-          <p className="text-xs text-gray-500">Sign in or create a provider account to continue.</p>
+          <Icons.UserPlus size={40} className="text-gray-300 dark:text-gray-600" />
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">No provider account found</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Sign in or create a provider account to continue.</p>
           <Button onClick={() => navigate({ name: 'provider-auth' })}>Sign in as provider</Button>
         </div>
       </div>
@@ -233,22 +235,34 @@ export const ProviderProfileScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar title="My Profile" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+      <TopBar
+        title="My Profile"
+        showBack={false}
+        right={
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label="Toggle theme"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-amber-300"
+          >
+            {theme === 'dark' ? <Icons.Sun size={18} /> : <Icons.Moon size={18} />}
+          </button>
+        }
+      />
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4 dark:bg-gray-950">
         {/* Profile header */}
         <Card className="flex items-center gap-4 p-4">
           <Avatar src={pro.avatar_url} name={pro.name} className="h-16 w-16 rounded-2xl text-lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <p className="truncate text-base font-bold text-gray-900">{pro.name}</p>
+              <p className="truncate text-base font-bold text-gray-900 dark:text-gray-100">{pro.name}</p>
               {kycStatus(pro) === 'approved' && <VerifiedBadge />}
             </div>
-            <p className="text-xs text-gray-500">{pro.skills.join(', ')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{pro.skills.join(', ')}</p>
             <div className="mt-1 flex items-center gap-1.5">
               <Stars rating={pro.rating} size={12} />
-              <span className="text-xs font-semibold text-gray-700">{pro.rating}</span>
-              <span className="ml-2 text-xs text-gray-400">{pro.phone || 'No phone linked'}</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{pro.rating}</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{pro.phone || 'No phone linked'}</span>
             </div>
           </div>
         </Card>
@@ -263,8 +277,8 @@ export const ProviderProfileScreen = () => {
         {/* Availability toggle */}
         <Card className="mt-3 flex items-center justify-between p-4">
           <div>
-            <p className="text-sm font-semibold text-gray-900">Availability</p>
-            <p className="text-[11px] text-gray-500">Accept new booking requests</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Availability</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Accept new booking requests</p>
           </div>
           <button
             onClick={toggleAvailability}
@@ -281,15 +295,15 @@ export const ProviderProfileScreen = () => {
         {/* Service area = my location + radius */}
         <Card className="mt-3 p-4">
           <div className="flex items-center gap-3">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
               <Icons.MapPin size={18} />
               {pro.latitude != null && pro.longitude != null && (
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900">My Location</p>
-              <p className="truncate text-[11px] text-gray-500">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">My Location</p>
+              <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
                 {pro.service_area || (pro.latitude != null && pro.longitude != null ? `${pro.latitude.toFixed(4)}, ${pro.longitude.toFixed(4)}` : 'No location set')}
               </p>
             </div>
@@ -301,10 +315,10 @@ export const ProviderProfileScreen = () => {
 
           <div className="mt-4 border-t border-gray-50 pt-3">
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-900">Service Radius</p>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-600">{radius} km</span>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Service Radius</p>
+              <span className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-0.5 text-xs font-bold text-emerald-600">{radius} km</span>
             </div>
-            <p className="mb-3 text-[11px] text-gray-500">
+            <p className="mb-3 text-[11px] text-gray-500 dark:text-gray-400">
               Receive booking requests from customers within this radius of your location.
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -315,22 +329,22 @@ export const ProviderProfileScreen = () => {
                   className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                     String(n) === radius
                       ? 'border-emerald-500 bg-emerald-500 text-white'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:border-emerald-300'
                   }`}
                 >
                   {n} km
                 </button>
               ))}
-              <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white py-1 pl-3 pr-1.5">
+              <div className="flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-1 pl-3 pr-1.5">
                 <input
                   value={radius}
                   onChange={(e) => setRadius(e.target.value.replace(/[^\d]/g, '').slice(0, 3))}
                   inputMode="numeric"
                   placeholder="?"
                   aria-label="Custom service radius in km"
-                  className="w-9 text-center text-xs font-semibold text-gray-700 focus:outline-none"
+                  className="w-9 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none"
                 />
-                <span className="text-[10px] text-gray-400">km</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">km</span>
                 <button
                   onClick={saveRadius}
                   disabled={savingRadius || String(pro.service_radius_km || 60) === radius}
@@ -372,18 +386,18 @@ export const ProviderProfileScreen = () => {
         {/* Recent reviews */}
         {reviews.length > 0 && (
           <div className="mt-4">
-            <h3 className="mb-2 text-sm font-bold text-gray-900">Recent Reviews</h3>
+            <h3 className="mb-2 text-sm font-bold text-gray-900 dark:text-gray-100">Recent Reviews</h3>
             <div className="space-y-2">
               {reviews.slice(0, 2).map((rev) => (
                 <Card key={rev.id} className="p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-900">{rev.customer_name}</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{rev.customer_name}</p>
                     <div className="flex items-center gap-1">
                       <Icons.Star size={11} className="fill-amber-400 text-amber-400" />
                       <span className="text-[11px] font-semibold">{rev.rating}</span>
                     </div>
                   </div>
-                  <p className="mt-1 text-[11px] text-gray-600">{rev.comment}</p>
+                  <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">{rev.comment}</p>
                 </Card>
               ))}
             </div>
@@ -397,16 +411,16 @@ export const ProviderProfileScreen = () => {
         >
           <Icons.LogOut size={16} /> Logout
         </Button>
-        <p className="mt-3 text-center text-[10px] text-gray-400">LuckySeva Provider v1.0.0</p>
+        <p className="mt-3 text-center text-[10px] text-gray-400 dark:text-gray-500">LuckySeva Provider v1.0.0</p>
       </div>
 
       {sheet && (
-        <div className="absolute inset-0 z-40 flex flex-col bg-gray-50">
-          <div className="flex items-center gap-3 border-b border-gray-100 bg-white p-3">
-            <button onClick={() => (pickingTrade && catalog.length ? setPickingTrade(false) : setSheet(null))} className="text-gray-400">
+        <div className="absolute inset-0 z-40 flex flex-col bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <button onClick={() => (pickingTrade && catalog.length ? setPickingTrade(false) : setSheet(null))} className="text-gray-400 dark:text-gray-500">
               <Icons.X size={22} />
             </button>
-            <p className="flex-1 text-base font-bold text-gray-900">
+            <p className="flex-1 text-base font-bold text-gray-900 dark:text-gray-100">
               {sheet === 'services'
                 ? pickingTrade && catalog.length
                   ? 'Change Trade'
@@ -416,7 +430,7 @@ export const ProviderProfileScreen = () => {
             {sheet === 'services' && tradeLabel && !pickingTrade && (
               <button
                 onClick={() => { setServicesError(''); setPickingTrade(true); loadTrades(); }}
-                className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+                className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
               >
                 {tradeLabel}
               </button>
@@ -428,9 +442,9 @@ export const ProviderProfileScreen = () => {
                 <Spinner className="py-10" />
               ) : servicesError && catalog.length === 0 ? (
                 <Card className="p-4 text-center">
-                  <Icons.WifiOff size={26} className="mx-auto text-gray-300" />
-                  <p className="mt-2 text-sm font-semibold text-gray-900">Could not load your services</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-gray-500">{servicesError}</p>
+                  <Icons.WifiOff size={26} className="mx-auto text-gray-300 dark:text-gray-600" />
+                  <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Could not load your services</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{servicesError}</p>
                   <Button variant="outline" onClick={loadServices} className="mt-3 w-full">Retry</Button>
                 </Card>
               ) : pickingTrade || catalog.length === 0 ? (
@@ -441,18 +455,18 @@ export const ProviderProfileScreen = () => {
                   <Spinner className="py-10" />
                 ) : trades.length === 0 ? (
                   <Card className="p-4 text-center">
-                    <Icons.Wrench size={26} className="mx-auto text-gray-300" />
-                    <p className="mt-2 text-sm font-semibold text-gray-900">Could not load the trades</p>
-                    <p className="mt-1 text-[11px] text-gray-500">Check your connection and try again.</p>
+                    <Icons.Wrench size={26} className="mx-auto text-gray-300 dark:text-gray-600" />
+                    <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">Could not load the trades</p>
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Check your connection and try again.</p>
                     <Button variant="outline" onClick={loadTrades} className="mt-3 w-full">Retry</Button>
                   </Card>
                 ) : (
                   <>
                     <Card className="p-3.5">
-                      <p className="text-sm font-bold text-gray-900">
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                         {catalog.length ? 'Change your trade' : 'Which trade do you work in?'}
                       </p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+                      <p className="mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
                         Pick your trade, then tick only the {tradeSlug ? tradeLabel : 'trade'} sub-services you actually
                         offer. You can change it later.
                       </p>
@@ -465,7 +479,7 @@ export const ProviderProfileScreen = () => {
                         onClick={() => requestTrade(t.slug)}
                         disabled={!!savingTrade}
                         className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors disabled:opacity-60 ${
-                          t.slug === tradeSlug ? 'border-emerald-200 bg-emerald-50/60' : 'border-gray-100 bg-white'
+                          t.slug === tradeSlug ? 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-900/40' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'
                         }`}
                       >
                         <span
@@ -475,13 +489,13 @@ export const ProviderProfileScreen = () => {
                           {t.name.charAt(0)}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-gray-900">{t.name}</p>
-                          <p className="truncate text-[11px] text-gray-400">{t.description}</p>
+                          <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{t.name}</p>
+                          <p className="truncate text-[11px] text-gray-400 dark:text-gray-500">{t.description}</p>
                         </div>
                         {savingTrade === t.slug ? (
                           <Spinner className="h-4 w-4" />
                         ) : (
-                          <Icons.ChevronRight size={16} className="shrink-0 text-gray-300" />
+                          <Icons.ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-gray-600" />
                         )}
                       </button>
                     ))}
@@ -490,25 +504,25 @@ export const ProviderProfileScreen = () => {
               ) : (
                 <>
                   <Card className="p-3.5">
-                    <p className="text-[11px] leading-relaxed text-gray-500">
+                    <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
                       These are only the {tradeLabel ? tradeLabel.toLowerCase() : 'trade'} services — the trade you
                       signed up with. Turn off the ones you don't do: those requests stop coming to you and customers
                       stop seeing them. Switch trade with the badge above.
                     </p>
                     <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
-                      <span className="text-xs font-semibold text-gray-900">
+                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
                         {picked.length} of {catalog.length} selected
                       </span>
                       <div className="flex items-center gap-3">
                         <button onClick={() => { setServicesError(''); setPicked(catalog.map((s) => s.id)); }} className="text-[11px] font-semibold text-emerald-600">
                           Select all
                         </button>
-                        <button onClick={() => { setServicesError(''); setPicked([]); }} className="text-[11px] font-semibold text-gray-400">
+                        <button onClick={() => { setServicesError(''); setPicked([]); }} className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
                           Clear
                         </button>
                       </div>
                     </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                       <div
                         className="h-full rounded-full bg-emerald-500 transition-all"
                         style={{ width: `${catalog.length ? (picked.length / catalog.length) * 100 : 0}%` }}
@@ -524,24 +538,24 @@ export const ProviderProfileScreen = () => {
                         type="button"
                         onClick={() => toggleService(svc.id)}
                         className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
-                          on ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-100 bg-white'
+                          on ? 'border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/40' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'
                         }`}
                       >
                         <span
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                            on ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-200 bg-white'
+                            on ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
                           }`}
                         >
                           {on && <Icons.Check size={14} />}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-gray-900">{svc.name}</p>
-                          <p className="text-[11px] text-gray-400">
+                          <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{svc.name}</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500">
                             {svc.estimated_duration}
-                            {!on && <span className="ml-1 font-medium text-gray-400">· hidden</span>}
+                            {!on && <span className="ml-1 font-medium text-gray-400 dark:text-gray-500">· hidden</span>}
                           </p>
                         </div>
-                        <span className="shrink-0 text-xs font-bold text-gray-700">{inr(svc.starting_price)}</span>
+                        <span className="shrink-0 text-xs font-bold text-gray-700 dark:text-gray-200">{inr(svc.starting_price)}</span>
                       </button>
                     );
                   })}
@@ -557,7 +571,7 @@ export const ProviderProfileScreen = () => {
                           ? `Save all ${catalog.length} services`
                           : `Save ${picked.length} of ${catalog.length} services`}
                   </Button>
-                  <p className="text-center text-[10px] text-gray-400">
+                  <p className="text-center text-[10px] text-gray-400 dark:text-gray-500">
                     Your profile price updates to the cheapest service you keep.
                   </p>
                 </>
@@ -567,12 +581,12 @@ export const ProviderProfileScreen = () => {
             {sheet === 'pricing' && (
               <>
                 <Card className="p-4">
-                  <p className="mb-1 text-xs font-semibold text-gray-700">Starting price (INR)</p>
+                  <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">Starting price (INR)</p>
                   <input
                     value={price}
                     onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ''))}
                     inputMode="numeric"
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                   />
                 </Card>
                 <Button onClick={savePricing} className="w-full">Save Pricing</Button>
@@ -582,31 +596,31 @@ export const ProviderProfileScreen = () => {
               <>
                 <Card className="p-4 space-y-3">
                   <div>
-                    <p className="mb-1 text-xs font-semibold text-gray-700">UPI ID</p>
+                    <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">UPI ID</p>
                     <input
                       value={bank.upi_id}
                       onChange={(e) => setBank({ ...bank, upi_id: e.target.value })}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-xs font-semibold text-gray-700">Account number</p>
+                    <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">Account number</p>
                     <input
                       value={bank.bank_account_number}
                       onChange={(e) => setBank({ ...bank, bank_account_number: e.target.value })}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                     />
                   </div>
                   <div>
-                    <p className="mb-1 text-xs font-semibold text-gray-700">IFSC</p>
+                    <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">IFSC</p>
                     <input
                       value={bank.bank_ifsc}
                       onChange={(e) => setBank({ ...bank, bank_ifsc: e.target.value.toUpperCase() })}
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                     />
                   </div>
                 </Card>
-                {bankMsg && <p className="text-[11px] text-gray-500">{bankMsg}</p>}
+                {bankMsg && <p className="text-[11px] text-gray-500 dark:text-gray-400">{bankMsg}</p>}
                 <Button onClick={saveBank} disabled={savingBank} className="w-full">
                   {savingBank ? 'Saving...' : 'Save Bank Details'}
                 </Button>
@@ -618,13 +632,13 @@ export const ProviderProfileScreen = () => {
               reviews.length ? reviews.map((rev) => (
                 <Card key={rev.id} className="p-3.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-900">{rev.customer_name}</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{rev.customer_name}</p>
                     <div className="flex items-center gap-1">
                       <Icons.Star size={11} className="fill-amber-400 text-amber-400" />
                       <span className="text-[11px] font-semibold">{rev.rating}</span>
                     </div>
                   </div>
-                  <p className="mt-1 text-[11px] text-gray-600">{rev.comment}</p>
+                  <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-300">{rev.comment}</p>
                 </Card>
               )) : <EmptyState icon={<Icons.Star size={26} />} title="No reviews yet" />)
             }
@@ -632,14 +646,14 @@ export const ProviderProfileScreen = () => {
             {sheet === 'bank' && (
               <>
                 <Card className="p-4">
-                  <p className="mb-1 text-xs font-semibold text-gray-700">Account holder name</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.acName') || pro.name} onChange={(e) => localStorage.setItem('luckyseva.acName', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
-                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700">Account number</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.acNo') || ''} onChange={(e) => localStorage.setItem('luckyseva.acNo', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
-                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700">IFSC</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.ifsc') || ''} onChange={(e) => localStorage.setItem('luckyseva.ifsc', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+                  <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">Account holder name</p>
+                  <input defaultValue={localStorage.getItem('luckyseva.acName') || pro.name} onChange={(e) => localStorage.setItem('luckyseva.acName', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700 dark:text-gray-200">Account number</p>
+                  <input defaultValue={localStorage.getItem('luckyseva.acNo') || ''} onChange={(e) => localStorage.setItem('luckyseva.acNo', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700 dark:text-gray-200">IFSC</p>
+                  <input defaultValue={localStorage.getItem('luckyseva.ifsc') || ''} onChange={(e) => localStorage.setItem('luckyseva.ifsc', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
                 </Card>
-                <p className="text-center text-[11px] text-gray-400">Details are stored locally and used for withdrawals.</p>
+                <p className="text-center text-[11px] text-gray-400 dark:text-gray-500">Details are stored locally and used for withdrawals.</p>
               </>
             )}
 
@@ -667,10 +681,10 @@ export const ProviderProfileScreen = () => {
 const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => void }) => {
   const status = kycStatus(pro);
   const statusTone =
-    status === 'approved' ? { text: 'text-emerald-600', bg: 'bg-emerald-50' }
-    : status === 'pending' ? { text: 'text-amber-600', bg: 'bg-amber-50' }
-    : status === 'rejected' ? { text: 'text-red-500', bg: 'bg-red-50' }
-    : { text: 'text-gray-500', bg: 'bg-gray-100' };
+    status === 'approved' ? { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/30' }
+    : status === 'pending' ? { text: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/30' }
+    : status === 'rejected' ? { text: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/30' }
+    : { text: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' };
   const [open, setOpen] = useState(false);
   const [docType, setDocType] = useState('aadhaar');
   const [docNumber, setDocNumber] = useState('');
@@ -699,8 +713,8 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
             {status === 'approved' ? <Icons.BadgeCheck size={20} /> : <Icons.ShieldCheck size={20} />}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900">Verification (KYC)</p>
-            <p className="text-[11px] text-gray-500">Build trust and get the Verified badge</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Verification (KYC)</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Build trust and get the Verified badge</p>
           </div>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusTone.bg} ${statusTone.text}`}>
@@ -709,20 +723,20 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
       </div>
 
       {status === 'approved' && (
-        <div className="mt-3 rounded-xl bg-emerald-50/60 px-3 py-2.5 text-[11px] text-emerald-700">
+        <div className="mt-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-900/40 px-3 py-2.5 text-[11px] text-emerald-700 dark:text-emerald-400">
           You're a verified provider. Customers see the Verified badge on your profile.
           {pro.kyc_doc_number ? ` Document on file: ${kycDocLabel(pro)} (${pro.kyc_doc_number}).` : ''}
         </div>
       )}
 
       {status === 'pending' && (
-        <div className="mt-3 rounded-xl bg-amber-50/60 px-3 py-2.5 text-[11px] text-amber-700">
+        <div className="mt-3 rounded-xl bg-amber-50/60 px-3 py-2.5 text-[11px] text-amber-700 dark:text-amber-400">
           Verification under review. Submitted {pro.kyc_submitted_at ? formatDate(pro.kyc_submitted_at) : ''} — {kycDocLabel(pro)}{pro.kyc_doc_number ? ` (${pro.kyc_doc_number})` : ''}.
         </div>
       )}
 
       {status === 'rejected' && (
-        <div className="mt-3 rounded-xl bg-red-50/60 px-3 py-2.5 text-[11px] text-red-600">
+        <div className="mt-3 rounded-xl bg-red-50/60 px-3 py-2.5 text-[11px] text-red-600 dark:text-red-400">
           {pro.kyc_review_note ? `Rejected: ${pro.kyc_review_note}` : 'Verification was rejected.'}
         </div>
       )}
@@ -736,11 +750,11 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
           ) : (
             <>
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-gray-700">Document type</span>
+                <span className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-200">Document type</span>
                 <select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 >
                   <option value="aadhaar">Aadhaar Card</option>
                   <option value="pan">PAN Card</option>
@@ -749,12 +763,12 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-gray-700">Document number</span>
+                <span className="mb-1 block text-xs font-semibold text-gray-700 dark:text-gray-200">Document number</span>
                 <input
                   value={docNumber}
                   onChange={(e) => setDocNumber(e.target.value.toUpperCase().slice(0, 20))}
                   placeholder="e.g. XXXX XXXX XXXX"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 />
               </label>
               {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}
@@ -777,25 +791,25 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
 const StatBox = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <Card className="flex flex-col items-center p-3 text-center">
     <span className="text-emerald-500">{icon}</span>
-    <p className="mt-1 text-sm font-bold text-gray-900">{value}</p>
-    <p className="text-[10px] text-gray-400">{label}</p>
+    <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">{value}</p>
+    <p className="text-[10px] text-gray-400 dark:text-gray-500">{label}</p>
   </Card>
 );
 
 const MenuRow = ({ icon, label, value, onClick }: { icon: React.ReactNode; label: string; value: string; onClick: () => void }) => (
-  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-sm">
-    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-600">{icon}</div>
-    <span className="flex-1 text-sm font-medium text-gray-900">{label}</span>
-    {value && <span className="text-xs text-gray-400">{value}</span>}
-    <Icons.ChevronRight size={16} className="text-gray-300" />
+  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 text-left transition-all hover:shadow-sm">
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{icon}</div>
+    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
+    {value && <span className="text-xs text-gray-400 dark:text-gray-500">{value}</span>}
+    <Icons.ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
   </button>
 );
 
 const SettingRow = ({ label, storageKey }: { label: string; storageKey: string }) => {
   const [on, setOn] = useState<boolean>(() => (localStorage.getItem(storageKey) ?? 'on') === 'on');
   return (
-    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4">
-      <p className="text-sm font-semibold text-gray-900">{label}</p>
+    <div className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
       <button
         onClick={() => {
           const next = !on;
