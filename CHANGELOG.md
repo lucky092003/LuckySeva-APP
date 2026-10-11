@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-11
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-11
+
+### Added
+- **Customer dark/light theme** — new `CustomerThemeProvider`
+  (`frontend/src/context/ThemeContext.tsx`) toggles the `dark` class on
+  `<html>` and persists the choice in `localStorage` (`luckyseva.theme`).
+  Class-based `dark:` variant enabled via `@custom-variant` in
+  `frontend/src/index.css`. A round Moon/Sun toggle button was added to the
+  **Profile** top bar (right side); the menu does not duplicate it. Dark
+  styling covers the whole Profile screen (profile card, edit inputs, location
+  card, menu items, refer banner, payment/settings sheets, logout) plus the
+  shared chrome it sits on — `TopBar`, `BottomNav`, `Card`, and
+  outline/ghost `Button` variants. Colors, icons, labels and routes are
+  unchanged; light mode is byte-identical to before.
+
+### Fixed
+- **Bottom navigation stability on all phone sizes** — app shells in
+  `PhoneShell.tsx` now use `h-screen` with a `supports-[height:100dvh]:h-dvh`
+  upgrade, so older Android WebViews that lack `dvh` no longer collapse the
+  layout and push `BottomNav` off-screen. `BottomNav` gained `z-10`, a
+  `min-h-[calc(3.75rem+env(safe-area-inset-bottom))]` guard and 48px+ touch
+  targets per tab, keeping it always visible, evenly spaced and clear of
+  Android gesture/3-button navigation on small, medium and large screens.
+  Page-level scroll is locked (`html, body, #root { height: 100%; overflow:
+  hidden }` in `index.css`) so the nav never shifts while screens scroll
+  internally.
 
 ## 2026-10-10
 

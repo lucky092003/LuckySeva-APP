@@ -119,8 +119,8 @@ export const Button = ({
   const variants: Record<string, string> = {
     primary: 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-sm shadow-emerald-500/30',
     secondary: 'bg-gray-900 text-white hover:bg-gray-800',
-    ghost: 'text-gray-700 hover:bg-gray-100',
-    outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white',
+    ghost: 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
+    outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:bg-gray-900',
     danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm shadow-red-500/30',
   };
   const sizes: Record<string, string> = {
@@ -142,13 +142,13 @@ export const Button = ({
 
 export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => {
   if (!onClick) {
-    return <div className={`rounded-2xl border border-gray-100 bg-white ${className}`}>{children}</div>;
+    return <div className={`rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 ${className}`}>{children}</div>;
   }
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`block w-full cursor-pointer rounded-2xl border border-gray-100 bg-white text-left transition-all hover:border-gray-200 hover:shadow-md active:scale-[0.995] ${className}`}
+      className={`block w-full cursor-pointer rounded-2xl border border-gray-100 bg-white text-left transition-all hover:border-gray-200 hover:shadow-md active:scale-[0.995] dark:border-gray-800 dark:bg-gray-900 ${className}`}
     >
       {children}
     </button>

@@ -6,6 +6,7 @@ import { api, setApiToken } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
 
 const PAYMENT_METHODS = [
   { key: 'upi', label: 'UPI', desc: 'GPay, PhonePe, Paytm' },
@@ -16,6 +17,7 @@ const PAYMENT_METHODS = [
 
 export const ProfileScreen = () => {
   const { customer, setCustomer, navigate } = useApp();
+  const { theme, setTheme } = useTheme();
   const { bookings } = useBookings('completed', customer?.phone || undefined);
   const { favourites } = useFavourites(customer?.phone || null);
   const { unread } = useUnreadNotifications(customer?.phone || null);
@@ -44,11 +46,11 @@ export const ProfileScreen = () => {
 
   if (!customer) {
     return (
-      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
         <TopBar title="Profile" showBack={false} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-          <Icons.User size={40} className="text-gray-300" />
-          <p className="text-sm font-semibold text-gray-800">You're not signed in</p>
+          <Icons.User size={40} className="text-gray-300 dark:text-gray-600" />
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">You're not signed in</p>
           <Button onClick={() => navigate({ name: 'auth' })}>Sign in</Button>
         </div>
       </div>
@@ -86,9 +88,21 @@ export const ProfileScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
-      <TopBar title="Profile" showBack={false} />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+      <TopBar
+        title="Profile"
+        showBack={false}
+        right={
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label="Toggle theme"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-amber-300"
+          >
+            {theme === 'dark' ? <Icons.Sun size={18} /> : <Icons.Moon size={18} />}
+          </button>
+        }
+      />
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4 dark:bg-gray-950">
         {/* Profile card */}
         <Card className="flex items-center gap-4 p-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 text-xl font-bold text-white">
@@ -96,10 +110,10 @@ export const ProfileScreen = () => {
           </div>
           {editing ? (
             <div className="min-w-0 flex-1 space-y-2">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
-              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
-              <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm" />
-              <button onClick={detectLocation} disabled={detecting} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60">
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+              <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+              <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+              <button onClick={detectLocation} disabled={detecting} className="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50">
                 {detecting ? 'Detecting...' : 'Use my current location'}
               </button>
               <div className="flex gap-2">
@@ -109,13 +123,13 @@ export const ProfileScreen = () => {
             </div>
           ) : (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-bold text-gray-900">{customer.name}</p>
-              <p className="truncate text-xs text-gray-500">{customer.email || 'No email added'}</p>
-              <p className="text-xs text-gray-500">{customer.phone}</p>
+              <p className="truncate text-base font-bold text-gray-900 dark:text-gray-100">{customer.name}</p>
+              <p className="truncate text-xs text-gray-500 dark:text-gray-400">{customer.email || 'No email added'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{customer.phone}</p>
             </div>
           )}
           {!editing && (
-            <button onClick={() => setEditing(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+            <button onClick={() => setEditing(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300">
               <Icons.Pencil size={16} />
             </button>
           )}
@@ -125,13 +139,13 @@ export const ProfileScreen = () => {
         <Card className="mt-3 flex items-center gap-3 p-4">
           <Icons.MapPin size={18} className="text-emerald-500" />
           <div className="flex-1">
-            <p className="text-[11px] text-gray-400">Current Location</p>
-            <p className="text-sm font-semibold text-gray-900">{customer.location || 'Not set'}</p>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">Current Location</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{customer.location || 'Not set'}</p>
           </div>
           <button onClick={saveCurrentLocation} disabled={detecting} className="text-emerald-500" title="Detect current location">
             <Icons.LocateFixed size={18} />
           </button>
-          <button onClick={() => navigate({ name: 'addresses' })} className="text-gray-300">
+          <button onClick={() => navigate({ name: 'addresses' })} className="text-gray-300 dark:text-gray-600">
             <Icons.ChevronRight size={18} />
           </button>
         </Card>
@@ -161,14 +175,14 @@ export const ProfileScreen = () => {
           <Icons.LogOut size={16} /> Logout
         </Button>
 
-        <p className="mt-4 text-center text-[10px] text-gray-400">LuckySeva v1.0.0 · Trusted Services</p>
+        <p className="mt-4 text-center text-[10px] text-gray-400 dark:text-gray-600">LuckySeva v1.0.0 · Trusted Services</p>
       </div>
 
       {/* Payment methods sheet */}
       {showPayments && (
         <Sheet onClose={() => setShowPayments(false)} title="Payment Methods">
           {PAYMENT_METHODS.map((m) => (
-            <label key={m.key} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3">
+            <label key={m.key} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
               <input
                 type="radio"
                 name="paymethod"
@@ -177,8 +191,8 @@ export const ProfileScreen = () => {
                 className="accent-emerald-500"
               />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">{m.label}</p>
-                <p className="text-[11px] text-gray-400">{m.desc}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{m.label}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">{m.desc}</p>
               </div>
               <Icons.CheckCircle size={18} className="text-emerald-500" />
             </label>
@@ -200,36 +214,36 @@ export const ProfileScreen = () => {
 };
 
 const MenuItem = ({ icon, label, value, onClick }: { icon: React.ReactNode; label: string; value: string; onClick: () => void }) => (
-  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-sm">
-    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-600">{icon}</div>
-    <span className="flex-1 text-sm font-medium text-gray-900">{label}</span>
-    {value && <span className="text-xs text-gray-400">{value}</span>}
-    <Icons.ChevronRight size={16} className="text-gray-300" />
+  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all hover:shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{icon}</div>
+    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
+    {value && <span className="text-xs text-gray-400 dark:text-gray-500">{value}</span>}
+    <Icons.ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
   </button>
 );
 
 const Sheet = ({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) => (
-  <div className="absolute inset-0 z-40 flex flex-col bg-white/60 backdrop-blur-sm">
-    <div className="flex items-center gap-3 border-b border-gray-100 bg-white p-4">
-      <p className="flex-1 text-base font-bold text-gray-900">{title}</p>
-      <button onClick={onClose} className="text-gray-400"><Icons.X size={22} /></button>
+  <div className="absolute inset-0 z-40 flex flex-col bg-white/60 backdrop-blur-sm dark:bg-gray-950/60">
+    <div className="flex items-center gap-3 border-b border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <p className="flex-1 text-base font-bold text-gray-900 dark:text-gray-100">{title}</p>
+      <button onClick={onClose} className="text-gray-400 dark:text-gray-500"><Icons.X size={22} /></button>
     </div>
-    <div className="flex flex-1 flex-col space-y-2.5 overflow-y-auto no-scrollbar bg-gray-50 p-4">{children}</div>
+    <div className="flex flex-1 flex-col space-y-2.5 overflow-y-auto no-scrollbar bg-gray-50 p-4 dark:bg-gray-950">{children}</div>
   </div>
 );
 
 const SettingToggle = ({ label, storageKey }: { label: string; storageKey: string }) => {
   const [on, setOn] = useState<boolean>(() => (localStorage.getItem(storageKey) ?? 'on') === 'on');
   return (
-    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4">
-      <p className="text-sm font-semibold text-gray-900">{label}</p>
+    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
       <button
         onClick={() => {
           const next = !on;
           localStorage.setItem(storageKey, next ? 'on' : 'off');
           setOn(next);
         }}
-        className={`h-6 w-11 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-gray-300'}`}
+        className={`h-6 w-11 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
       >
         <div className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
       </button>

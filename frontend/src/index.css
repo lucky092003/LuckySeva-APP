@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
 
+/* Class-based dark mode (customer profile theme toggle) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   html,
   body,
