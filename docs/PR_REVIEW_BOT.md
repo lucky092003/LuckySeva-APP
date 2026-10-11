@@ -11,7 +11,7 @@ The rules are specific to this repo, not generic style advice:
 | Severity | Rule | Why it exists here |
 |---|---|---|
 | blocker | `secret` | Supabase service-role key, JWT, private key, GitHub/model/AWS token literals |
-| blocker | `hardcoded-admin-credentials` | The admin login has a literal fallback (see `docs/brain.md` §7.7) |
+| blocker | `hardcoded-admin-credentials` | The admin login has a literal fallback |
 | blocker | `destructive-sql` | Mirrors the CI grep, so it lands before `master` |
 | blocker | `ownership-filter-removed` | RLS is `USING (true)` and the backend uses the service role, so handler-level `.eq("customer_phone", ...)` is the access boundary |
 | blocker | `auth-guard-removed` | Same reasoning for `require_admin` / `require_customer` |
@@ -22,7 +22,7 @@ The rules are specific to this repo, not generic style advice:
 | warning | `cors-widened` | `allow_origins=["*"]` is a live wildcard in `main.py` already |
 | warning | `unpinned-dependency` | `pip-audit` runs against `requirements.txt` in CI |
 | info | `foreign-key-without-index` | Every other migration pairs a `REFERENCES` column with an index |
-| info | `route-order-risk` | FastAPI matches in declaration order (`docs/brain.md` §1.6) |
+| info | `route-order-risk` | FastAPI matches routes in declaration order, so a broad route declared first shadows a specific one |
 
 The function edits its own comment on each new push, so a PR never accumulates
 more than one. Drafts are skipped, and a `(repo, pr, head_sha)` unique index
