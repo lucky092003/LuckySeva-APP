@@ -14,6 +14,15 @@ matches the newest dated section.
 ## 2026-10-11
 
 ### Added
+- **Provider dark/light theme** (`frontend/src/screens/provider/*`) — the same
+  Moon/Sun toggle was added to the **provider Profile** top bar, and the
+  provider experience is now fully dark-aware: Auth (signup/OTP inputs), Home
+  requests feed (earnings strip, stat cards, request/active-job cards, pills,
+  skeletons), Bookings (tabs + rows), Earnings (statement, period tabs,
+  overview chart & tooltip, tables), Profile (header, stats, availability,
+  KYC card, radius chips, menu rows, all sheets — services/pricing/reviews/
+  bank) and the booking detail screen. Emerald/gradient accents and white-on-
+  gradient text are untouched.
 - **Customer dark/light theme** — new `CustomerThemeProvider`
   (`frontend/src/context/ThemeContext.tsx`) toggles the `dark` class on
   `<html>` and persists the choice in `localStorage` (`luckyseva.theme`).
