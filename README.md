@@ -86,7 +86,7 @@ LuckySeva-APP/
 ├── android/                   # Capacitor Android native project
 ├── ios/                       # Capacitor iOS native project
 ├── docs/                      # Feature, API and deployment documentation
-└── .github/workflows/         # CI, CodeQL, PR labeler, Android APK release
+└── .github/workflows/         # CI, PR labeler, Android APK release
 ```
 
 ## Getting started
@@ -244,10 +244,9 @@ await api.customer.createBooking({ service_id, scheduled_date, scheduled_time })
 | Migrations | Applies every migration to a throwaway Postgres twice; fails on destructive SQL |
 | Edge functions | `deno fmt/lint/check`, tests, `deno audit` |
 
-Alongside it: CodeQL security scanning (`codeql.yml`), the PR labeler
-(`label.yml`), and the Android APK build (`android-apks.yml`, every push to
-`master`). Dependabot covers GitHub Actions, npm and pip, weekly, grouped into
-one PR per ecosystem.
+Alongside it: the PR labeler (`label.yml`) and the Android APK build
+(`android-apks.yml`, every push to `master`). Dependabot covers GitHub Actions,
+npm and pip, weekly, grouped into one PR per ecosystem.
 
 The PR review bot (`backend/supabase/functions/pr-review-bot/`) reviews pull
 requests with deterministic, repo-specific rules and maintains

@@ -271,9 +271,13 @@ Runs on every push/PR to `master`:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `codeql.yml` | push/PR | Security scanning (Python, JS/TS, Java/Kotlin, Swift, Actions) |
 | `label.yml` | pull_request_target | Auto-labels PRs from the labeler config |
 | `android-apks.yml` | push to `master` + manual dispatch | Builds both Android APKs (customer + partner) and refreshes the assets on the latest GitHub release (signed release requires the secrets listed in [docs/RELEASE.md](RELEASE.md); without signing secrets it falls back to `debug` APKs as artifacts only) |
+
+> CodeQL security scanning was removed because it needs code scanning (GitHub
+> Advanced Security) to be enabled, which this private repository does not have,
+> so its `Analyze (...)` checks could never pass. Re-add `.github/workflows/codeql.yml`
+> if the repository gains Advanced Security.
 
 ### 7.2 Dependabot
 
