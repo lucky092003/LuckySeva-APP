@@ -83,11 +83,12 @@ connected branch auto-deploys.
 ## Android (Play Store) — do this on any machine
 
 **Automatic build option:** `.github/workflows/android-apks.yml` builds both
-APKs on every merge to `master` and refreshes the assets on the latest GitHub
-release, so users can download an up-to-date APK without any local tooling
-(signing needs the repo secrets documented in
-[docs/RELEASE.md](RELEASE.md); without them it produces debug APKs as
-workflow artifacts). Bump `android/version.properties` for store releases.
+APKs on every merge to `master` and publishes them to the release for the current
+`versionName` (creating `v<versionName>` if new, refreshing its assets if it
+already exists), so users can download an up-to-date APK without any local tooling
+(signing needs the repo secrets documented in [docs/RELEASE.md](RELEASE.md);
+without them it produces debug APKs as workflow artifacts). Bump
+`android/version.properties` for store releases.
 
 Manual build below (Android Studio / signed bundle for Play Store).
 

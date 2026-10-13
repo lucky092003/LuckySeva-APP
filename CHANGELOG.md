@@ -20,6 +20,12 @@ matches the newest dated section.
   (`min-h-[calc(4.25rem+env(safe-area-inset-bottom))]`), each tab keeps a >=52px
   touch target and the label uses a fixed `11px` size with tight tracking instead
   of a viewport-scaled `2.8vw` size (PR #69).
+- **APK release is now hands-off** (`.github/workflows/android-apks.yml`) — on
+  merge to `master` the workflow builds both signed APKs and publishes them to
+  the release for the current `versionName`: it creates `v<versionName>` if it is
+  new, and refreshes that release's assets if it already exists. The app version
+  is left untouched — the workflow always publishes whatever
+  `android/version.properties` declares.
 
 ### Removed
 - **CodeQL workflow** (`.github/workflows/codeql.yml`) — code scanning is not

@@ -17,8 +17,10 @@ supports manual runs via `workflow_dispatch`). It:
 2. Builds + syncs the web bundle for **customer**, runs `assembleRelease`, and
    copies the APK to `releases/LuckySeva-<version>.apk`.
 3. Repeats for **provider** (`releases/LuckySeva-Partner-<version>.apk`).
-4. Uploads both APKs to the **latest GitHub release** with `gh release upload
-   --clobber` — this is what keeps `releases/latest` always serving fresh builds.
+4. Publishes both APKs to the **version's GitHub release** (`v<versionName>`) —
+   creating the tag + release if it doesn't exist yet, or refreshing the assets
+   with `gh release upload --clobber` if it does. This is what keeps
+   `releases/latest` serving fresh builds automatically; no manual publish step.
 5. Also uploads the APKs as run artifacts as a backup.
 
 ### Required repository secrets
@@ -50,7 +52,9 @@ the workflow itself runs `chmod +x android/gradlew` and `mkdir -p releases`
 1. Bump versions in `android/version.properties` (commit):
    - `versionCode` = previous + 1
    - `versionName` = e.g. `1.1.0`
-2. Merge the PR to `master` — CI builds and publishes the APKs automatically.
+2. Merge the PR to `master` — CI builds and publishes the APKs automatically,
+   creating the `v<versionName>` GitHub release the first time and refreshing its
+   assets on later pushes of the same version.
    For a re-run without a push: **Actions → Android APKs → Run workflow**.
 
 ## Manual build (local machine, fallback)
@@ -89,7 +93,7 @@ Repeat these steps:
    the customer and `com.luckyseva.partner` for the partner, including the
    right app label.)
 2. Dry verify: APKs must exist in `releases/` (this folder is gitignored; it is only a staging area).
-3. Publish to GitHub:
+2. Publish to GitHub (already handled by CI for the `v<versionName>` release):
    ```powershell
    cd C:\Users\lucky\Desktop\LuckySeva-App
    gh release create v1.1.0 `
@@ -97,6 +101,8 @@ Repeat these steps:
      releases\LuckySeva-Partner-v1.1.0.apk `
      --title "LuckySeva v1.1.0" --notes "- Summary of this release"
    ```
-   (To just refresh an existing release's assets:
-   `gh release upload v1.0.0 releases\LuckySeva-*.apk --clobber`.)
+   (Only needed as a manual fallback — merging the version bump normally lets
+   `android-apks.yml` create/refresh this release on its own. To refresh an
+   existing release's assets by hand:
+   `gh release upload v1.1.0 releases\LuckySeva-*.apk --clobber`.)
 4. Users scan the QR / visit the page → get this new version. The QR never changes.
