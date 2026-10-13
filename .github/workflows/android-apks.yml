@@ -76,7 +76,7 @@ jobs:
           ./gradlew assemble${BUILD_TYPE^} --no-daemon
           VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
           mkdir -p "${GITHUB_WORKSPACE}/releases"
-          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-$VERSION.apk"
+          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-v$VERSION.apk"
 
       - name: Build provider APK
         run: |
@@ -87,7 +87,7 @@ jobs:
           ./gradlew assemble${BUILD_TYPE^} --no-daemon
           VERSION=$(grep '^versionName' version.properties | cut -d= -f2)
           mkdir -p "${GITHUB_WORKSPACE}/releases"
-          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-Partner-$VERSION.apk"
+          cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-Partner-v$VERSION.apk"
 
       - name: Publish APKs to the version release
         if: env.BUILD_TYPE == 'release'
