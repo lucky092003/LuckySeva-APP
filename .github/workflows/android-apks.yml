@@ -89,15 +89,28 @@ jobs:
           mkdir -p "${GITHUB_WORKSPACE}/releases"
           cp app/build/outputs/apk/${BUILD_TYPE}/app-${BUILD_TYPE}.apk "${GITHUB_WORKSPACE}/releases/LuckySeva-Partner-$VERSION.apk"
 
-      - name: Update latest release assets
+      - name: Publish APKs to the version release
         if: env.BUILD_TYPE == 'release'
         working-directory: releases
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |          
-          LATEST_TAG=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .tag_name)
-          gh release upload "$LATEST_TAG" LuckySeva-*.apk --clobber --repo "${{ github.repository }}"
-          echo "Updated release $LATEST_TAG with fresh APKs from ${{ github.sha }}"
+        run: |
+          # Release tag always tracks version.properties, so bumping versionName in a
+          # PR is the only step needed to cut a new release: on merge this step creates
+          # tag v<version> + release, and refreshes the assets when it already exists.
+          VERSION=$(grep '^versionName' ../android/version.properties | cut -d= -f2)
+          TAG="v$VERSION"
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG" LuckySeva-*.apk --clobber --repo "${{ github.repository }}"
+            echo "Refreshed existing release $TAG with APKs built from ${{ github.sha }}"
+          else
+            gh release create "$TAG" LuckySeva-*.apk \
+              --repo "${{ github.repository }}" \
+              --title "LuckySeva $TAG" \
+              --notes "Signed Android APKs (customer + partner) for LuckySeva $TAG, built automatically from ${{ github.sha }}." \
+              --latest
+            echo "Created release $TAG with APKs built from ${{ github.sha }}"
+          fi
 
       - name: Upload artifacts (backup)
         uses: actions/upload-artifact@v4

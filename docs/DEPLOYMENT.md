@@ -213,8 +213,9 @@ npx cap sync
 4. Upload to Google Play Console
 
 **Automatic:** every push to `master` triggers `.github/workflows/android-apks.yml`,
-which builds both APKs (customer + partner) and refreshes the assets on the
-latest GitHub release. It needs the repo secrets documented in
+which builds both APKs (customer + partner) and publishes them to the release for
+the current `versionName` — creating `v<versionName>` if new, refreshing its assets
+if it already exists. It needs the repo secrets documented in
 [docs/RELEASE.md](RELEASE.md) (`VITE_API_URL`, `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`);
 without the signing secrets it produces `debug` APKs as artifacts only.
@@ -272,7 +273,7 @@ Runs on every push/PR to `master`:
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `label.yml` | pull_request_target | Auto-labels PRs from the labeler config |
-| `android-apks.yml` | push to `master` + manual dispatch | Builds both Android APKs (customer + partner) and refreshes the assets on the latest GitHub release (signed release requires the secrets listed in [docs/RELEASE.md](RELEASE.md); without signing secrets it falls back to `debug` APKs as artifacts only) |
+| `android-apks.yml` | push to `master` + manual dispatch | Builds both Android APKs (customer + partner) and publishes them to the release for the current `versionName` (creates `v<versionName>` if new, refreshes assets if it exists). Signed release requires the secrets listed in [docs/RELEASE.md](RELEASE.md); without signing secrets it falls back to `debug` APKs as artifacts only |
 
 > CodeQL security scanning was removed because it needs code scanning (GitHub
 > Advanced Security) to be enabled, which this private repository does not have,
