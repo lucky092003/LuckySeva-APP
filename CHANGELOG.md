@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-13
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-13
+
+### Changed
+- **Phone bottom navigation spacing** (`frontend/src/components/BottomNav.tsx`) —
+  the phone bottom nav no longer looks cramped on small screens: side padding was
+  widened (`px-[max(0.75rem,env(safe-area-inset-left))]`), the bar is taller
+  (`min-h-[calc(4.25rem+env(safe-area-inset-bottom))]`), each tab keeps a >=52px
+  touch target and the label uses a fixed `11px` size with tight tracking instead
+  of a viewport-scaled `2.8vw` size (PR #69).
+
+### Removed
+- **CodeQL workflow** (`.github/workflows/codeql.yml`) — code scanning is not
+  enabled for this repository, so the workflow only produced failing runs.
 
 ## 2026-10-11
 
