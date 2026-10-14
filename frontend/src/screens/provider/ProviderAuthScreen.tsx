@@ -77,6 +77,7 @@ export const ProviderAuthScreen = () => {
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const noticeTimer = useRef<number | null>(null);
 
   const validPhone = phoneRegex.test(form.phone);
   const validEmail = emailRegex.test(form.email.trim());
@@ -94,6 +95,24 @@ export const ProviderAuthScreen = () => {
     const t = setTimeout(() => setTimer((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [timer]);
+
+  useEffect(
+    () => () => {
+      if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+    },
+    []
+  );
+
+  // The "not registered yet" note is only an FYI while the signup form opens, so
+  // it clears itself after a few seconds instead of sitting there until the next
+  // action. Only clears the message it set, so a newer error is never wiped.
+  const flashNotice = (message: string) => {
+    setError(message);
+    if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => {
+      setError((prev) => (prev === message ? '' : prev));
+    }, 5000);
+  };
 
   const fetchServiceArea = async () => {
     setLocating(true);
@@ -127,7 +146,7 @@ export const ProviderAuthScreen = () => {
       if (!isSignup && isSignupRequired(e)) {
         // This number has never been signed up as a provider - show the form.
         setStep('signup');
-        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        flashNotice(otpErrorMessage(e, UNREGISTERED_FALLBACK));
         return;
       }
       setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
@@ -190,7 +209,7 @@ export const ProviderAuthScreen = () => {
     } catch (e) {
       if (!isSignup && isSignupRequired(e)) {
         setStep('signup');
-        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        flashNotice(otpErrorMessage(e, UNREGISTERED_FALLBACK));
         return;
       }
       setError(

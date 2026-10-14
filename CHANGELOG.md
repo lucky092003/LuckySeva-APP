@@ -13,6 +13,16 @@ matches the newest dated section.
 
 ## 2026-10-14
 
+### Changed
+- **"This number is not registered yet" auto-hides**
+  (`frontend/src/screens/customer/AuthScreen.tsx`,
+  `frontend/src/screens/provider/ProviderAuthScreen.tsx`) — when a login attempt
+  is refused because the number is not on file, the app still switches to the
+  signup form and shows the note, but the note now clears itself after 5 seconds
+  instead of staying until the next action. A `flashNotice` helper owns the
+  timer and only clears the exact message it set, so a newer error is never
+  wiped early, and the timer is cleared on unmount.
+
 ### Fixed
 - **Mobile number validation no longer fires while typing**
   (`frontend/src/screens/customer/AuthScreen.tsx`,
