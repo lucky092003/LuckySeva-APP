@@ -165,6 +165,7 @@ export const AuthScreen = () => {
   const [verifying, setVerifying] = useState(false);
   const [debugCode, setDebugCode] = useState<string | null>(null);
   const [nameTouched, setNameTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   const validPhone = phoneRegex.test(phone);
@@ -275,7 +276,9 @@ export const AuthScreen = () => {
   };
 
   const prettyPhone = phone.replace(/^(\d{5})(\d{5})$/, '$1 $2');
-  const badPhone = phone.length > 0 && !validPhone;
+  // Only complain after the user leaves the field / tries to move on, never while
+  // they are still typing the remaining digits of a 10-digit number.
+  const badPhone = phoneTouched && phone.length > 0 && !validPhone;
 
   return (
     <div className="relative flex flex-1 flex-col overflow-y-auto no-scrollbar bg-[#0C0C0F] md:min-h-full md:flex-row">
@@ -430,6 +433,7 @@ export const AuthScreen = () => {
               placeholder="Enter mobile number"
               autoFocus
               value={phone}
+              onBlur={() => setPhoneTouched(true)}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
               className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-medium tracking-wide text-gray-900 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400 focus:outline-none"
             />
@@ -450,6 +454,7 @@ export const AuthScreen = () => {
               onClick={() => {
                 setStep('signup');
                 setError('');
+                setPhoneTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
               style={{ color: GREEN }}
@@ -558,6 +563,7 @@ export const AuthScreen = () => {
                 inputMode="numeric"
                 placeholder="Mobile Number"
                 value={phone}
+                onBlur={() => setPhoneTouched(true)}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 className="h-full min-w-0 flex-1 bg-transparent text-[15px] tracking-wide text-gray-700 placeholder:text-gray-400 focus:outline-none"
               />
@@ -628,6 +634,7 @@ export const AuthScreen = () => {
                 setError('');
                 setDebugCode(null);
                 setNameTouched(false);
+                setPhoneTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
               style={{ color: GREEN }}
