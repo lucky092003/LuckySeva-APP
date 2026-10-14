@@ -167,6 +167,7 @@ export const AuthScreen = () => {
   const [nameTouched, setNameTouched] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const noticeTimer = useRef<number | null>(null);
 
   const validPhone = phoneRegex.test(phone);
   const validEmail = emailRegex.test(email.trim());
@@ -180,6 +181,24 @@ export const AuthScreen = () => {
     const t = setTimeout(() => setTimer((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [timer]);
+
+  useEffect(
+    () => () => {
+      if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+    },
+    []
+  );
+
+  // The "not registered yet" note is only an FYI while the signup form opens, so
+  // it clears itself after a few seconds instead of sitting there until the next
+  // action. Only clears the message it set, so a newer error is never wiped.
+  const flashNotice = (message: string) => {
+    setError(message);
+    if (noticeTimer.current) window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => {
+      setError((prev) => (prev === message ? '' : prev));
+    }, 5000);
+  };
 
   const sendOtp = async (isSignup: boolean) => {
     if (!validPhone || sending) return;
@@ -199,7 +218,7 @@ export const AuthScreen = () => {
       if (!isSignup && isSignupRequired(e)) {
         // Nobody signed up with this number yet - take them to the signup form.
         setStep('signup');
-        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        flashNotice(otpErrorMessage(e, UNREGISTERED_FALLBACK));
         return;
       }
       setError(otpErrorMessage(e, 'Could not send the OTP. Please try again.'));
@@ -264,7 +283,7 @@ export const AuthScreen = () => {
       if (!isSignup && isSignupRequired(e)) {
         // The number vanished from the database between the OTP and this verify.
         setStep('signup');
-        setError(otpErrorMessage(e, UNREGISTERED_FALLBACK));
+        flashNotice(otpErrorMessage(e, UNREGISTERED_FALLBACK));
         return;
       }
       setError(otpErrorMessage(e, 'Incorrect OTP. Please try again.'));
