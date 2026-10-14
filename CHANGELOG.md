@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-14
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line above is maintained automatically by the PR review bot and always
 matches the newest dated section.
+
+## 2026-10-14
+
+### Fixed
+- **Mobile number validation no longer fires while typing**
+  (`frontend/src/screens/customer/AuthScreen.tsx`,
+  `frontend/src/screens/provider/ProviderAuthScreen.tsx`) — the "invalid
+  number" state is now gated behind a `phoneTouched` flag that is set on blur,
+  so the field no longer flags a number as bad while the user is still entering
+  the remaining digits of a 10-digit mobile number. The flag resets when
+  switching between the login and signup steps.
 
 ## 2026-10-13
 

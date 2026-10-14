@@ -60,6 +60,7 @@ export const ProviderAuthScreen = () => {
   const [verifying, setVerifying] = useState(false);
   const [debugCode, setDebugCode] = useState<string | null>(null);
   const [nameTouched, setNameTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [professionTouched, setProfessionTouched] = useState(false);
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
   const [timer, setTimer] = useState(30);
@@ -79,7 +80,9 @@ export const ProviderAuthScreen = () => {
 
   const validPhone = phoneRegex.test(form.phone);
   const validEmail = emailRegex.test(form.email.trim());
-  const badPhone = form.phone.length > 0 && !validPhone;
+  // Only complain after the user leaves the field / tries to move on, never while
+  // they are still typing the remaining digits of a 10-digit number.
+  const badPhone = phoneTouched && form.phone.length > 0 && !validPhone;
   const code = digits.join('');
 
   useEffect(() => {
@@ -361,6 +364,7 @@ export const ProviderAuthScreen = () => {
               placeholder="Enter mobile number"
               autoFocus
               value={form.phone}
+              onBlur={() => setPhoneTouched(true)}
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
               className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-medium tracking-wide text-gray-900 dark:text-gray-100 placeholder:text-sm placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
             />
@@ -381,6 +385,7 @@ export const ProviderAuthScreen = () => {
               onClick={() => {
                 setStep('signup');
                 setError('');
+                setPhoneTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
               style={{ color: GREEN }}
@@ -489,6 +494,7 @@ export const ProviderAuthScreen = () => {
                 inputMode="numeric"
                 placeholder="Mobile Number"
                 value={form.phone}
+                onBlur={() => setPhoneTouched(true)}
                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                 className="h-full min-w-0 flex-1 bg-transparent text-[15px] tracking-wide text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none"
               />
@@ -583,6 +589,7 @@ export const ProviderAuthScreen = () => {
                 setDebugCode(null);
                 setNameTouched(false);
                 setProfessionTouched(false);
+                setPhoneTouched(false);
               }}
               className="h-11 font-semibold underline-offset-2 active:opacity-70"
               style={{ color: GREEN }}
