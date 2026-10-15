@@ -9,11 +9,25 @@
   body,
   #root {
     height: 100%;
+    /* Dynamic viewport height = the *currently visible* area on mobile.
+       Keeps the bottom nav inside the screen on every device (small or large),
+       instead of overflowing #root and getting clipped. Falls back to 100%. */
+    height: 100dvh;
     overflow: hidden;
   }
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Engines without dvh support (very old Android WebViews): the build minifier
+   may drop the earlier `height: 100%` override, so restore it explicitly. */
+@supports not (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100%;
   }
 }
 
@@ -92,10 +106,12 @@ html.dark {
   --admin-nav-active-bg: #059669;
 }
 
-/* Native app: respect status bar / home indicator insets */
+/* Native app: keep gestures smooth.
+   Status bar / home indicator insets are applied on the shell (top) and the
+   bottom nav (bottom) instead of body padding. Applying them here shrank
+   #root below the shell's 100vh/100dvh height, so the bottom nav overflowed
+   and got clipped on real phones (looked tiny and pushed below the screen). */
 body {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
   overscroll-behavior-y: none;
   touch-action: manipulation;
 }

@@ -26,7 +26,7 @@ export const BottomNav = () => {
   const hideOnDesktop = isNative ? '' : ' md:hidden';
 
   return (
-    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] px-[max(0.75rem,env(safe-area-inset-left))] pt-2 pb-[calc(env(safe-area-inset-bottom)+0.875rem)] min-h-[calc(4.25rem+env(safe-area-inset-bottom))]${hideOnDesktop}`}>
+    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] min-h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] ${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
@@ -34,14 +34,14 @@ export const BottomNav = () => {
           <button
             key={tab.label}
             onClick={() => navigate(tab.screen)}
-            className="flex min-h-[3.25rem] flex-1 min-w-0 flex-col items-center justify-center gap-1 py-1 active:scale-95 transition-transform"
+            className="flex min-h-[3.25rem] flex-1 min-w-0 flex-col items-center justify-center gap-1 py-1 touch-manipulation active:scale-95 transition-transform"
           >
             <Icon
-              size={22}
+              size={23}
               className={`shrink-0 ${isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}
               strokeWidth={isActive ? 2.4 : 2}
             />
-            <span className={`max-w-full truncate text-[11px] leading-tight font-semibold tracking-tight ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            <span className={`max-w-full truncate text-xs leading-tight font-semibold tracking-tight ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
               {tab.label}
             </span>
           </button>
