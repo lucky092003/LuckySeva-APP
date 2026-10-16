@@ -112,6 +112,33 @@ jobs:
             echo "Created release $TAG with APKs built from ${{ github.sha }}"
           fi
 
+      - name: Prune stale release assets
+        if: env.BUILD_TYPE == 'release'
+        working-directory: releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Uploads only refresh/overwrite matching asset names, so artifacts left over
+          # from older naming schemes (e.g. LuckySeva-1.0.0.apk before the v-prefix rule)
+          # would otherwise stay pinned to the release forever. Delete anything that is
+          # not one of the two fresh APKs of the current version.
+          VERSION=$(grep '^versionName' ../android/version.properties | cut -d= -f2)
+          TAG="v$VERSION"
+          KEEP1="LuckySeva-v$VERSION.apk"
+          KEEP2="LuckySeva-Partner-v$VERSION.apk"
+          gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[].name' > /tmp/assets.txt
+          while IFS= read -r asset; do
+            if [ "$asset" != "$KEEP1" ] && [ "$asset" != "$KEEP2" ]; then
+              echo "Deleting stale asset: $asset"
+              ASSET_ID=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" \
+                --jq ".assets[] | select(.name == \"$asset\") | .id")
+              gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$ASSET_ID"
+            else
+              echo "Keeping fresh asset: $asset"
+            fi
+          done < /tmp/assets.txt
+
       - name: Upload artifacts (backup)
         uses: actions/upload-artifact@v4
         with:
