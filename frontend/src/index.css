@@ -21,6 +21,25 @@
   }
 }
 
+/* Real device insets, from two independent sources.
+   env(safe-area-inset-*) works on web/iOS, but on Android the Chromium
+   passthrough is unreliable on some WebView builds (bottom inset stays 0
+   while the system bar still overlays the page). Capacitor's built-in
+   SystemBars plugin separately injects the TRUE values as
+   --safe-area-inset-* custom properties on <html> at runtime.
+   max() of both is correct whenever EITHER source is right:
+   - web browser: env() correct, vars unset (0)
+   - iOS WebView: env() correct, vars also injected correctly
+   - Android WebView passthrough: env() may be broken, vars are real
+   - Android native padding fallback: both 0, but WebView is already
+     padded natively above the system bars */
+:root {
+  --safe-area-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --safe-area-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --safe-area-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --safe-area-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}
+
 /* Engines without dvh support (very old Android WebViews): the build minifier
    may drop the earlier `height: 100%` override, so restore it explicitly. */
 @supports not (height: 100dvh) {

@@ -10,7 +10,7 @@ const showPhoneMockup =
 export const PhoneShell = ({ children }: { children: ReactNode }) => {
   if (isNative) {
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)]">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-white pt-[var(--safe-area-top)]">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       </div>
     );
@@ -39,7 +39,7 @@ export const PhoneShell = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-lg flex-col overflow-hidden border-x border-gray-200 bg-white pt-[env(safe-area-inset-top)] md:max-w-none md:border-x-0">
+    <div className="mx-auto flex h-full w-full max-w-lg flex-col overflow-hidden border-x border-gray-200 bg-white pt-[var(--safe-area-top)] md:max-w-none md:border-x-0">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
     </div>
   );

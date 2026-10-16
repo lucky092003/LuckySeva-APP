@@ -26,7 +26,7 @@ export const BottomNav = () => {
   const hideOnDesktop = isNative ? '' : ' md:hidden';
 
   return (
-    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.875rem)] min-h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] ${hideOnDesktop}`}>
+    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] pl-[max(0.75rem,var(--safe-area-left))] pr-[max(0.75rem,var(--safe-area-right))] pt-2 pb-[calc(var(--safe-area-bottom)+0.875rem)] min-h-[calc(4.5rem+var(--safe-area-bottom))] ${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
