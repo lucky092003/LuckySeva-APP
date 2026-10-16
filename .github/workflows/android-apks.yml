@@ -20,7 +20,7 @@ jobs:
       # Debug builds when signing secrets are not configured (installable via "unknown sources" but not store-worthy)
       BUILD_TYPE: ${{ secrets.ANDROID_KEYSTORE_BASE64 && 'release' || 'debug' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
