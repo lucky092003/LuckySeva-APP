@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      // Android only: drop `viewport-fit=cover` so the WebView never reports it.
+      // Capacitor's SystemBars passthrough (WebView >= 140) relies on Chromium
+      // populating env(safe-area-inset-*), which is still broken/unreliable on
+      // several WebView builds -> the bottom nav labels end up under the system
+      // gesture bar. Without cover, Capacitor falls back to padding the window
+      // natively, so app content always sits above the status/gesture bars.
+      if (/android/i.test(navigator.userAgent)) {
+        (function () {
+          var m = document.querySelector('meta[name=viewport]');
+          if (m) {
+            m.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+          }
+        })();
+      }
+    </script>
     <title>LuckySeva — Trusted Services, At Your Doorstep</title>
     <meta property="og:image" content="https://bolt.new/static/og_default.png" />
     <meta name="twitter:card" content="summary_large_image" />
