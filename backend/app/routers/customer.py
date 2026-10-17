@@ -1,4 +1,5 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+import secrets
 
 from fastapi import APIRouter, Depends
 
@@ -576,6 +577,185 @@ def quote(body: dict, claims: dict = Depends(require_customer)):
         "coupon_description": coupon.get("description") if coupon else None,
         "error": error,
         "payments_enabled": gateway.payments_enabled(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Referrals
+# ---------------------------------------------------------------------------
+# The reward rides the coupons machinery: claiming a code issues the referee a
+# first-booking coupon and the referrer a general one, so `discount_for`
+# already polices expiry, one-use and first-booking-only. No money logic here.
+
+# No 0/O/1/I — a code typed from a screenshot must not be ambiguous.
+_REFERRAL_ALPHABET = "ACDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+REWARD_FLAT = 100.0
+REWARD_TTL_DAYS = 30
+
+
+def _random_token(length: int) -> str:
+    return "".join(secrets.choice(_REFERRAL_ALPHABET) for _ in range(length))
+
+
+def _reward_expiry() -> str:
+    return (datetime.now(timezone.utc) + timedelta(days=REWARD_TTL_DAYS)).isoformat()
+
+
+def ensure_referral_code(client, phone: str) -> str | None:
+    """The customer's own referral code, assigned on first use.
+
+    Codes are generated lazily rather than in the signup INSERT, so this
+    feature can be added without backfilling 17 tables' worth of history:
+    the first `/customer/referral/me` or admin lookup stamps the code.
+    """
+    me = one(client.table("profiles").select("referral_code").eq("phone", phone).maybe_single().execute())
+    if not me:
+        return None
+    if me.get("referral_code"):
+        return me["referral_code"]
+    for _ in range(5):
+        candidate = "LS" + _random_token(6)
+        taken = one(
+            client.table("profiles")
+            .select("phone")
+            .eq("referral_code", candidate)
+            .maybe_single()
+            .execute()
+        )
+        if taken:
+            continue
+        res = (
+            client.table("profiles")
+            .update({"referral_code": candidate})
+            .eq("phone", phone)
+            .select("referral_code")
+            .execute()
+        )
+        return ((res.data or [{}])[0]).get("referral_code") or candidate
+    return None
+
+
+def _issue_reward_coupon(client, kind: str) -> dict:
+    """One flat-discount coupon, named after the kind so consoles read well."""
+    prefix = "WELCOME" if kind == "referee" else "THANKYOU"
+    code = f"{prefix}-{_random_token(5)}"
+    row = {
+        "code": code,
+        "description": (
+            f"Referral reward: Rs {REWARD_FLAT:g} off your first booking"
+            if kind == "referee"
+            else f"Referral reward: Rs {REWARD_FLAT:g} off your next booking"
+        ),
+        "discount_type": "flat",
+        "discount_value": REWARD_FLAT,
+        "min_amount": 149.0 if kind == "referee" else 149.0,
+        "max_per_phone": 1,
+        # Referrer rewards are not gated to a first booking — the referrer is,
+        # by definition, not a new user.
+        "first_booking_only": kind == "referee",
+        "active": True,
+    }
+    row["expires_at"] = _reward_expiry()
+    res = client.table("coupons").insert(row).execute()
+    created = (res.data or [{}])[0]
+    return {
+        "code": created.get("code") or code,
+        "discount_type": "flat",
+        "discount_value": REWARD_FLAT,
+        "expires_at": row["expires_at"],
+    }
+
+
+@router.get("/referral/me")
+def referral_me(claims: dict = Depends(require_customer)):
+    """The caller's own code plus how the program is going for them."""
+    client = db()
+    phone = customer_phone(claims)
+    code = ensure_referral_code(client, phone)
+    invited_rows = (
+        client.table("referrals")
+        .select("id")
+        .eq("referrer_phone", phone)
+        .execute()
+        .data
+        or []
+    )
+    claimed = one(
+        client.table("referrals")
+        .select("referee_coupon_code")
+        .eq("referee_phone", phone)
+        .maybe_single()
+        .execute()
+    )
+    return {
+        "code": code,
+        "reward_per_friend": REWARD_FLAT,
+        "invited": len(invited_rows),
+        "earned": round2(len(invited_rows) * REWARD_FLAT),
+        "my_referee_coupon": claimed.get("referee_coupon_code") if claimed else None,
+    }
+
+
+@router.post("/referral/claim")
+def referral_claim(body: dict, claims: dict = Depends(require_customer)):
+    """Use a friend's code: both sides walk out with a coupon.
+
+    Rules (each a real guard, not documentation):
+      - the code must belong to an existing profile
+      - you cannot use your own code
+      - one claim per account — `idx_referrals_referee` is the backstop
+    """
+    client = db()
+    phone = customer_phone(claims)
+    raw = body.get("code") if isinstance(body.get("code"), str) else ""
+    entered = raw.strip().upper()
+    if not entered:
+        raise ApiError(400, "Enter a referral code first")
+
+    owner = one(
+        client.table("profiles")
+        .select("phone, name, referral_code")
+        .eq("referral_code", entered)
+        .maybe_single()
+        .execute()
+    )
+    if not owner:
+        raise ApiError(404, "This referral code does not exist")
+    if owner["phone"] == phone:
+        raise ApiError(400, "You cannot use your own referral code")
+
+    existing = one(
+        client.table("referrals").select("id").eq("referee_phone", phone).maybe_single().execute()
+    )
+    if existing:
+        raise ApiError(400, "You have already used a referral code on this account")
+
+    referee_coupon = _issue_reward_coupon(client, "referee")
+    referrer_coupon = _issue_reward_coupon(client, "referrer")
+
+    client.table("referrals").insert(
+        {
+            "referrer_phone": owner["phone"],
+            "referee_phone": phone,
+            "code": entered,
+            "status": "rewarded",
+            "referrer_coupon_code": referrer_coupon["code"],
+            "referee_coupon_code": referee_coupon["code"],
+        }
+    ).execute()
+
+    insert_notification(
+        owner["phone"],
+        "referral",
+        "Referral reward earned",
+        f"A friend just used your referral code {entered} — a Rs {REWARD_FLAT:g} coupon is in your coupons.",
+    )
+
+    return {
+        "ok": True,
+        "referee_coupon": referee_coupon,
+        "referrer_coupon_code": referrer_coupon["code"],
     }
 
 

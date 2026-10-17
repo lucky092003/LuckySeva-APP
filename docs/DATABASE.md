@@ -603,6 +603,7 @@ Migrations live in `backend/supabase/migrations/` and are applied in **filename 
 | `20261002000000_booking_priority_fee.sql` | priority_fee column |
 | `20261003000000_full_catalog_market_rates.sql` | Full 182-service catalog |
 | `20261005000000_platform_monetization.sql` | GST, disputes, push_outbox |
+| `20261017010000_add_referrals.sql` | Referral program: `referrals` table + `profiles.referral_code` |
 
 **Migration Rules:**
 1. All migrations must be **idempotent** (CI applies twice)

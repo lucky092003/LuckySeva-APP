@@ -235,6 +235,15 @@ export const api = {
     refunds: () => request<Refund[]>('customer', '/refunds'),
     requestRefund: (bookingId: string, reason: string) =>
       request<Refund>('customer', `/bookings/${bookingId}/refund-request`, 'POST', { reason }),
+    referralMe: () =>
+      request<{ code: string | null; invited: number; earned: number; reward_per_friend: number; my_referee_coupon: string | null }>('customer', '/referral/me'),
+    claimReferral: (code: string) =>
+      request<{ ok: boolean; referee_coupon: { code: string; discount_value: number; expires_at: string } | null; referrer_coupon_code: string | null }>(
+        'customer',
+        '/referral/claim',
+        'POST',
+        { code }
+      ),
   },
 
   provider: {

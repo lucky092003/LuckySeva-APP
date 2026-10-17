@@ -200,6 +200,21 @@ def disputes(status: str | None = None):
     return q.limit(200).execute().data or []
 
 
+@router.get("/referrals")
+def referrals():
+    """Who referred whom, newest first, with both phones readable to trace abuse."""
+    client = db()
+    return (
+        client.table("referrals")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(200)
+        .execute()
+        .data
+        or []
+    )
+
+
 @router.get("/payments")
 def payments(status: str | None = None):
     client = db()

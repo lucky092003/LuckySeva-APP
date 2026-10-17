@@ -176,14 +176,15 @@ PUBLIC:
 ANY VALID TOKEN:
   GET  /auth/me
 
-require_customer (18 routes):
+require_customer (20 routes):
   GET/PUT /customer/profile
   GET/POST/PUT/DELETE /customer/addresses
   GET/POST /customer/bookings
-  GET/PUT /customer/bookings/{id}/cancel, /payment
+  GET/PUT /customer/bookings/{id}/cancel, /payment, /reschedule
   GET/POST /customer/favourites
   GET/PUT /customer/notifications
   GET/POST /customer/reviews, /tickets
+  GET/POST /customer/referral (me + claim)
 
 require_provider (19 routes):
   GET/PUT /provider/me
@@ -196,7 +197,7 @@ require_provider (19 routes):
   GET /provider/earnings, /provider/dashboard
   GET/POST /provider/payouts
 
-require_admin (21 routes):
+require_admin (22 routes):
   GET /admin/stats, /admin/revenue
   GET/POST/PUT/DELETE /admin/professionals
   PUT /admin/kyc/{id}
@@ -204,7 +205,7 @@ require_admin (21 routes):
   PUT /admin/categories/{slug}/commission
   GET/POST/PUT/DELETE /admin/coupons
   GET/POST/PUT/DELETE /admin/settings
-  GET/POST /admin/audit-logs, /admin/bookings, /admin/payouts, /admin/refunds
+  GET/POST /admin/audit-logs, /admin/bookings, /admin/payouts, /admin/refunds, /admin/referrals
 ```
 
 ### 5.5 Booking lifecycle
