@@ -4,11 +4,6 @@ import { registerPush } from '@/services/push';
 
 export type Role = 'customer' | 'provider' | 'admin';
 
-export const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123',
-};
-
 // Each build targets exactly ONE role (set via VITE_APP_ROLE at build time).
 // A build for a role contains only that role's screens — no runtime role switching.
 //   customer -> web + LuckySeva app (com.luckyseva.app)

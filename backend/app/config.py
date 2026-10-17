@@ -74,6 +74,19 @@ def is_payments_enabled() -> bool:
     return PAYMENTS_ENABLED
 
 
+def cors_origin_list() -> list[str]:
+    """Permitted browser origins for CORS, env-driven with a wildcard fallback.
+
+    CORS_ORIGINS accepts a comma-separated list. Empty/unset keeps the original
+    `*` behaviour so an existing deploy that has not set the var is not broken
+    by the change.
+    """
+    raw = os.getenv("CORS_ORIGINS", "").strip()
+    if not raw or raw == "*":
+        return ["*"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
 def push_configured() -> bool:
     return bool(FCM_PROJECT_ID and FCM_CREDENTIALS_JSON)
 

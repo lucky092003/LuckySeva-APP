@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from . import config
 from .config import DOCS_ENABLED
 from .exceptions import ApiError
 from .routers import auth, catalog, customer, payments, provider, admin
@@ -24,7 +25,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Wildcard by default so a fresh deploy never breaks on arrival; set
+    # CORS_ORIGINS="https://app.tld,https://admin.tld" in production once the
+    # real domains are known - a wildcard tells any site it may call the API
+    # with the visitor's stored token.
+    allow_origins=config.cors_origin_list(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

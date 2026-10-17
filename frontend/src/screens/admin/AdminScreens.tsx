@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { api, setApiToken } from '@/services/api';
-import { useApp, ADMIN_CREDENTIALS } from '@/context/app-context';
+import { useApp } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
 import { Card, Spinner, Badge, EmptyState, Button, VerifiedBadge, Avatar, Input } from '@/components/ui';
 import { inr, formatDate, slugToLabel } from '@/utils/format';
@@ -830,10 +830,10 @@ export const AdminProfile = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate text-base font-bold text-gray-900">{settings.admin_name || `@${ADMIN_CREDENTIALS.username}`}</p>
+                    <p className="truncate text-base font-bold text-gray-900">{settings.admin_name || '@admin'}</p>
                     <Icons.BadgeCheck size={16} className="shrink-0 text-emerald-500" />
                   </div>
-                  <p className="text-xs text-gray-500">@{ADMIN_CREDENTIALS.username}{settings.admin_email ? ` · ${settings.admin_email}` : ''}</p>
+                  <p className="text-xs text-gray-500">@admin{settings.admin_email ? ` · ${settings.admin_email}` : ''}</p>
                   <div className="mt-1.5">
                     <Badge tone="success">Administrator</Badge>
                   </div>
@@ -944,7 +944,7 @@ export const AdminProfile = () => {
               <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
             </label>
             <Button onClick={changeProfile} disabled={saving || !name.trim()} className="w-full">{saving ? 'Saving...' : 'Save Profile'}</Button>
-            <p className="text-center text-[11px] text-gray-400">Only super admin @{ADMIN_CREDENTIALS.username} has access.</p>
+            <p className="text-center text-[11px] text-gray-400">Only super admin @admin has access.</p>
           </div>
         </Modal>
       )}

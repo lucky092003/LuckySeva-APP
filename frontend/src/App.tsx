@@ -121,6 +121,7 @@ function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
     case 'provider-earnings': return <ProviderEarningsScreen />;
     case 'provider-profile': return <ProviderProfileScreen />;
     case 'provider-detail': return <ProviderDetailScreen bookingId={screen.bookingId} />;
+    case 'help': return <HelpScreen />;
     case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     default: return <ProviderHomeScreen />;
   }

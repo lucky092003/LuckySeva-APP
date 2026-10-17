@@ -61,7 +61,7 @@ export const InvoiceScreen = ({ bookingId }: { bookingId: string }) => {
     );
   }
 
-  const { service, visit, total } = invoiceAmounts(booking);
+  const { service, visit, priority, discount, total } = invoiceAmounts(booking);
   const no = invoiceNumber(booking);
   const comma = (n: number) => Number(n).toLocaleString('en-IN');
 
@@ -144,6 +144,18 @@ export const InvoiceScreen = ({ bookingId }: { bookingId: string }) => {
                   <td className="py-2 text-gray-700">Visit fee</td>
                   <td className="py-2 text-right font-medium text-gray-900">{inr(visit)}</td>
                 </tr>
+                {priority > 0 && (
+                  <tr className="border-b border-gray-50">
+                    <td className="py-2 text-gray-700">Priority provider fee</td>
+                    <td className="py-2 text-right font-medium text-gray-900">{inr(priority)}</td>
+                  </tr>
+                )}
+                {discount > 0 && (
+                  <tr className="border-b border-gray-50">
+                    <td className="py-2 text-gray-700">Discount{booking.coupon_code ? ` (${booking.coupon_code})` : ''}</td>
+                    <td className="py-2 text-right font-medium text-emerald-600">-{inr(discount)}</td>
+                  </tr>
+                )}
                 <tr>
                   <td className="pt-2 text-base font-bold text-gray-900">Total Paid ({booking.payment_method.toUpperCase()})</td>
                   <td className="pt-2 text-right text-xl font-extrabold text-emerald-600">{inr(total)}</td>
