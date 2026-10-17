@@ -1,0 +1,83 @@
+# Auto-deploys the backend to Render once CI is green on master.
+#
+# Render's own push-to-deploy webhook was silently not firing for this repo:
+# merges landed and CI passed, but the service kept running the old commit
+# until a manual "Deploy latest commit" click. This workflow closes that gap -
+# it fires after the CI workflow completes on master and calls the service's
+# Render Deploy Hook, which starts a deploy from the REST API instead of
+# relying on a webhook.
+#
+# One-time setup (Dashboard copy/paste):
+#   1. Render -> luckyseva-api -> Settings -> "Deploy Hook" -> copy URL
+#   2. GitHub repo -> Settings -> Secrets and variables -> Actions ->
+#      New repository secret -> Name: RENDER_DEPLOY_HOOK_URL, paste URL
+#
+# Alternatively switch Auto-Deploy back on in Render settings; this workflow
+# then stays as belt-and-braces because the hook still just starts a deploy.
+#
+# Note: the /health poll at the end only proves the API is reachable again -
+# Render keeps the old instance serving traffic while the new deploy builds -
+# not that the new commit is live.
+
+name: Deploy to Render
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [master]
+  # Lets "Run workflow" force a deploy from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-deploy
+  # Never cancel: a cancelled hook call may have already started a deploy, and
+  # two queued requests settle to the same latest-commit deploy anyway.
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Check the deploy hook is configured
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set - see the header of .github/workflows/deploy-render.yml"
+            exit 1
+          fi
+
+      - name: Trigger Render deploy
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          code=$(curl --silent --show-error --output /tmp/hook.json --write-out '%{http_code}' \
+            --max-time 30 -X POST "$HOOK_URL")
+          cat /tmp/hook.json; echo
+          case "$code" in
+            200|201) echo "Render accepted the deploy request (HTTP $code).";;
+            *) echo "::error::Deploy hook returned HTTP $code"; exit 1;;
+          esac
+
+      - name: Wait for the API to report healthy
+        env:
+          BASE_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://luckyseva-app-gbjw.onrender.com' }}
+        run: |
+          # Free-tier deploys can cold start; give it a full eight minutes.
+          for attempt in $(seq 1 48); do
+            if curl --silent --show-error --fail --max-time 10 \
+                 "$BASE_URL/health" | grep -q '"ok"'; then
+              echo "Backend healthy again (attempt $attempt)."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Backend did not report healthy within 8 minutes."
+          exit 1
