@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-14
+**Last updated:** 2026-10-17
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -8,8 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
-`Last updated` line above is maintained automatically by the PR review bot and always
-matches the newest dated section.
+`Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-17
+
+### Added
+- **Proper referral system**
+  (`backend/app/routers/customer.py`, `20261017010000_add_referrals.sql`,
+  `frontend/src/screens/customer/ProfileScreen.tsx`) — the profile card's
+  placeholder is now a real program: every customer gets a permanent `LS…`
+  referral code (assigned lazily, stored on `profiles.referral_code`),
+  claiming a friend's code issues the referee a Rs 100 first-booking coupon
+  and the referrer a Rs 100 general coupon through the existing coupons
+  machinery, subject to no-self-referral and one-claim-per-account
+  (`UNIQUE(referrals.referee_phone)`). Sharing uses the Web Share API with a
+  clipboard fallback; an admin `/admin/referrals` listing exists.
 
 ## 2026-10-14
 

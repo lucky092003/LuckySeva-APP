@@ -25,6 +25,10 @@ export const ProfileScreen = () => {
   const [showPayments, setShowPayments] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [copied, setCopied] = useState('');
+  const [ref, setRef] = useState<{ code: string | null; invited: number; earned: number; reward_per_friend: number; my_referee_coupon: string | null } | null>(null);
+  const [claim, setClaim] = useState('');
+  const [claimMsg, setClaimMsg] = useState('');
+  const [claiming, setClaiming] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', location: '' });
   const [detecting, setDetecting] = useState(false);
 
@@ -43,6 +47,10 @@ export const ProfileScreen = () => {
   useEffect(() => {
     if (customer) setForm({ name: customer.name, email: customer.email, location: customer.location });
   }, [customer]);
+
+  useEffect(() => {
+    api.customer.referralMe().then(setRef).catch(() => setRef(null));
+  }, [customer?.phone]);
 
   if (!customer) {
     return (
@@ -77,7 +85,8 @@ export const ProfileScreen = () => {
   };
 
   const copyReferral = async () => {
-    const code = 'LUCKY' + customer.phone.slice(-4);
+    const code = ref?.code;
+    if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
     } catch {
@@ -85,6 +94,48 @@ export const ProfileScreen = () => {
     }
     setCopied(code);
     setTimeout(() => setCopied(''), 2000);
+  };
+
+  const shareReferral = async () => {
+    const code = ref?.code;
+    if (!code) return;
+    const text = `Use my LuckySeva referral code ${code} — you get ₹100 off your first booking, I earn ₹100 too!`;
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'LuckySeva', text });
+        return;
+      } catch {
+        /* user dismissed — fall through to copy */
+      }
+    }
+    copyReferral();
+  };
+
+  const claimReferral = async () => {
+    if (!claim.trim() || claiming) return;
+    setClaiming(true);
+    setClaimMsg('');
+    try {
+      const res = await api.customer.claimReferral(claim.trim());
+      const coupon = res.referee_coupon;
+      if (coupon) {
+        try {
+          await navigator.clipboard.writeText(coupon.code);
+        } catch {
+          /* ignore */
+        }
+        setClaimMsg(`🎉 Coupon ${coupon.code} copied — ₹${coupon.discount_value} off your first booking!`);
+      } else {
+        setClaimMsg('Referral applied!');
+      }
+      setClaim('');
+      const fresh = await api.customer.referralMe();
+      setRef(fresh);
+    } catch (e) {
+      setClaimMsg(e instanceof Error ? e.message : 'Could not apply this code. Try again.');
+    } finally {
+      setClaiming(false);
+    }
   };
 
   return (
@@ -162,14 +213,61 @@ export const ProfileScreen = () => {
         </div>
 
         {/* Refer */}
-        <button onClick={copyReferral} className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-600 p-4 text-left text-white">
-          <Icons.Percent size={22} />
-          <div className="flex-1">
-            <p className="text-sm font-bold">{copied ? `Copied code ${copied}!` : 'Refer & Earn ₹100'}</p>
-            <p className="text-xs text-white/90">{copied ? 'Share it with a friend' : 'Invite friends, both get rewards'}</p>
+        <div className="mt-4 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-600">
+          <div className="flex items-center gap-3 p-4 text-white">
+            <Icons.Gift size={22} />
+            <div className="flex-1">
+              <p className="text-sm font-bold">{copied ? `Copied ${copied}!` : 'Refer & Earn ₹100'}</p>
+              <p className="text-xs text-white/90">
+                {ref?.code
+                  ? `Your code: ${ref.code}`
+                  : 'Loading your code…'}
+              </p>
+            </div>
+            <button
+              onClick={copyReferral}
+              disabled={!ref?.code}
+              title="Copy code"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30 disabled:opacity-50"
+            >
+              {copied ? <Icons.Check size={16} /> : <Icons.Copy size={16} />}
+            </button>
+            <button
+              onClick={shareReferral}
+              disabled={!ref?.code}
+              title="Share code"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30 disabled:opacity-50"
+            >
+              <Icons.Share2 size={16} />
+            </button>
           </div>
-          <Icons.ChevronRight size={18} />
-        </button>
+          <div className="border-t border-white/20 px-4 py-3 text-white">
+            <p className="text-[11px] text-white/80">
+              {ref
+                ? `${ref.invited} friend${ref.invited === 1 ? '' : 's'} joined · ₹${ref.earned} earned`
+                : 'Invite friends — both get ₹100'}
+            </p>
+            {!ref?.my_referee_coupon && !claimMsg && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={claim}
+                  onChange={(e) => setClaim(e.target.value.toUpperCase())}
+                  placeholder="Have a friend's code?"
+                  maxLength={12}
+                  className="min-w-0 flex-1 rounded-lg border border-white/30 bg-white/15 px-3 py-1.5 text-xs text-white placeholder:text-white/60 focus:outline-none"
+                />
+                <button
+                  onClick={claimReferral}
+                  disabled={!claim.trim() || claiming}
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
+                >
+                  {claiming ? '…' : 'Apply'}
+                </button>
+              </div>
+            )}
+            {claimMsg && <p className="mt-2 rounded-lg bg-white/20 px-3 py-1.5 text-[11px]">{claimMsg}</p>}
+          </div>
+        </div>
 
         <Button variant="outline" onClick={() => { setApiToken(null); setCustomer(null); navigate({ name: 'auth' }); }} className="mt-4 w-full text-red-500">
           <Icons.LogOut size={16} /> Logout
