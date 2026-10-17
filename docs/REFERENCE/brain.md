@@ -109,9 +109,9 @@ trivial edits, docs, and "just one line".
   (`fix/booking-saved-address-on-top`).
 - Workflow: `git checkout -b <branch>` -> commit -> `git push -u origin <branch>` -> open a PR
   -> merge the PR. Never `git push` while on `master`.
-- Why it is load-bearing: CI, the PR review bot and the changelog (§12) only run on pull
-  requests. A push to `master` skips review, skips the changelog entry, and fires the whole
-  pipeline (three Vercel deploys + Render) on unreviewed code.
+- Why it is load-bearing: CI only runs on pull requests. A push to `master` skips
+  review and fires the whole pipeline (three Vercel deploys + Render) on
+  unreviewed code.
 - `master` is protected by convention, not by a branch rule — nothing in GitHub stops you, so
   the discipline lives here. If you find yourself on `master`, `git checkout -b <branch>` first.
 - Run the §9 verification on the branch **before** pushing.
@@ -176,8 +176,8 @@ backend/
     routers/         auth, catalog, customer, provider, admin
   tests/             test_smoke.py (5 tests), test_maybe_single.py (9) — 14 total, no network
   supabase/
-    config.toml      [functions.pr-review-bot] verify_jwt = false — GitHub signs the body instead
-    functions/       pr-review-bot/ (Deno) + deno.json shared import map. See 12.
+    config.toml      supabase project config (db push; no edge functions)
+    migrations/      SQL schema migrations, applied in filename order. See 6.
     migrations/      9 files, filename-ordered
   requirements.txt / requirements-dev.txt / ruff.toml
 android/  ios/       Capacitor native projects
@@ -454,15 +454,14 @@ require_admin  (no handler receives claims)
 | `favourites` | `UNIQUE (customer_phone, professional_id)`. |
 | `notifications` | `customer_phone`, `type` (`booking`/`alert`/`payment`/`provider`/`review`), `booking_id` FK CASCADE, `read`. |
 | `support_tickets`, `payouts`, `admin_settings`, `audit_logs`, `booking_declines` | `booking_declines` = `(booking_id, professional_id)` with **no unique constraint**, so duplicates are possible. |
-| `pr_review_settings` | One row per repo for the PR review bot (section 12). `min_severity` / `comment_mode` are CHECKed, `rules text[]` is an allowlist (empty = all), `block_on_blocker` defaults **false** because `REQUEST_CHANGES` blocks the merge. Also holds `changelog_enabled` / `changelog_branch` / `changelog_file` (§12.1). Holds no secrets. |
-| `pr_reviews` | One row per webhook run. `UNIQUE (repo_full_name, pr_number, head_sha)` — that index *is* the webhook-replay guard, so the writer **upserts**. `changelog_status` / `changelog_pr_url` record the other half of the run. **No anon policies**: audit log, service-role only. |
-| `changelog_entries` | One row per PR, the source of truth the `CHANGELOG.md` block is rendered from (§12.1). `UNIQUE (repo_full_name, pr_number)` makes a replayed `opened` webhook idempotent. `kind` is CHECKed to `added`/`changed`/`fixed`, derived from the PR title prefix. **No anon policies**. |
+| `pr_review_settings` | *(removed with the PR review bot)* |
+| `pr_reviews` | *(removed with the PR review bot)* |
+| `changelog_entries` | *(removed with the PR review bot)* |
 
 Index notes: `idx_bookings_open_confirmed` is a **partial** index
 `(created_at DESC) WHERE status = 'confirmed' AND professional_id IS NULL` — it exists purely to
 serve the provider feed. `idx_professionals_kyc_status` is partial on `kyc_status = 'pending'`.
-`idx_pr_reviews_sha`, `idx_pr_review_settings_enabled`, `idx_changelog_entries_pr` and
-`idx_changelog_entries_date` are the indexes added by the bot migrations.
+The bot indexes (`idx_pr_reviews_*`, `idx_changelog_entries_*`) went away with the bot.
 
 ---
 
@@ -614,9 +613,9 @@ loop in the CI `migrations` job.
 | `20260924000000_provider_kyc.sql` | 6 `kyc_*` columns + partial index |
 | `20260927000000_add_physiotherapy_category.sql` | 11th category + 5 services |
 | `20260928000000_booking_address_link.sql` | `bookings.address_id` + index |
-| `20260929000000_pr_review_bot.sql` | `pr_review_settings` + `pr_reviews` for the review bot (see §12) |
+| `20260929000000_pr_review_bot.sql` | `pr_review_settings` + `pr_reviews` for the review bot (now removed — see §12) |
 | `20260930000000_backfill_professional_services.sql` | re-links every professional to every service of their `category_slug` at the starting price, and deletes links that point outside it. The `DELETE` is intentional here but slips past the CI guard below, which only matches an unaliased `DELETE FROM <table>;` |
-| `20260930000000_changelog_entries.sql` | `changelog_entries` + the `changelog_*` settings and `pr_reviews` outcome columns (see §12.1) |
+| `20260930000000_changelog_entries.sql` | `changelog_entries` + the `changelog_*` settings and `pr_reviews` outcome columns (bot removed — see §12) |
 | `20261002000000_booking_priority_fee.sql` | `bookings.priority_fee` + `admin_settings` rows `priority_top_n` / `priority_fee` |
 | `20261003000000_full_catalog_market_rates.sql` | full catalog: 4 new categories (`packer-mover`, `cctv-security`, `laundry-dry-cleaning`, `lawn-garden`), 182 services re-priced to market, `other` pushed to `sort_order` 15, junction relink + re-mirror, `professionals.starting_price` resynced to each category minimum, and a duplicate-service `DELETE` (see below) |
 
@@ -674,20 +673,6 @@ python -m pytest tests -q     # 14 tests
 python -m compileall -q app
 pip-audit -r requirements.txt # continue-on-error in CI
 ```
-
-Run from `backend/supabase/functions/` (needs Deno 2):
-
-```sh
-deno task test                # 80 tests: diff parser, rules, changelog, HMAC, PEM
-deno task lint
-deno task check               # type-check index.ts + review_local.ts
-deno fmt --check
-deno task review main...HEAD  # dry-run the bot's rules against a diff, no deploy
-```
-
-`deno task test` passes `--allow-env` only; the rules are pure, so the suite never
-touches the network or a Supabase project. The `edge-functions` CI job runs all four
-checks plus `deno audit`.
 
 Install dev tools first: `pip install -r requirements.txt -r requirements-dev.txt` (runtime deps
 intentionally do **not** include lint/test packages, so Render stays lean).
@@ -804,127 +789,35 @@ update this file rather than leaving the doc and the code disagreeing.
 | Change a role's capabilities | `VITE_APP_ROLE` handling in `app-context.tsx` + `capacitor.config.ts` (appId/appName) + the `Screen` union + `App.tsx` renderers + the `require_*` guard on the backend |
 | Touch anything audited | the four write sites in `routers/admin.py`; if you add a mutation, decide whether it needs an `audit_logs` row |
 | Change a table's shape | new migration + update section 6 of this file in the same commit |
-| Add a review rule | `RULES` in `backend/supabase/functions/pr-review-bot/checks.ts` + a test in `checks_test.ts`; document it in the README table |
-| Change what lands in `CHANGELOG.md` | `classifyTitle` / `KIND_BY_PREFIX` / `renderBlock` in `pr-review-bot/changelog.ts` + a test in `changelog_test.ts`; the writing/orchestration is `changelog_writer.ts` (§12.1) |
+| Add a review rule | *(the PR review bot was removed — repo discipline is CI + human review)* |
+| Change what lands in `CHANGELOG.md` | edit `CHANGELOG.md` by hand; keep dated sections, newest first |
 
 ---
 
-## 12. The PR review bot
+## 12. The PR review bot (removed — do not reintroduce by habit)
 
-`backend/supabase/functions/pr-review-bot/` is a Supabase Edge Function (Deno) that
-reviews pull requests and maintains the changelog. It is **not** an LLM: every rule is
-a pure function over the diff, so it costs nothing, is deterministic, and cannot be
-talked into a wrong answer.
+The PR review bot was deleted in `2026-10`. It was a Supabase Edge Function
+(`backend/supabase/functions/pr-review-bot/`) that HMAC-verified GitHub
+webhooks, ran deterministic rules over PR diffs, posted one sticky comment per
+PR and maintained a machine-written `CHANGELOG.md` block. It was **never
+deployed** — `/functions/v1/pr-review-bot` always returned 404 — so not a
+single PR was ever reviewed by it, and its three tables
+(`pr_review_settings`, `pr_reviews`, `changelog_entries`) always stood empty.
 
-Flow, for `pull_request` `opened` / `synchronize` / `reopened` / `ready_for_review`:
+Removal rationale and what dropped with it:
 
-1. Verify `X-Hub-Signature-256` (HMAC-SHA256 over the raw body) with
-   `GITHUB_WEBHOOK_SECRET`. No secret set => 500, deliberately. A missing or malformed
-   header is a 401, never an exception.
-2. Read `pr_review_settings` for the repo. Missing row => defaults, and it gets inserted
-   so you can then edit it. `enabled = false` or a draft PR => stop.
-3. `idx_pr_reviews_sha` on `(repo, pr, head_sha)` short-circuits a replayed webhook.
-4. On `opened` / `ready_for_review`, do the **changelog** step (12.1). It is wrapped in
-   its own try/catch: a changelog failure must not cost the PR its review.
-5. `GET /repos/{repo}/pulls/{n}/files`, then run the rules, then edit the existing
-   comment (found by the `<!-- luckyseva-pr-review-bot -->` marker) or post a new one.
-6. Upsert one `pr_reviews` row carrying both outcomes. Errors land there too and return
-   502 so GitHub retries.
+- Function code, `deno.json`/`deno.lock`, the CI `edge-functions` job and the
+  `[functions.pr-review-bot]` config block.
+- The three tables, dropped by `20261017000000_remove_pr_review_bot.sql`
+  (marked `-- luckyseva: destructive-by-design`; the destructive-statement CI
+  guard exempts migrations that carry that marker after documenting the loss).
+- `docs/PR_REVIEW_BOT.md` and every doc/ref pointing at bot internals.
 
-Files: `index.ts` (handler), `github.ts` (REST + App/PAT tokens), `checks.ts` (the
-rules), `changelog.ts` (block rendering), `changelog_writer.ts` (orchestration),
-`diff.ts` (hunk parser), `signature.ts` (HMAC), `pem.ts` (GitHub's PKCS#1 key
-=> PKCS#8 for WebCrypto), `review_local.ts` (dry run), `types.ts`, `deno.json`.
-
-Constraints worth knowing before you change it:
-
-- **`verify_jwt = false`** in `supabase/config.toml`. The platform's JWT gate would
-  reject GitHub's requests before the HMAC check ever runs.
-- **Secrets live in `supabase secrets`, never in a table.** `pr_review_settings` has
-  the same `USING (true)` policies as everything else here, so a webhook secret in a
-  row would be readable with the public anon key.
-- **`pr_reviews` and `changelog_entries` have no anon policies on purpose.** The run
-  log is an audit trail and the entries are mirrored into a committed file; nothing in
-  the app reads either from a browser.
-- **`recordRun` upserts, it does not insert.** Retries are deliberate (`verdict =
-  'error'` rows are re-runnable) and `UNIQUE (repo, pr, head_sha)` means a plain
-  insert would collide with its own previous attempt and lose the retry.
-- **Token resolution**: App installation token (RS256 JWT built by hand in `github.ts`,
-  cached until 60s before expiry) when the payload has an `installation`, otherwise
-  `GITHUB_TOKEN` as a PAT fallback.
-- **Diff truncation is real.** GitHub omits `patch` for binary files and for diffs over
-  its size cap. Those files are reported as "not scanned" rather than passed over in
-  silence, and the run caps at 300 files.
-
-The rules exist because of specific properties of *this* codebase, not generic style.
-The highest-value ones encode §1.3 and §1.6: RLS is `USING (true)` and the backend uses
-the service role, so a removed `.eq("customer_phone", ...)` is a real data leak, and
-route declaration order is load-bearing.
-
-**Tuning rules — check the false positives first.** Several suppressions are deliberate
-and will look wrong in isolation:
-
-| Suppression | Why |
-|---|---|
-| `ownership-filter-removed` compares removals against additions **per column** | A refactor that moves `.eq("phone", p)` onto a rewritten line shows as `-` then `+`. Counting deletions alone flagged 6 false blockers on `cd977cd`. |
-| `secret`'s fuzzy pattern is skipped in tests and `.example` files | A repo's own fakes live there. Known-shape tokens (private key, `ghp_`, `eyJ...`, `sk-`, `AKIA`, Supabase key) are still reported everywhere. |
-| `secret` / `hardcoded-admin-credentials` skip `pr-review-bot/` | The rules match their own pattern literals. Every other rule still runs there. |
-| `hardcoded-admin-credentials` is scoped to code files | `docs/brain.md` documents the `admin` / `admin123` fallback on purpose. |
-| `destructive-sql` excludes `DROP POLICY` | Every migration opens `CREATE POLICY` with `DROP POLICY IF EXISTS`; that is what makes the second CI pass a no-op. |
-
-`deno task review <ref>` runs the rules against any diff in the repo with no deploy
-step, which is the fastest way to check a rule edit against real history. It reports
-zero findings across the 20 most recent commits.
-
-### 12.1 The date-wise changelog
-
-On `opened` (and `ready_for_review`, so a PR drafted first is not missed) the bot
-appends a dated entry to `CHANGELOG.md` via its own PR. The choices were deliberate:
-
-- **The bot opens a PR, it does not push to `master`.** A push to `master` would fire
-  the whole pipeline on every PR and could land entries for work that never merged.
-- **Entries are written on `opened`, not on merge.** This means a PR you later close
-  unmerged still appears. Accepted knowingly: you see the entry while the work is in
-  flight, and `changelog_enabled = false` turns the whole thing off.
-- **The PR title is the entry text.** Nothing smarter was attempted — the hand-written
-  dated sections are far richer than anything derivable from a title. Bucket =
-  conventional-commit prefix (`feat` => Added, `fix` => Fixed, else
-  Changed); the prefix is stripped from the line because the bucket already says it.
-
-Four invariants make re-running safe, and all four are load-bearing:
-
-1. **The table is the source of truth; the file is a rendering.** `changelog_entries`
-   is rebuilt into the block every run, so a hand-edited branch is corrected rather
-   than compounded. Never patch the file incrementally.
-2. **`UNIQUE (repo_full_name, pr_number)`.** A replayed `opened` webhook, or a PR that
-   fires both `opened` and `ready_for_review`, produces one entry.
-3. **Dates are UTC, taken from the PR's `created_at`.** A webhook replayed tomorrow
-   still lands under the day the PR was opened, so the block is deterministic.
-4. **Only the marked region is written.** `applyBlock` replaces everything between
-   `<!-- luckyseva-changelog:start -->` and `<!-- ...:end -->` and joins the parts with
-   exactly one blank line, so it is idempotent. `normalizeBlock` re-adds the markers if
-   they are ever missing — without that, a marker-less block would be inserted again on
-   every run and the file would grow without bound.
-
-**The file format is dated, and the bot owns the header.** Sections are `## YYYY-MM-DD`,
-newest first — never `## [Unreleased]` — and the line directly under `# Changelog` is
-`**Last updated:** <newest entry date>`, written by `applyLastUpdated` from
-`newestEntryDate(entries)`. It is idempotent and rewrites in place rather than
-appending, so a hand-written date can be corrected. Because the header is machine-written,
-`recordChangelog` treats a run as `unchanged` only when **both** the block and the header
-match, otherwise the header could go stale behind a `hasChanged: false` short-circuit.
-`emptyChangelog()` — used only when the file is missing entirely — seeds the same header
-with `no entries yet`. Hand-written sections below the block follow the same dated
-convention; keep them dated when you add to them.
-
-The bot PR is **reused**, not recreated: it looks for an open PR whose head is
-`changelog_branch` and pushes to it, so you get one PR per batch of PRs rather than
-one per merged PR. `hasChanged` short-circuits the write entirely when the rendered
-block already matches the branch, so a no-op webhook makes no commit.
-
-Watch for the one silent failure mode: if `pr.base.sha` is absent from the payload the
-branch is never created and the write fails. `readFile` returning `null` on a branch
-that does not exist is the intended path, not an error.
+Code review discipline now rests on CI + human review; `CHANGELOG.md` is
+maintained by hand (dated sections, newest first, `Last updated` bumped on
+change). If a reviewer bot is ever wanted again, either dependency (a URL
+reachable by GitHub webhooks, e.g. the FastAPI backend, instead of an Edge
+Function nobody deploys) is the thing to solve first.
 
 ---
 
@@ -943,22 +836,13 @@ python -m pytest tests -q
 python -m compileall -q app
 pip-audit -r requirements.txt
 
-# backend/supabase/functions/  (Deno 2)
-deno task test | lint | check
-deno fmt --check
-deno task review main...HEAD              # dry-run the review bot's rules
-
 # supabase
 npx supabase db push
-npx supabase functions deploy pr-review-bot
 
 # env vars
 # frontend/.env      VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_APP_ROLE, VITE_API_URL
 #                     (+ optional VITE_PHONE_MOCKUP)
 # backend/.env       SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET
-# edge fn secrets    GITHUB_WEBHOOK_SECRET, GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY
-#                    (or GITHUB_TOKEN for a PAT) — SUPABASE_URL and
-#                    SUPABASE_SERVICE_ROLE_KEY are injected automatically
 ```
 
 Roles and roles builds: `customer` -> `com.luckyseva.app` (web + native), `provider` ->

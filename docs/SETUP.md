@@ -142,11 +142,6 @@ cd ../backend
 py -m pip install -r requirements-dev.txt
 ruff check app tests
 python -m pytest tests -q
-
-# edge functions
-cd backend/supabase/functions
-deno task test
-deno task lint
 ```
 
 ## 6. Android app (optional)

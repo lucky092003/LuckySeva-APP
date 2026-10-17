@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-14
+**Last updated:** 2026-10-17
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -8,8 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
-`Last updated` line above is maintained automatically by the PR review bot and always
-matches the newest dated section.
+`Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-17
+
+### Removed
+- **PR review bot deleted end to end**
+  (`backend/supabase/functions/pr-review-bot/` + tables) — the Edge Function
+  was never deployed and never reviewed a single PR, so the dead weight is
+  gone: function code, its CI job, config block, bot docs and the three
+  `pr_review_*` / `changelog_entries` tables (dropped empty by the new
+  migration). `CHANGELOG.md` and the changelog are maintained by hand now.
 
 ## 2026-10-14
 

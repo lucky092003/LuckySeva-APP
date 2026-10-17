@@ -57,8 +57,8 @@
 |------|-------------|--------|--------|
 | T-01 | CI/CD pipeline (GitHub Actions) | Done | - |
 | T-02 | Database migrations automation | Done | - |
-| T-03 | PR review bot (Deno Edge Function) | Done | - |
-| T-04 | Automatic changelog generation | Done | - |
+| T-03 | PR review bot (Deno Edge Function) | Removed | Was never deployed; deleted from repo + DB (2026-10) |
+| T-04 | Automatic changelog generation | Removed | Gone with the bot; changelog is manual again |
 | T-05 | Rate limiting middleware | Planned | - |
 | T-06 | Redis caching layer | Planned | - |
 | T-07 | API versioning strategy | Planned | - |

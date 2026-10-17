@@ -462,43 +462,37 @@ bookings (
 
 ## ADR-012: PR Review Bot as Supabase Edge Function
 
-**Status:** Accepted
+**Status:** Superseded (removed in October 2026)
 **Date:** September 2026
 
-### Context
+> **Removed.** The bot was never deployed —
+> `/functions/v1/pr-review-bot` always returned 404, no PR was ever reviewed
+> and its three tables always stood empty. The function code, its CI job, the
+> `[functions.pr-review-bot]` config block, `docs/PR_REVIEW_BOT.md` and the
+> `pr_review_settings` / `pr_reviews` / `changelog_entries` tables were
+> deleted in the same change that dropped them from the database
+> (`20261017000000_remove_pr_review_bot.sql`). Code review now rests on CI +
+> human review; `CHANGELOG.md` is maintained by hand.
+
+### Context (historical)
 
 We needed automated PR review for security and code quality, without external services.
 
-### Decision
+### Decision (historical)
 
-Supabase Edge Function (Deno) that:
-1. Receives GitHub webhook
-2. Runs static analysis rules on the diff
-3. Posts review comment
-4. Maintains CHANGELOG.md via PR
+A Supabase Edge Function (Deno) that received the GitHub webhook, ran static
+analysis rules over the diff, posted a review comment and maintained
+`CHANGELOG.md` via its own PR.
 
-```typescript
-// backend/supabase/functions/pr-review-bot/index.ts
-Deno.serve(async (req) => {
-  const payload = await verifyWebhook(req);
-  const findings = runRules(diff);
-  await postReviewComment(payload.pr, findings);
-  await updateChangelog(payload.pr);
-});
-```
-
-### Consequences
+### Consequences (historical)
 
 **Positive:**
 - No external service (runs on Supabase)
 - Deterministic (no LLM costs)
-- Self-contained
-- Maintains changelog automatically
 
 **Negative:**
-- Deno runtime (additional complexity)
-- Must be deployed separately
-- Limited to static analysis
+- A second runtime (Deno) and a separate deploy step nobody executed — the
+  un-deployed URL is what made the whole thing dead weight rather than automation
 
 ---
 

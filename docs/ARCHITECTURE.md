@@ -182,9 +182,7 @@ backend/
 │   ├── test_maybe_single.py # maybe_single() pattern enforcement
 │   └── ...
 ├── supabase/
-│   ├── config.toml          # Edge function config
-│   ├── functions/
-│   │   └── pr-review-bot/   # PR review + changelog bot (Deno)
+│   ├── config.toml          # Supabase project config (db push)
 │   └── migrations/          # SQL schema migrations
 ├── requirements.txt         # Runtime deps
 └── requirements-dev.txt     # Lint/test deps
@@ -267,9 +265,7 @@ screen
 - `audit_logs` — Admin action audit trail
 
 **Bot Tables (PR Review):**
-- `pr_review_settings` — Per-repo bot settings
-- `pr_reviews` — Bot run history
-- `changelog_entries` — Changelog source data
+- *(the PR review bot tables were removed — see `20261017000000_remove_pr_review_bot.sql`)*
 
 ### 4.2 Key Design Decisions
 
@@ -433,7 +429,7 @@ Service: LuckySeva API
 | **Frontend** | npm ci → ESLint → TypeScript → Vitest → Build → npm audit |
 | **Backend** | pip install → compileall → Ruff → pytest → pip-audit |
 | **Migrations** | Apply all migrations to throwaway Postgres (twice), check for destructive SQL |
-| **Edge Functions** | deno fmt → deno lint → deno check → tests → deno audit |
+| **Edge Functions** | *(removed with the PR review bot)* |
 
 Dependabot runs weekly on: GitHub Actions, npm (frontend/), pip (backend/).
 

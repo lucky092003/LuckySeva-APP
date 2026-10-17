@@ -383,9 +383,8 @@ No built-in rate limiting. The OTP endpoint has a **cooldown** (30 seconds betwe
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend | Database access (bypasses RLS) |
 | `SUPABASE_JWT_SECRET` | Backend | JWT signing/verification |
 | `SUPABASE_URL` | Backend | Supabase project URL |
-| `GITHUB_WEBHOOK_SECRET` | PR Review Bot | HMAC signature verification |
-| `GITHUB_APP_PRIVATE_KEY` | PR Review Bot | GitHub App authentication |
-| `GITHUB_APP_ID` | PR Review Bot | GitHub App identifier |
+
+*(The `GITHUB_*` PR-review-bot secrets went away when the bot was removed.)*
 
 ### 8.2 Frontend Environment Variables
 

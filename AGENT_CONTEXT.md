@@ -228,7 +228,7 @@ Backend does NO geo filtering. Frontend filters by Haversine distance client-sid
 
 17 tables in Supabase PostgreSQL. Migrations in `backend/supabase/migrations/`, applied in filename order.
 
-Key tables: `categories`, `services`, `professionals`, `professional_services`, `bookings`, `reviews`, `addresses`, `profiles` (phone=PK), `notifications`, `favourites`, `support_tickets`, `payouts`, `payments`, `refunds`, `coupons`, `coupon_redemptions`, `admin_settings`, `audit_logs`, `booking_declines`, `pr_review_settings`, `pr_reviews`, `changelog_entries`.
+Key tables: `categories`, `services`, `professionals`, `professional_services`, `bookings`, `reviews`, `addresses`, `profiles` (phone=PK), `notifications`, `favourites`, `support_tickets`, `payouts`, `payments`, `refunds`, `coupons`, `coupon_redemptions`, `admin_settings`, `audit_logs`, `booking_declines`.
 
 ---
 
@@ -327,26 +327,19 @@ Four parallel jobs on every push/PR to `master`:
 | Frontend | npm ci → ESLint → TypeScript → Vitest → Build → npm audit |
 | Backend | pip install → compileall → Ruff → pytest → pip-audit |
 | Migrations | Apply all migrations twice → grep for destructive SQL |
-| Edge functions | deno fmt → lint → check → tests |
+| Edge functions | *(removed with the PR review bot)* |
 
 Dependabot runs weekly on: GitHub Actions, npm (frontend/), pip (backend/).
 
 ---
 
-## 11. PR Review Bot
+## 11. PR Review Bot (removed)
 
-`backend/supabase/functions/pr-review-bot/` is a Supabase Edge Function (Deno) that:
-1. Verifies GitHub webhook HMAC
-2. Runs static rules on the diff
-3. Posts review comment
-4. Maintains CHANGELOG.md via PR
-
-Key rules (all enforced, not style):
-- `secret`: blocks Supabase keys, JWTs, private keys
-- `hardcoded-admin-credentials`: blocks `admin`/`admin123` literals
-- `destructive-sql`: blocks `DROP TABLE`, `TRUNCATE`, `DELETE FROM`
-- `ownership-filter-removed`: blocks removed `.eq("customer_phone", ...)`
-- `auth-guard-removed`: blocks removed `require_admin`/`require_customer`
+The PR review bot was removed. It was never deployed (its Edge Function URL
+never existed), so no PR was ever reviewed and `CHANGELOG.md` was maintained
+by hand. Its three tables are dropped by
+`20261017000000_remove_pr_review_bot.sql`. Code review discipline now rests
+entirely on CI + human review.
 
 ---
 
@@ -376,25 +369,20 @@ OTP_DEBUG=true                    # Dev mode: OTP in response
 
 ## 13. PR & Changelog Workflow
 
-### PR Title Convention
+### PR Title Convention (still required)
 
-PR title prefix determines changelog category:
+PR title prefix signals change type to reviewers:
 
-| Prefix | Changelog Section |
-|--------|-------------------|
-| `feat:`, `feature:` | ### Added |
-| `fix:`, `bugfix:`, `hotfix:` | ### Fixed |
-| Everything else | ### Changed |
+| Prefix | Meaning |
+|--------|---------|
+| `feat:`, `feature:` | New functionality |
+| `fix:`, `bugfix:`, `hotfix:` | Bug fix |
+| Everything else | Chores, docs, CI |
 
 **Format:** `feat: short description` or `fix: issue description`
 
-### Changelog Auto-Update
-
-When you open a PR:
-1. PR review bot detects the PR
-2. Bot extracts prefix from title (feat/fix/other)
-3. Entry added to `CHANGELOG.md` under that date's section
-4. Bot creates/updates a changelog PR automatically
+The changelog is **maintained by hand** — when merging, add a dated entry to
+`CHANGELOG.md` yourself.
 
 ### Example PR Title
 

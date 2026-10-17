@@ -242,16 +242,11 @@ await api.customer.createBooking({ service_id, scheduled_date, scheduled_time })
 | Frontend | `npm ci`, ESLint, TypeScript, Vitest, production build, `npm audit` |
 | Backend | `pip install`, `compileall`, Ruff, pytest, `pip-audit` |
 | Migrations | Applies every migration to a throwaway Postgres twice; fails on destructive SQL |
-| Edge functions | `deno fmt/lint/check`, tests, `deno audit` |
+| Edge functions | *(removed with the PR review bot)* |
 
 Alongside it: the PR labeler (`label.yml`) and the Android APK build
 (`android-apks.yml`, every push to `master`). Dependabot covers GitHub Actions,
 npm and pip, weekly, grouped into one PR per ecosystem.
-
-The PR review bot (`backend/supabase/functions/pr-review-bot/`) reviews pull
-requests with deterministic, repo-specific rules and maintains
-`CHANGELOG.md`. Configuration, setup and the full rule list are documented in
-[docs/PR_REVIEW_BOT.md](docs/PR_REVIEW_BOT.md).
 
 ## Commands
 
@@ -275,14 +270,6 @@ Backend (run from `backend/`):
 | `python -m compileall -q app` | Byte-compile every module |
 | `pip-audit -r requirements.txt` | Audit runtime deps for CVEs |
 
-Edge functions (run from `backend/supabase/functions/`, needs [Deno](https://deno.com) 2):
-
-| Command | Description |
-|---------|-------------|
-| `deno task test` | Rule-engine, changelog and crypto tests |
-| `deno task lint` / `deno task check` | Lint / type-check |
-| `deno task review <ref>` | Dry-run the review rules against a diff |
-
 ## Documentation
 
 | Document | Contents |
@@ -292,7 +279,6 @@ Edge functions (run from `backend/supabase/functions/`, needs [Deno](https://den
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Deep architecture notes |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Full deployment guide with checklists and troubleshooting |
 | [docs/RELEASE.md](docs/RELEASE.md) | APK release process, secrets and QR download flow |
-| [docs/PR_REVIEW_BOT.md](docs/PR_REVIEW_BOT.md) | Review bot setup, rules and changelog writer |
 | [docs/API.md](docs/API.md) | Endpoint reference |
 | [docs/SECURITY.md](docs/SECURITY.md) | Security model and hardening checklist |
 | [PUBLISHING.md](PUBLISHING.md) | App store and web publishing walkthrough |

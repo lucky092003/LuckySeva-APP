@@ -266,7 +266,7 @@ Runs on every push/PR to `master`:
 | **Frontend** | npm ci → ESLint → TypeScript → Vitest → Build → npm audit |
 | **Backend** | pip install → compileall → Ruff → pytest → pip-audit |
 | **Migrations** | Apply all migrations to Postgres (twice) → Check for destructive SQL |
-| **Edge Functions** | deno fmt → lint → check → tests |
+| **Edge Functions** | *(removed with the PR review bot)* |
 
 **Separate workflows:**
 

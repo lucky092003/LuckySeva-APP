@@ -503,71 +503,13 @@ Queued push notifications (for retry/dead-letter).
 
 ---
 
-## 6. PR Review Bot Tables
+## 6. PR Review Bot Tables (removed)
 
-### 6.1 `pr_review_settings`
-
-Per-repository bot configuration.
-
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| `repo_full_name` | `text` | PK | e.g., `owner/repo` |
-| `enabled` | `boolean` | NOT NULL DEFAULT true | |
-| `min_severity` | `text` | NOT NULL DEFAULT `'warning'` | `info`, `warning`, `blocker` |
-| `comment_mode` | `text` | NOT NULL DEFAULT `'sticky'` | `sticky`, `new`, `dry_run` |
-| `rules` | `text[]` | NULL | Allowlist of rule IDs (empty = all) |
-| `block_on_blocker` | `boolean` | NOT NULL DEFAULT false | |
-| `changelog_enabled` | `boolean` | NOT NULL DEFAULT true | |
-| `changelog_branch` | `text` | NOT NULL DEFAULT `'luckyseva/changelog'` | |
-| `changelog_file` | `text` | NOT NULL DEFAULT `'CHANGELOG.md'` | |
-| `created_at` | `timestamptz` | DEFAULT `now()` | |
-| `updated_at` | `timestamptz` | DEFAULT `now()` | |
-
----
-
-### 6.2 `pr_reviews`
-
-Bot run history (one row per webhook event).
-
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| `id` | `uuid` | PK | |
-| `repo_full_name` | `text` | NOT NULL | |
-| `pr_number` | `int` | NOT NULL | |
-| `head_sha` | `text` | NOT NULL | PR head commit |
-| `verdict` | `text` | NOT NULL | `clean`, `findings`, `error` |
-| `findings` | `jsonb` | NULL | Rule findings |
-| `changelog_status` | `text` | NULL | `skipped`, `updated`, `created`, `error` |
-| `changelog_pr_url` | `text` | NULL | Bot's changelog PR URL |
-| `created_at` | `timestamptz` | DEFAULT `now()` | |
-
-**Constraints:**
-- UNIQUE `(repo_full_name, pr_number, head_sha)`
-
----
-
-### 6.3 `changelog_entries`
-
-Source of truth for changelog generation.
-
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| `id` | `uuid` | PK | |
-| `repo_full_name` | `text` | NOT NULL | |
-| `pr_number` | `int` | NOT NULL | |
-| `pr_title` | `text` | NOT NULL | |
-| `pr_author` | `text` | NOT NULL | |
-| `pr_url` | `text` | NOT NULL | |
-| `kind` | `text` | NOT NULL, CHECK `IN ('added', 'fixed', 'changed')` | Derived from PR title prefix |
-| `entry_date` | `date` | NOT NULL | PR creation date |
-| `created_at` | `timestamptz` | DEFAULT `now()` | |
-
-**Constraints:**
-- UNIQUE `(repo_full_name, pr_number)`
-
-**Indexes:**
-- `idx_changelog_entries_pr` on `(repo_full_name, pr_number)`
-- `idx_changelog_entries_date` on `(repo_full_name, entry_date DESC)`
+The PR review bot and its three tables (`pr_review_settings`, `pr_reviews`,
+`changelog_entries`) were removed — the bot was never deployed, so the tables
+always stood empty. They are dropped by
+`20261017000000_remove_pr_review_bot.sql`. The two original bot migrations
+remain in the folder because migrations are append-only.
 
 ---
 
@@ -603,11 +545,12 @@ Migrations live in `backend/supabase/migrations/` and are applied in **filename 
 | `20261002000000_booking_priority_fee.sql` | priority_fee column |
 | `20261003000000_full_catalog_market_rates.sql` | Full 182-service catalog |
 | `20261005000000_platform_monetization.sql` | GST, disputes, push_outbox |
+| `20261017000000_remove_pr_review_bot.sql` | Drops the removed review bot's three empty tables |
 
 **Migration Rules:**
 1. All migrations must be **idempotent** (CI applies twice)
 2. Use `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`
-3. CI **fails** on `DROP TABLE`, `TRUNCATE`, `DELETE FROM <table>;`
+3. CI **fails** on `DROP TABLE`, `TRUNCATE`, `DELETE FROM <table>;` — a whole-feature removal may opt out with the `-- luckyseva: destructive-by-design` marker after documenting the data loss in its header comment
 4. After adding a table, add the four `anon_*` policies or anon queries will return nothing
 
 ---
