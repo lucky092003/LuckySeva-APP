@@ -239,28 +239,26 @@ These are known, not endorsed. Fix deliberately and update this file:
 
 **Auth/Security:**
 - OTP never verified (no SMS provider)
-- Admin password cleartext, default `admin123`
-- CORS `allow_origins=["*"]`
+- Admin password cleartext in `admin_settings`, default `admin123`
+- CORS defaults to a wildcard; set `CORS_ORIGINS=https://a,https://b` in prod (env-driven since 2026-10)
 - JWT no revocation (30 days)
-- `verify_token` leaks PyJWT error
-
-**Data isolation holes:**
-- `GET /provider/bookings/{id}` no ownership check
-- `DELETE /admin/professionals/{id}` no existence check
-- `POST /admin/settings` no audit log
-
-**Correctness bugs:**
-- `GET /customer/reviews` broken for named users
-- `GET /provider/dashboard` wrong date filter
-- `POST /customer/bookings` explicit `total_amount: 0` becomes `base + visit_fee`
-- `invoiceAmounts` can show more than booking total
 
 **Behavioral quirks:**
 - Every role's screens statically imported (comment says otherwise)
-- `renderProvider` has no `help` case
 - Most mutations swallow errors `.catch(() => {})`
 - No payment gateway (1500ms fake latency)
-- `toggleFavourite` downloads whole list on every call
+- `toggleFavourite`'s `useIsFavourite` downloads the whole list on mount
+
+**Fixed in the 2026-10 deep audit (was on this list):**
+- `verify_token` leaked PyJWT internals -> now a clean 401 message
+- `GET /provider/bookings/{id}` had no ownership -> 404 unless owner/in-field (was already fixed in code)
+- `DELETE /admin/professionals/{id}` had no existence check -> 404 first
+- `POST /admin/settings` audit log -> was already there
+- `GET /customer/reviews` named-user breakage -> already fixed (joins via bookings)
+- `GET /provider/dashboard` local-timezone "today" -> UTC now
+- `POST /customer/bookings` trusted client `total_amount` -> already fixed (server-priced)
+- `invoiceAmounts` inflated totals -> now priced from stored fields, priority + discount lines shown
+- `renderProvider` missing `help` case -> added
 
 ---
 

@@ -24,6 +24,19 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   (`UNIQUE(referrals.referee_phone)`). Sharing uses the Web Share API with a
   clipboard fallback; an admin `/admin/referrals` listing exists.
 
+### Fixed
+- **Security & invoice correctness hardening** (deep audit) — `verify_token`
+  no longer surfaces PyJWT internals to the client (clean 401);
+  `DELETE /admin/professionals/{id}` now 404s on a missing id before it
+  deletes or audits; `GET /provider/dashboard`'s "today" is computed in UTC to
+  match how `created_at` is written (was server-local, splitting the day at
+  the wrong midnight for IST); the invoice now prices from the booking's
+  stored fields (`base + visit + priority - discount`), shows a Priority fee
+  line and a discount line with the coupon code, and can never claim more
+  than `total_amount`; provider renderer gains the missing `help` case; CORS
+  is env-driven via `CORS_ORIGINS` (wildcard fallback preserved); dead
+  `ADMIN_CREDENTIALS` const replaced by display literals.
+
 ## 2026-10-14
 
 ### Changed

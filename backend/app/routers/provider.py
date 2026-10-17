@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 
@@ -704,7 +704,10 @@ def dashboard(claims: dict = Depends(require_provider)):
     rows = mine.data or []
     active = sum(1 for r in rows if r.get("status") in {"assigned", "on_the_way", "started"})
     completed = [r for r in rows if r.get("status") == "completed"]
-    today = date.today().isoformat()
+    # created_at is written as UTC (events.now_iso), so "today" must also be
+    # UTC — date.today() answered with the server's local zone and split the
+    # day at the wrong midnight, putting morning-IST jobs on yesterday's card.
+    today = datetime.now(timezone.utc).date().isoformat()
     today_earnings = sum(
         float(r.get("total_amount") or 0) for r in completed if (r.get("created_at") or "")[:10] == today
     )

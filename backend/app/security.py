@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Optional
 
@@ -5,6 +6,8 @@ import jwt
 
 from . import config
 from .exceptions import ApiError
+
+logger = logging.getLogger(__name__)
 
 TOKEN_TTL_DAYS = 30
 
@@ -22,10 +25,14 @@ def sign_token(phone: str, role: str, professional_id: Optional[str] = None) -> 
 
 
 def verify_token(token: str) -> dict:
+    # The token itself is untrusted input: PyJWT's exception messages embed
+    # fragments of what was submitted (and the algorithm state), so they are
+    # for the log, never the response.
     try:
         claims = jwt.decode(token, config.SUPABASE_JWT_SECRET, algorithms=["HS256"])
     except jwt.PyJWTError as e:
-        raise ApiError(401, f"Invalid token: {e}")
+        logger.warning("token rejected: %s", e)
+        raise ApiError(401, "Invalid or expired token")
     if not claims.get("phone") or not claims.get("role"):
         raise ApiError(401, "Token missing phone/role")
     return claims

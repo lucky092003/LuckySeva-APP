@@ -336,9 +336,18 @@ def update_professional(professional_id: str, body: dict):
 @router.delete("/professionals/{professional_id}")
 def delete_professional(professional_id: str):
     client = db()
+    existing = one(
+        client.table("professionals")
+        .select("id, name")
+        .eq("id", professional_id)
+        .maybe_single()
+        .execute()
+    )
+    if not existing:
+        raise ApiError(404, "Professional not found")
     client.table("professionals").delete().eq("id", professional_id).execute()
     client.table("audit_logs").insert(
-        {"action": "provider_delete", "detail": f"Deleted provider {professional_id}"}
+        {"action": "provider_delete", "detail": f"Deleted provider {existing.get('name') or professional_id}"}
     ).execute()
     return {"ok": True}
 
