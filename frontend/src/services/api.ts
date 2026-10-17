@@ -282,7 +282,7 @@ export const api = {
 
   admin: {
     stats: () => request<{ bookings: number; customers: number; providers: number; reviews: number; today_revenue: number; recent_bookings: Booking[] }>('admin', '/stats'),
-    revenue: () => request<{ total_platform_fee: number; by_date: Record<string, number> }>('/ledger', '/admin/revenue'),
+    revenue: () => request<{ total_platform_fee: number; by_date: Record<string, number> }>('admin', '/revenue'),
     bookings: () => request<Booking[]>('admin', '/bookings'),
     professionals: () => request<Professional[]>('admin', '/professionals'),
     categories: () => request<Category[]>('admin', '/categories'),
