@@ -159,6 +159,23 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
           <Detail icon={<Icons.Clock size={15} />} label="Time" value={booking.scheduled_time} />
           <Detail icon={<Icons.MapPin size={15} />} label="Address" value={booking.customer_address} />
           {booking.notes && <Detail icon={<Icons.StickyNote size={15} />} label="Notes" value={booking.notes} />}
+          {/* Real turn-by-turn directions live in the Google Maps app — Google's
+              terms don't allow embedded navigation inside a WebView. */}
+          {booking.latitude != null && booking.longitude != null && (
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  `https://www.google.com/maps/dir/?api=1&destination=${booking.latitude},${booking.longitude}`,
+                  '_blank',
+                  'noopener',
+                )
+              }
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100 dark:border-gray-700 dark:bg-gray-900 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+            >
+              <Icons.Navigation size={16} /> Navigate to Customer
+            </button>
+          )}
         </Card>
 
         {/* Payment */}

@@ -29,7 +29,10 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   (key from `VITE_GOOGLE_MAPS_API_KEY`, restricted to that single API) with a
   pulsing provider marker, dashed line to the service address and a zoom
   clamp; it silently falls back to free OpenStreetMap/Leaflet when the key is
-  unset, blocked or fails to load. On the provider side an
+  unset, blocked or fails to load. The provider's job screen gains a
+  "Navigate to Customer" button that hands off to the Google Maps app for real
+  turn-by-turn directions (Google's terms forbid embedding navigation in a
+  WebView, so a deep link is the standard pattern). On the provider side an
   invisible publisher (mounted for the provider role) watches GPS via
   `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
   active job exists — `POST /provider/heartbeat` now accepts an optional
