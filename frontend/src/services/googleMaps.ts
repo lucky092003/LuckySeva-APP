@@ -1,5 +1,9 @@
 let pending: Promise<typeof window.google.maps> | null = null;
 
+/** Configured Maps JavaScript API key (may be undefined when unset). */
+export const googleMapsKey =
+  (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined) || undefined;
+
 /**
  * Loads the Google Maps JavaScript API once per page and resolves with the
  * maps namespace. The key is restricted to the Maps JavaScript API in the
@@ -43,6 +47,5 @@ export function loadGoogleMaps(apiKey: string): Promise<typeof window.google.map
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var google: { maps: Record<string, unknown> } | undefined;
 }

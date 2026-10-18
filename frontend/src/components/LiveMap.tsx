@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { loadGoogleMaps } from '@/services/googleMaps';
-import { GOOGLE_MAPS_KEY, GoogleMapImpl } from '@/components/GoogleMap';
+import { loadGoogleMaps, googleMapsKey } from '@/services/googleMaps';
+import { GoogleMapImpl } from '@/components/GoogleMap';
 import type { LatLng } from '@/components/mapTypes';
 
 const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLng; professional: LatLng | null; className?: string }) => {
@@ -78,6 +78,9 @@ const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLn
     if (!m.getBounds().pad(-0.2).contains(bounds)) {
       m.fitBounds(bounds.pad(0.35), { animate: true });
     }
+    // Primitive deps keep this stable across renders even though the parent
+    // recreates the position objects inline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer.latitude, customer.longitude, professional?.latitude, professional?.longitude]);
 
   return (
@@ -93,16 +96,16 @@ const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLn
  */
 export const LiveMap = ({ customer, professional, className }: { customer: LatLng; professional: LatLng | null; className?: string }) => {
   const [engine, setEngine] = useState<'checking' | 'google' | 'leaflet'>(
-    GOOGLE_MAPS_KEY ? 'checking' : 'leaflet',
+    googleMapsKey ? 'checking' : 'leaflet',
   );
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_KEY) {
+    if (!googleMapsKey) {
       setEngine('leaflet');
       return;
     }
     let cancelled = false;
-    loadGoogleMaps(GOOGLE_MAPS_KEY)
+    loadGoogleMaps(googleMapsKey)
       .then(() => {
         if (!cancelled) setEngine('google');
       })

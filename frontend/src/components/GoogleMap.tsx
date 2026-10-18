@@ -1,22 +1,37 @@
-import { useEffect, useRef, useState } from 'react';
-import { loadGoogleMaps } from '@/services/googleMaps';
+import { useEffect, useRef } from 'react';
+import { loadGoogleMaps, googleMapsKey } from '@/services/googleMaps';
 import type { LatLng } from '@/components/mapTypes';
 
-export const GOOGLE_MAPS_KEY = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined) || undefined;
+/* Minimal structural types for the pieces of the Google Maps namespace we
+   touch — keeps the bundle light and lint clean without official typings. */
+interface GBounds {
+  extend: (point: object) => void;
+}
+interface GMap {
+  fitBounds: (bounds: GBounds, padding?: number | string) => void;
+  getZoom: () => number;
+  setZoom: (zoom: number) => void;
+}
+interface GMarker {
+  setPosition: (position: object) => void;
+  setMap: (map: null) => void;
+}
+interface GPolyline {
+  setPath: (path: object[]) => void;
+  setMap: (map: null) => void;
+}
+interface MapsNamespace {
+  Map: new (el: HTMLElement, opts: Record<string, unknown>) => GMap;
+  Marker: new (opts: Record<string, unknown>) => GMarker;
+  Polyline: new (opts: Record<string, unknown>) => GPolyline;
+  LatLng: new (lat: number, lng: number) => object;
+  LatLngBounds: new () => GBounds;
+  Size: new (w: number, h: number) => object;
+  Point: new (x: number, y: number) => object;
+  event: { addListenerOnce: (target: GMap, event: string, fn: () => void) => void };
+}
 
-type GMap = Record<string, any>; // google.maps.Map — kept loose to avoid bundling types
-
-const pinIcon = (gm: any, body: string, size = 44) => ({
-  url:
-    'data:image/svg+xml;utf8,' +
-    encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`,
-    ),
-  scaledSize: new gm.Size(size, size),
-  anchor: new gm.Point(size / 2, size / 2 + 4),
-});
-
-const CAR_BODY =
+const CAR_ICON_BODY =
   '<circle cx="22" cy="22" r="10" fill="#10b981" opacity="0.35">' +
   '<animate attributeName="r" from="10" to="20" dur="1.6s" repeatCount="indefinite"/>' +
   '<animate attributeName="opacity" from="0.45" to="0" dur="1.6s" repeatCount="indefinite"/>' +
@@ -24,27 +39,50 @@ const CAR_BODY =
   '<circle cx="22" cy="22" r="9" fill="#10b981" stroke="#ffffff" stroke-width="2.5"/>' +
   '<text x="22" y="26.5" font-size="10.5" text-anchor="middle">🚙</text>';
 
-const HOME_BODY =
+const HOME_ICON_BODY =
   '<circle cx="22" cy="22" r="9" fill="#ffffff" stroke="#ef4444" stroke-width="2.5"/>' +
   '<text x="22" y="26.5" font-size="10.5" text-anchor="middle">🏠</text>';
 
+const pinIcon = (ns: MapsNamespace, body: string, size = 44) => ({
+  url:
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`,
+    ),
+  scaledSize: new ns.Size(size, size),
+  anchor: new ns.Point(size / 2, size / 2 + 4),
+});
+
 /** Google Maps renderer (chosen when a key is configured). */
-const GoogleMapImpl = ({ customer, professional, className }: { customer: LatLng; professional: LatLng | null; className?: string }) => {
+export const GoogleMapImpl = ({
+  customer,
+  professional,
+  className,
+}: {
+  customer: LatLng;
+  professional: LatLng | null;
+  className?: string;
+}) => {
   const el = useRef<HTMLDivElement | null>(null);
+  const ns = useRef<MapsNamespace | null>(null);
   const map = useRef<GMap | null>(null);
-  const customerM = useRef<GMap | null>(null);
-  const proM = useRef<GMap | null>(null);
-  const line = useRef<GMap | null>(null);
-  // Latest props for the async loader callback.
-  const latest = useRef({ customer, professional });
-  latest.current = { customer, professional };
+  const customerM = useRef<GMarker | null>(null);
+  const proM = useRef<GMarker | null>(null);
+  const line = useRef<GPolyline | null>(null);
+  // Latest props, read by the async loader callback once the script lands.
+  const props = useRef<{ customer: LatLng; professional: LatLng | null }>({ customer, professional });
+
+  useEffect(() => {
+    props.current = { customer, professional };
+  });
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps(GOOGLE_MAPS_KEY!).then((gm) => {
+    loadGoogleMaps(googleMapsKey!).then((gm) => {
       if (cancelled || !el.current) return;
-      const g = gm as any;
-      const m: GMap = new g.Map(el.current, {
+      const g = gm as unknown as MapsNamespace;
+      ns.current = g;
+      const m = new g.Map(el.current, {
         center: { lat: customer.latitude, lng: customer.longitude },
         zoom: 14,
         disableDefaultUI: true,
@@ -53,19 +91,19 @@ const GoogleMapImpl = ({ customer, professional, className }: { customer: LatLng
         gestureHandling: 'cooperative',
       });
       map.current = m;
-      const c = latest.current.customer;
-      const p = latest.current.professional;
+      const c = props.current.customer;
+      const p = props.current.professional;
       customerM.current = new g.Marker({
         position: { lat: c.latitude, lng: c.longitude },
         map: m,
-        icon: pinIcon(g, HOME_BODY),
+        icon: pinIcon(g, HOME_ICON_BODY),
         zIndex: 100,
       });
       if (p) {
         proM.current = new g.Marker({
           position: { lat: p.latitude, lng: p.longitude },
           map: m,
-          icon: pinIcon(g, CAR_BODY),
+          icon: pinIcon(g, CAR_ICON_BODY),
           zIndex: 200,
         });
         line.current = new g.Polyline({
@@ -84,13 +122,7 @@ const GoogleMapImpl = ({ customer, professional, className }: { customer: LatLng
           map: m,
         });
       }
-      const pts = p ? [c, p] : [c];
-      const bounds = new g.LatLngBounds();
-      pts.forEach((x) => bounds.extend(new g.LatLng(x.latitude, x.longitude)));
-      m.fitBounds(bounds, 40);
-      g.event.addListenerOnce(m, 'idle', () => {
-        if ((m.getZoom() as number) > 17) m.setZoom(17);
-      });
+      applyBounds(g, m, c, p);
     });
     return () => {
       cancelled = true;
@@ -98,13 +130,28 @@ const GoogleMapImpl = ({ customer, professional, className }: { customer: LatLng
       proM.current?.setMap(null);
       line.current?.setMap(null);
       map.current = null;
-      customerM.current = proM.current = line.current = null;
+      ns.current = null;
+      customerM.current = null;
+      proM.current = null;
+      line.current = null;
     };
+    // Mount-only setup; later positions flow through the update effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const applyBounds = (g: MapsNamespace, m: GMap, c: LatLng, p: LatLng | null) => {
+    const pts = p ? [c, p] : [c];
+    const bounds = new g.LatLngBounds();
+    pts.forEach((x) => bounds.extend(new g.LatLng(x.latitude, x.longitude)));
+    m.fitBounds(bounds, 40);
+    // Don't zoom into the pavement when both markers sit close together.
+    g.event.addListenerOnce(m, 'idle', () => {
+      if (m.getZoom() > 17) m.setZoom(17);
+    });
+  };
+
   useEffect(() => {
-    const g = (window.google?.maps as any) || null;
+    const g = ns.current;
     const m = map.current;
     if (!g || !m) return;
     customerM.current?.setPosition(new g.LatLng(customer.latitude, customer.longitude));
@@ -115,17 +162,11 @@ const GoogleMapImpl = ({ customer, professional, className }: { customer: LatLng
         { lat: customer.latitude, lng: customer.longitude },
       ]);
     }
-    const pts = professional ? [customer, professional] : [customer];
-    const bounds = new g.LatLngBounds();
-    pts.forEach((p) => bounds.extend(new g.LatLng(p.latitude, p.longitude)));
-    m.fitBounds(bounds, 40);
-    // Don't zoom into the pavement when both markers sit close together.
-    g.event.addListenerOnce(m, 'idle', () => {
-      if ((m.getZoom() as number) > 17) m.setZoom(17);
-    });
+    applyBounds(g, m, customer, professional);
+    // Primitive deps keep this stable across renders even though the parent
+    // recreates the position objects inline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer.latitude, customer.longitude, professional?.latitude, professional?.longitude]);
 
   return <div ref={el} className={`min-h-0 overflow-hidden ${className ?? ''}`} />;
 };
-
-export { GoogleMapImpl };
