@@ -1,29 +1,32 @@
-let pending: Promise<typeof window.google.maps> | null = null;
+/**
+ * Loads the Google Maps JavaScript API once per page. The key is restricted
+ * to the Maps JavaScript API in the Cloud Console; the injected loader is the
+ * standard async flow. The resolved namespace is structural — callers write
+ * their own minimal typings against it (see components/GoogleMap.tsx).
+ */
+type MapsNamespace = Record<string, unknown>;
 
 /** Configured Maps JavaScript API key (may be undefined when unset). */
 export const googleMapsKey =
   (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined) || undefined;
 
-/**
- * Loads the Google Maps JavaScript API once per page and resolves with the
- * maps namespace. The key is restricted to the Maps JavaScript API in the
- * Cloud Console; the injected loader is the standard dynamic-import flow.
- */
-export function loadGoogleMaps(apiKey: string): Promise<typeof window.google.maps> {
+let pending: Promise<MapsNamespace> | null = null;
+
+export function loadGoogleMaps(apiKey: string): Promise<MapsNamespace> {
   if (pending) return pending;
-  pending = new Promise((resolve, reject) => {
+  pending = new Promise<MapsNamespace>((resolve, reject) => {
     const cbName = '__luckysevaMapsReady';
-    const w = window as unknown as {
-      google?: { maps?: unknown };
-      [key: string]: unknown;
-    };
+    const w = window as unknown as Record<string, unknown> & { google?: { maps?: MapsNamespace } };
     if (w.google?.maps) {
-      resolve(w.google as typeof window.google.maps);
+      resolve(w.google.maps);
       return;
     }
     w[cbName] = () => {
-      if (w.google?.maps) resolve(w.google as typeof window.google.maps);
-      else reject(new Error('Google Maps loaded without a maps namespace'));
+      if (w.google?.maps) {
+        resolve(w.google.maps);
+      } else {
+        reject(new Error('Google Maps loaded without a maps namespace'));
+      }
       delete w[cbName];
     };
     const s = document.createElement('script');
@@ -44,8 +47,4 @@ export function loadGoogleMaps(apiKey: string): Promise<typeof window.google.map
     }, 10000);
   });
   return pending;
-}
-
-declare global {
-  var google: { maps: Record<string, unknown> } | undefined;
 }
