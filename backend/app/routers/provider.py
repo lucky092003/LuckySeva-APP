@@ -293,18 +293,27 @@ def set_availability(body: dict, claims: dict = Depends(require_provider)):
 
 
 @router.post("/heartbeat")
-def heartbeat(claims: dict = Depends(require_provider)):
+def heartbeat(body: dict, claims: dict = Depends(require_provider)):
     """Stamped by the provider app on load and on every feed poll.
 
     Drives the "Active now" badge and is the liveness signal for pushing a new
     job, so a provider who closed the app is not pinged for a request they will
     only see hours later.
+
+    An optional `latitude`/`longitude` pair updates the professional's live
+    position so customers can track an in-progress job on the map.
     """
+    patch: dict = {"last_seen_at": now_iso()}
+    lat = body.get("latitude")
+    lng = body.get("longitude")
+    if isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+        patch["latitude"] = float(lat)
+        patch["longitude"] = float(lng)
     res = (
         db().table("professionals")
-        .update({"last_seen_at": now_iso()})
+        .update(patch)
         .eq("id", provider_id(claims))
-        .select("id, last_seen_at")
+        .select("id, last_seen_at, latitude, longitude")
         .execute()
     )
     if not res.data:

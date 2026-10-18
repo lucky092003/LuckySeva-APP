@@ -12,6 +12,22 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ## 2026-10-18
 
+### Added
+- **Live provider tracking on the customer's Track screen**
+  (`frontend/src/components/LiveMap.tsx`, `ProviderLocationPublisher.tsx`,
+  `frontend/src/screens/customer/TrackingScreen.tsx`,
+  `backend/app/routers/provider.py`) — while a job is assigned, on the way or
+  in progress, the customer now sees an OpenStreetMap (Leaflet, free — no API
+  key/billing) with the service address, a pulsing marker for the
+  professional's live position, road distance and an ETA estimate (~20 km/h
+  city average). The customer screen polls every 15 s. On the provider side an
+  invisible publisher (mounted for the provider role) watches GPS via
+  `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
+  active job exists — `POST /provider/heartbeat` now accepts an optional
+  `latitude`/`longitude` pair and stores them on the professional row.
+  Tracking reflects the provider's position only while the provider app is
+  open (foreground), the same v1 limitation most of the category ships with.
+
 ### Fixed
 - **Past-dated bookings no longer linger under Upcoming**
   (`frontend/src/hooks/useBookings.ts`) — the Upcoming tab previously filtered

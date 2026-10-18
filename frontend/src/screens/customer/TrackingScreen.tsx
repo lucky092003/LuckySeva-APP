@@ -4,7 +4,9 @@ import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Avatar } from '@/components/ui';
+import { LiveMap } from '@/components/LiveMap';
 import { inr, formatRelativeDay } from '@/utils/format';
+import { haversineKm } from '@/services/location';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
 const STEPS: { key: BookingStatus; label: string; icon: string }[] = [
@@ -40,7 +42,29 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
       .finally(() => setLoading(false));
   };
 
+  // Silent refresh (no spinner) so a live in-progress job keeps the map fresh.
+  const refreshSilently = () => {
+    api.customer
+      .booking(bookingId)
+      .then((b) => {
+        setBooking(b);
+        if (b.professional_id) {
+          api.catalog
+            .professional(b.professional_id)
+            .then((res) => setProfessional(res.professional))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  };
+
   useEffect(load, [bookingId]);
+
+  useEffect(() => {
+    if (!booking || !['assigned', 'on_the_way', 'started'].includes(booking.status)) return;
+    const t = setInterval(refreshSilently, 15000);
+    return () => clearInterval(t);
+  }, [booking?.status, bookingId]);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /><Spinner className="py-20" /></div>;
   if (!booking) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /></div>;
@@ -48,6 +72,18 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const currentIdx = STATUS_FLOW.indexOf(booking.status);
   const isCompleted = booking.status === 'completed';
   const isCancelled = booking.status === 'cancelled';
+
+  const hasCustomerCoords = booking.latitude != null && booking.longitude != null;
+  const hasProCoords = professional?.latitude != null && professional?.longitude != null;
+  // Map only matters once a pro is assigned and the job is in motion.
+  const showLiveMap =
+    hasCustomerCoords &&
+    hasProCoords &&
+    ['assigned', 'on_the_way', 'started'].includes(booking.status);
+  const distanceKm =
+    showLiveMap ? haversineKm(booking.latitude!, booking.longitude!, professional!.latitude!, professional!.longitude!) : null;
+  // ~20 km/h average city two-wheeler speed, floored so "1 min away" still says 2.
+  const etaMin = distanceKm == null ? null : Math.max(2, Math.round((distanceKm / 20) * 60));
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
@@ -65,6 +101,39 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
             </div>
           </div>
         </div>
+
+        {/* Live location map — only while a pro is heading or working */}
+        {showLiveMap && (
+          <Card className="mb-4 !p-2">
+            <LiveMap
+              customer={{ latitude: booking.latitude!, longitude: booking.longitude! }}
+              professional={
+                professional?.latitude != null && professional?.longitude != null
+                  ? { latitude: professional.latitude, longitude: professional.longitude }
+                  : null
+              }
+              className="h-52"
+            />
+            <div className="flex items-center gap-2 px-2 py-2 text-[11px] font-semibold text-gray-600">
+              {distanceKm == null ? (
+                <>
+                  <Icons.Loader size={13} className="animate-spin" />
+                  <span>Waiting for {professional?.name || 'provider'}'s live location...</span>
+                </>
+              ) : (
+                <>
+                  <Icons.Truck size={13} className="text-emerald-600" />
+                  <span>
+                    {distanceKm < 1
+                      ? `${Math.round(distanceKm * 1000)} m away`
+                      : `${distanceKm.toFixed(1)} km away`}{' '}
+                    · reaching in ~{etaMin} min
+                  </span>
+                </>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* Professional card */}
         {professional && (

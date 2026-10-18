@@ -253,7 +253,8 @@ export const api = {
     bookings: () => request<Booking[]>('provider', '/bookings'),
     updateAvailability: (payload: { status?: string; latitude?: number; longitude?: number }) =>
       request<{ ok: boolean }>('provider', '/availability', 'PUT', payload),
-    heartbeat: () => request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST'),
+    heartbeat: (coords?: { latitude: number; longitude: number }) =>
+      request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST', coords ?? {}),
     deviceToken: (token: string, platform = 'web') =>
       request<{ registered: boolean }>('provider', '/device-token', 'POST', { token, platform }),
     myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
