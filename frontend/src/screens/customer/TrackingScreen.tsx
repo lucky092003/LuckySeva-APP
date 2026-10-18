@@ -7,6 +7,7 @@ import { Card, Spinner, Button, Avatar } from '@/components/ui';
 import { LiveMap } from '@/components/LiveMap';
 import { inr, formatRelativeDay } from '@/utils/format';
 import { haversineKm } from '@/services/location';
+import { fetchRoute, type RouteResult } from '@/services/routing';
 import type { Booking, BookingStatus, Professional } from '@/types';
 
 const STEPS: { key: BookingStatus; label: string; icon: string }[] = [
@@ -25,6 +26,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const { navigate } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [professional, setProfessional] = useState<Professional | null>(null);
+  const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
@@ -74,6 +76,35 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
 
   useEffect(load, [bookingId]);
 
+  // Road route for the Blinkit-style line. Refetched only when the provider
+  // moves ~200 m or the fix changes — the routing service caches close calls.
+  const proLatKey = Math.round((professional?.latitude ?? 0) * 500);
+  const proLngKey = Math.round((professional?.longitude ?? 0) * 500);
+  useEffect(() => {
+    if (!booking || !professional) return;
+    if (!LIVE_STATUSES.includes(booking.status)) return;
+    const { latitude: custLat, longitude: custLng } = booking;
+    if (custLat == null || custLng == null) return;
+    if (professional.latitude == null || professional.longitude == null) return;
+    const proLat = professional.latitude;
+    const proLng = professional.longitude;
+    let alive = true;
+    const load = () =>
+      fetchRoute(
+        { latitude: proLat, longitude: proLng },
+        { latitude: custLat, longitude: custLng },
+      ).then((r) => {
+        if (alive && r) setRoute(r);
+      });
+    load();
+    const t = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking?.status, booking?.latitude, booking?.longitude, proLatKey, proLngKey]);
+
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /><Spinner className="py-20" /></div>;
   if (!booking) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /></div>;
 
@@ -86,11 +117,16 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   // Full-bleed live map (Blinkit-style) while a pro is assigned and in motion.
   const showLiveMap =
     hasCustomerCoords && hasProCoords && LIVE_STATUSES.includes(booking.status);
-  const distanceKm = showLiveMap
+  const distanceKm = route ? route.distanceKm : showLiveMap
     ? haversineKm(booking.latitude!, booking.longitude!, professional!.latitude!, professional!.longitude!)
     : null;
-  // ~20 km/h average city two-wheeler speed, floored so "1 min away" still says 2.
-  const etaMin = distanceKm == null ? null : Math.max(2, Math.round((distanceKm / 20) * 60));
+  // Real road-route minutes when the route fetch succeeded; a ~20 km/h
+  // straight-line estimate otherwise, floored so "1 min away" still says 2.
+  const etaMin = route
+    ? route.durationMin
+    : distanceKm == null
+      ? null
+      : Math.max(2, Math.round((distanceKm / 20) * 60));
 
   const banner = (
     tone: 'live' | 'done' | 'bad',
@@ -221,6 +257,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
             className="absolute inset-0 z-0"
             customer={{ latitude: booking.latitude!, longitude: booking.longitude! }}
             professional={{ latitude: professional!.latitude!, longitude: professional!.longitude! }}
+            route={route?.path ?? null}
           />
 
           {/* Floating status + ETA on top of the map */}
