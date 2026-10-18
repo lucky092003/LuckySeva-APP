@@ -93,7 +93,7 @@ export const LiveMap = ({
   return (
     <div
       ref={el}
-      className={`relative z-0 min-h-0 w-full overflow-hidden rounded-2xl ${className}`}
+      className={`min-h-0 overflow-hidden ${className}`}
     />
   );
 };

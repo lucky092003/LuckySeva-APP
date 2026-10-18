@@ -20,7 +20,12 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   in progress, the customer now sees an OpenStreetMap (Leaflet, free — no API
   key/billing) with the service address, a pulsing marker for the
   professional's live position, road distance and an ETA estimate (~20 km/h
-  city average). The customer screen polls every 15 s. On the provider side an
+  city average). The customer screen polls every 15 s. When both the service
+  address and the professional's position are known the tracking screen
+  renders the map full-bleed, Blinkit-style: floating status card and a
+  pulsing "live" distance/ETA pill on top, professional, progress timeline and
+  booking details docked in a rounded bottom sheet; otherwise the classic
+  stacked layout is kept. On the provider side an
   invisible publisher (mounted for the provider role) watches GPS via
   `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
   active job exists — `POST /provider/heartbeat` now accepts an optional
