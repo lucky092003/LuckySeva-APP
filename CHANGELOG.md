@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-17
+**Last updated:** 2026-10-18
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-18
+
+### Fixed
+- **Past-dated bookings no longer linger under Upcoming**
+  (`frontend/src/hooks/useBookings.ts`) — the Upcoming tab previously filtered
+  only by status (`confirmed`/`assigned`) and ignored the schedule, so bookings
+  whose service date had already passed stayed there indefinitely. A
+  confirmed/assigned booking whose `scheduled_date` is before today is now
+  shown as completed (Completed tab, "Completed" badge, Rate/Invoice/Refund
+  actions), the Upcoming tab only lists bookings from today onward, and the
+  Upcoming list is sorted soonest-first.
+- **Booking card action buttons fit inside the card**
+  (`frontend/src/screens/customer/MyBookingsScreen.tsx`) — the
+  Cancel / Reschedule / Track (and Rate Service / Invoice / Refund) rows used
+  the default button size whose `px-4` padding pushed the Track button past
+  the card edge on narrow screens. Buttons now use the `sm` size, `min-w-0`
+  and truncating labels, so the rows always stay inside the card.
 
 ## 2026-10-17
 

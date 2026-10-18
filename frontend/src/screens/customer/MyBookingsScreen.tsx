@@ -261,39 +261,40 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
       <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
         {booking.status === 'completed' ? (
           <>
-            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onReview}>
-              <Icons.Star size={14} /> Rate Service
+            <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReview}>
+              <Icons.Star size={14} /> <span className="truncate">Rate Service</span>
             </Button>
-            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onInvoice}>
-              <Icons.Receipt size={14} /> Invoice
+            <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onInvoice}>
+              <Icons.Receipt size={14} /> <span className="truncate">Invoice</span>
             </Button>
-            <Button variant="outline" className="flex-1 py-2 text-xs text-amber-600" onClick={onRefund}>
-              <Icons.Undo2 size={14} /> Refund
+            <Button size="sm" variant="outline" className="min-w-0 flex-1 text-amber-600" onClick={onRefund}>
+              <Icons.Undo2 size={14} /> <span className="truncate">Refund</span>
             </Button>
           </>
         ) : booking.status === 'cancelled' ? (
           ['paid', 'cash'].includes(booking.payment_status) ? (
-            <Button variant="outline" className="flex-1 py-2 text-xs text-amber-600" onClick={onRefund}>
-              <Icons.Undo2 size={14} /> Request Refund
+            <Button size="sm" variant="outline" className="min-w-0 flex-1 text-amber-600" onClick={onRefund}>
+              <Icons.Undo2 size={14} /> <span className="truncate">Request Refund</span>
             </Button>
           ) : null
         ) : (
           <>
             <Button
+              size="sm"
               variant="outline"
-              className="flex-1 py-2 text-xs text-red-500"
+              className="min-w-0 flex-1 text-red-500"
               onClick={onCancel}
               disabled={cancelling}
             >
-              {cancelling ? 'Cancelling...' : <><Icons.X size={14} /> Cancel</>}
+              {cancelling ? 'Cancelling...' : <><Icons.X size={14} /> <span className="truncate">Cancel</span></>}
             </Button>
             {['confirmed', 'assigned'].includes(booking.status) ? (
-              <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onReschedule}>
-                <Icons.CalendarClock size={14} /> Reschedule
+              <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReschedule}>
+                <Icons.CalendarClock size={14} /> <span className="truncate">Reschedule</span>
               </Button>
             ) : null}
-            <Button variant="outline" className="flex-1 py-2 text-xs" onClick={onTrack}>
-              <Icons.Navigation size={14} /> Track
+            <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onTrack}>
+              <Icons.Navigation size={14} /> <span className="truncate">Track</span>
             </Button>
           </>
         )}
