@@ -25,14 +25,13 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   renders the map full-bleed, Blinkit-style: floating status card and a
   pulsing "live" distance/ETA pill on top, professional, progress timeline and
   booking details docked in a rounded bottom sheet; otherwise the classic
-  stacked layout is kept. The map engine is the Google Maps JavaScript API
-  (key from `VITE_GOOGLE_MAPS_API_KEY`, restricted to that single API) with a
-  pulsing provider marker, dashed line to the service address and a zoom
-  clamp; it silently falls back to free OpenStreetMap/Leaflet when the key is
-  unset, blocked or fails to load. The provider's job screen gains a
-  "Navigate to Customer" button that hands off to the Google Maps app for real
-  turn-by-turn directions (Google's terms forbid embedding navigation in a
-  WebView, so a deep link is the standard pattern). On the provider side an
+  stacked layout is kept. The map stack is fully free — OpenStreetMap tiles
+  on Leaflet, a pulsing provider marker, a solid green OSRM road-route line
+  (with a dashed straight-line fallback) and an OSRM-miss ETA floor; no API
+  key or billing account is involved anywhere. A "Navigate to Customer"
+  button on the provider's job screen hands off to the Google Maps app for
+  real turn-by-turn directions (a plain deep link, not the Maps API). On the
+  provider side an
   invisible publisher (mounted for the provider role) watches GPS via
   `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
   active job exists — `POST /provider/heartbeat` now accepts an optional

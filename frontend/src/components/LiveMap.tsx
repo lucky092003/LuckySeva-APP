@@ -1,16 +1,31 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { loadGoogleMaps, googleMapsKey } from '@/services/googleMaps';
-import { GoogleMapImpl } from '@/components/GoogleMap';
 import type { LatLng } from '@/components/mapTypes';
 
-const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLng; professional: LatLng | null; className?: string }) => {
+/**
+ * Live tracking map — 100% free stack (no API keys, no billing):
+ *   • Map tiles: OpenStreetMap via Leaflet
+ *   • Road route line: OSRM (fetched by the caller and passed in as `route`)
+ * One map per mount; instances live outside React's model and are cleaned up
+ * on unmount.
+ */
+export const LiveMap = ({
+  customer,
+  professional,
+  route,
+  className,
+}: {
+  customer: LatLng;
+  professional: LatLng | null;
+  route?: LatLng[] | null;
+  className?: string;
+}) => {
   const el = useRef<HTMLDivElement | null>(null);
-  // Leaflet instances live outside React's model — one map per mount.
   const map = useRef<L.Map | null>(null);
   const customerMarker = useRef<L.Marker | null>(null);
   const proMarker = useRef<L.Marker | null>(null);
+  const routeLine = useRef<L.Polyline | null>(null);
 
   useEffect(() => {
     if (!el.current || map.current) return;
@@ -29,6 +44,7 @@ const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLn
       map.current = null;
       customerMarker.current = null;
       proMarker.current = null;
+      routeLine.current = null;
     };
   }, []);
 
@@ -50,6 +66,25 @@ const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLn
     }
 
     if (professional) {
+      // Route layer: solid road route when available, dashed straight line
+      // otherwise.
+      const solid = route && route.length >= 2;
+      const linePts: LatLng[] = solid ? route! : [professional, customer];
+      if (!routeLine.current) {
+        routeLine.current = L.polyline(
+          linePts.map((p) => [p.latitude, p.longitude] as [number, number]),
+          solid
+            ? { color: '#10b981', weight: 5, opacity: 0.95 }
+            : { color: '#10b981', weight: 2, opacity: 0.9, dashArray: '1 8', lineCap: 'round' },
+        ).addTo(m);
+      } else {
+        routeLine.current.setLatLngs(linePts.map((p) => [p.latitude, p.longitude] as [number, number]));
+        if (solid) {
+          routeLine.current.setStyle({ color: '#10b981', weight: 5, opacity: 0.95 });
+        } else {
+          routeLine.current.setStyle({ color: '#10b981', weight: 2, opacity: 0.9, dashArray: '1 8', lineCap: 'round' });
+        }
+      }
       if (!proMarker.current) {
         proMarker.current = L.marker([professional.latitude, professional.longitude], {
           zIndexOffset: 500,
@@ -78,50 +113,11 @@ const LeafletMapImpl = ({ customer, professional, className }: { customer: LatLn
     if (!m.getBounds().pad(-0.2).contains(bounds)) {
       m.fitBounds(bounds.pad(0.35), { animate: true });
     }
-    // Primitive deps keep this stable across renders even though the parent
-    // recreates the position objects inline.
+    // Primitive deps keep this stable across renders even though the caller
+    // recreates the position objects inline; route identity changes only on
+    // a fresh fetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customer.latitude, customer.longitude, professional?.latitude, professional?.longitude]);
+  }, [customer.latitude, customer.longitude, professional?.latitude, professional?.longitude, route]);
 
-  return (
-    <div ref={el} className={`min-h-0 overflow-hidden ${className ?? ''}`} />
-  );
-};
-
-/**
- * Live tracking map. Uses the Google Maps JavaScript API when a key is
- * configured (VITE_GOOGLE_MAPS_API_KEY); falls back to free
- * OpenStreetMap/Leaflet when the key is missing, blocked or fails to load.
- * Props contract is identical for both engines, so callers never care.
- */
-export const LiveMap = ({ customer, professional, className }: { customer: LatLng; professional: LatLng | null; className?: string }) => {
-  const [engine, setEngine] = useState<'checking' | 'google' | 'leaflet'>(
-    googleMapsKey ? 'checking' : 'leaflet',
-  );
-
-  useEffect(() => {
-    if (!googleMapsKey) {
-      setEngine('leaflet');
-      return;
-    }
-    let cancelled = false;
-    loadGoogleMaps(googleMapsKey)
-      .then(() => {
-        if (!cancelled) setEngine('google');
-      })
-      .catch(() => {
-        if (!cancelled) setEngine('leaflet');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (engine === 'checking') {
-    return <div className={`min-h-0 w-full bg-gray-100 ${className ?? ''}`} />;
-  }
-  if (engine === 'google') {
-    return <GoogleMapImpl customer={customer} professional={professional} className={className} />;
-  }
-  return <LeafletMapImpl customer={customer} professional={professional} className={className} />;
+  return <div ref={el} className={`min-h-0 overflow-hidden ${className ?? ''}`} />;
 };
