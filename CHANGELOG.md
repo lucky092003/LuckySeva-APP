@@ -25,7 +25,11 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   renders the map full-bleed, Blinkit-style: floating status card and a
   pulsing "live" distance/ETA pill on top, professional, progress timeline and
   booking details docked in a rounded bottom sheet; otherwise the classic
-  stacked layout is kept. On the provider side an
+  stacked layout is kept. The map engine is the Google Maps JavaScript API
+  (key from `VITE_GOOGLE_MAPS_API_KEY`, restricted to that single API) with a
+  pulsing provider marker, dashed line to the service address and a zoom
+  clamp; it silently falls back to free OpenStreetMap/Leaflet when the key is
+  unset, blocked or fails to load. On the provider side an
   invisible publisher (mounted for the provider role) watches GPS via
   `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
   active job exists — `POST /provider/heartbeat` now accepts an optional
