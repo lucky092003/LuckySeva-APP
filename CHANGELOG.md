@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,7 +10,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
 
+## 2026-10-19
+
+### Added
+- **Journey-scoped live tracking ("Provider is on the way")**
+  (`backend/supabase/migrations/20261019000000_provider_tracking.sql`,
+  `backend/app/routers/provider.py`, `backend/app/routers/customer.py`,
+  `frontend/src/screens/customer/TrackingScreen.tsx`,
+  `frontend/src/screens/provider/ProviderDetailScreen.tsx`,
+  `frontend/src/components/ProviderLocationPublisher.tsx`,
+  `frontend/src/services/providerTracking.ts`) — the customer's map now turns on
+  exactly when the provider taps **Start Journey** (`assigned` → `on_the_way`)
+  and stops the moment the job leaves that status (Start Service / complete /
+  cancel / decline re-queues it). Live fixes go to a new booking-scoped
+  `provider_tracking` table through `POST /provider/bookings/{id}/location`,
+  which refuses coordinates unless the caller is the provider assigned to a
+  booking that is genuinely `on_the_way` (404 for someone else's job, 409
+  `tracking_not_active` otherwise); the customer reads it through
+  `GET /customer/bookings/{id}/tracking`, polled every 8 s. A fix older than
+  150 s is treated as lost, so the pin is dropped instead of being drawn stale.
+  The green header now carries a real ETA — OSRM road-route minutes when the
+  route resolves, otherwise a straight-line estimate floored at 2 min — and the
+  floating pill shows live distance. On the provider side "Start Journey" asks
+  for the location permission in context and publishes the first fix
+  immediately, and a new **Location Sharing** card on the job screen surfaces
+  permission-denied / no-GPS / server-unreachable states with a **Retry
+  Sharing** button. GPS problems never blank the screen: the booking details,
+  provider card (call button included) and timeline stay visible with an
+  explanatory notice. Tracking data no longer comes from
+  `professionals.latitude` — that column is the provider's *base* location used
+  by radius matching, so live travel coordinates no longer risk overwriting it.
+- **`provider_tracking` table with ownership-scoped RLS**
+  (`backend/supabase/migrations/20261019000000_provider_tracking.sql`) — one row
+  per live journey, deleted when it ends. Deliberate exception to the
+  `USING (true)` house style: only the booking's customer may SELECT the row and
+  only the assigned provider may INSERT/UPDATE/DELETE it, read through a new
+  `luckyseva_jwt_claim()` helper so the migration still applies to the plain
+  `postgres:15` CI runs. The service-role backend remains the real boundary.
+- **Tracking endpoint tests**
+  (`backend/tests/test_provider_tracking.py`) — ownership and status gating for
+  both new routes, coordinate validation, upsert-replaces-the-previous-fix, and
+  the lifecycle rules (leaving `on_the_way` clears the position; `on_the_way`
+  keeps it).
+
+### Fixed
+- **"Could not reach the server to share your location" now reports what actually
+  failed** (`frontend/src/services/providerTracking.ts`,
+  `ProviderLocationPublisher.tsx`,
+  `frontend/src/screens/provider/ProviderDetailScreen.tsx`) — every failed
+  position publish used one generic line, which hid the case it hit in practice:
+  an app build that knows the tracking route talking to a backend that has not
+  been deployed with it yet (the publish 404s, and now says so). A booking the
+  server no longer treats as on-the-way, one it does not recognise for this
+  provider, an expired session and a genuine network failure are each named
+  separately. Sharing keeps retrying on the 20 s job poll, so it recovers on its
+  own once the backend catches up — no app restart needed.
+
 ## 2026-10-18
+
+### Added
+- **Live provider tracking on the customer's Track screen**
+  (`frontend/src/components/LiveMap.tsx`, `ProviderLocationPublisher.tsx`,
+  `frontend/src/screens/customer/TrackingScreen.tsx`,
+  `backend/app/routers/provider.py`) — while a job is assigned, on the way or
+  in progress, the customer now sees an OpenStreetMap (Leaflet, free — no API
+  key/billing) with the service address, a pulsing marker for the
+  professional's live position, road distance and an ETA estimate (~20 km/h
+  city average). The customer screen polls every 15 s. When both the service
+  address and the professional's position are known the tracking screen
+  renders the map full-bleed, Blinkit-style: floating status card and a
+  pulsing "live" distance/ETA pill on top, professional, progress timeline and
+  booking details docked in a rounded bottom sheet; otherwise the classic
+  stacked layout is kept. The map stack is fully free — OpenStreetMap tiles
+  on Leaflet, a pulsing provider marker, a solid green OSRM road-route line
+  (with a dashed straight-line fallback) and an OSRM-miss ETA floor; no API
+  key or billing account is involved anywhere. A "Navigate to Customer"
+  button on the provider's job screen hands off to the Google Maps app for
+  real turn-by-turn directions (a plain deep link, not the Maps API). On the
+  provider side an
+  invisible publisher (mounted for the provider role) watches GPS via
+  `watchPosition` and posts coordinates with the 30 s heartbeat whenever an
+  active job exists — `POST /provider/heartbeat` now accepts an optional
+  `latitude`/`longitude` pair and stores them on the professional row.
+  Tracking reflects the provider's position only while the provider app is
+  open (foreground), the same v1 limitation most of the category ships with.
 
 ### Fixed
 - **Past-dated bookings no longer linger under Upcoming**

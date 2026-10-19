@@ -28,6 +28,16 @@ def _fresh_deadline(client) -> str:
     return new_accept_deadline(client)
 
 
+def _clear_tracking(client, booking_id: str) -> None:
+    """Delete the live position for a journey that is no longer underway.
+
+    Called on every status change away from `on_the_way` and on a decline, so a
+    finished / re-queued job stops feeding the customer's map immediately
+    instead of leaving a stale pin behind.
+    """
+    client.table("provider_tracking").delete().eq("booking_id", booking_id).execute()
+
+
 def _phone_visible(row: dict, claims: dict) -> bool:
     """Customer contact is released only once this professional owns the job.
 
@@ -293,18 +303,27 @@ def set_availability(body: dict, claims: dict = Depends(require_provider)):
 
 
 @router.post("/heartbeat")
-def heartbeat(claims: dict = Depends(require_provider)):
+def heartbeat(body: dict, claims: dict = Depends(require_provider)):
     """Stamped by the provider app on load and on every feed poll.
 
     Drives the "Active now" badge and is the liveness signal for pushing a new
     job, so a provider who closed the app is not pinged for a request they will
     only see hours later.
+
+    An optional `latitude`/`longitude` pair updates the professional's live
+    position so customers can track an in-progress job on the map.
     """
+    patch: dict = {"last_seen_at": now_iso()}
+    lat = body.get("latitude")
+    lng = body.get("longitude")
+    if isinstance(lat, (int, float)) and isinstance(lng, (int, float)):
+        patch["latitude"] = float(lat)
+        patch["longitude"] = float(lng)
     res = (
         db().table("professionals")
-        .update({"last_seen_at": now_iso()})
+        .update(patch)
         .eq("id", provider_id(claims))
-        .select("id, last_seen_at")
+        .select("id, last_seen_at, latitude, longitude")
         .execute()
     )
     if not res.data:
@@ -526,6 +545,9 @@ def decline(booking_id: str, claims: dict = Depends(require_provider)):
                     "accept_expired_at": None,
                 }
             ).eq("id", booking_id).execute()
+            # The journey is no longer this provider's, so its live position
+            # must not keep streaming to the customer.
+            _clear_tracking(client, booking_id)
     return {"ok": True}
 
 
@@ -548,6 +570,9 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
     if booking_row.get("professional_id") != provider_id(claims):
         raise ApiError(403, "Not your booking")
     res = client.table("bookings").update({"status": status}).eq("id", booking_id).select("*").execute()
+    if status != "on_the_way":
+        # Started / completed / cancelled all end the journey: stop the map.
+        _clear_tracking(client, booking_id)
     if status == "completed":
         pro = one(
             client.table("professionals")
@@ -584,6 +609,69 @@ def update_status(booking_id: str, body: dict, claims: dict = Depends(require_pr
             }
         ).execute()
     return res.data[0]
+
+
+@router.post("/bookings/{booking_id}/location")
+def publish_location(booking_id: str, body: dict, claims: dict = Depends(require_provider)):
+    """Stream this provider's live GPS for a journey that is underway.
+
+    Booking-scoped on purpose. The position is refused unless the caller is the
+    provider assigned to a booking that is actually `on_the_way`, so it can
+    never be recorded for a job the provider does not own, before the journey
+    starts (requirement: nothing live merely because the job was accepted), or
+    after it has ended.
+    """
+    lat = body.get("latitude")
+    lng = body.get("longitude")
+    if (
+        not isinstance(lat, (int, float))
+        or isinstance(lat, bool)
+        or not isinstance(lng, (int, float))
+        or isinstance(lng, bool)
+    ):
+        raise ApiError(400, "latitude and longitude are required")
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise ApiError(400, "latitude and longitude must be valid coordinates")
+
+    client = db()
+    booking_row = one(
+        client.table("bookings")
+        .select("id, professional_id, status, customer_phone")
+        .eq("id", booking_id)
+        .maybe_single()
+        .execute()
+    )
+    # 404, not 403, for the same reason as GET /bookings/{id}: a provider
+    # outside this job should not learn that the booking exists.
+    if not booking_row or booking_row.get("professional_id") != provider_id(claims):
+        raise ApiError(404, "Booking not found")
+    if booking_row.get("status") != "on_the_way":
+        raise ApiError(
+            409,
+            "Live tracking is only active while the journey is on the way",
+            "tracking_not_active",
+        )
+
+    payload = {
+        "booking_id": booking_id,
+        "professional_id": provider_id(claims),
+        "customer_phone": booking_row.get("customer_phone"),
+        "latitude": float(lat),
+        "longitude": float(lng),
+        "updated_at": now_iso(),
+    }
+    accuracy = body.get("accuracy")
+    if isinstance(accuracy, (int, float)) and not isinstance(accuracy, bool) and accuracy >= 0:
+        payload["accuracy_m"] = float(accuracy)
+    res = (
+        client.table("provider_tracking")
+        .upsert(payload, on_conflict="booking_id")
+        .select("booking_id, updated_at")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(400, "Could not record the location")
+    return {"ok": True, "updated_at": res.data[0]["updated_at"]}
 
 
 @router.get("/earnings")

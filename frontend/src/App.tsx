@@ -4,6 +4,7 @@ import { AdminThemeProvider } from '@/context/AdminThemeContext';
 import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
 import { WebTopNav } from '@/components/WebTopNav';
+import { ProviderLocationPublisher } from '@/components/ProviderLocationPublisher';
 import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 
 import { SplashScreen } from '@/screens/customer/SplashScreen';
@@ -81,6 +82,8 @@ function Router() {
         {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
       <BottomNav />
+      {/* Silent GPS publisher so customers can track an in-progress job. */}
+      {role === 'provider' && screen.name !== 'provider-auth' && <ProviderLocationPublisher />}
     </PhoneShell>
   );
 }

@@ -348,6 +348,48 @@ def booking(booking_id: str, claims: dict = Depends(require_customer)):
     return booking
 
 
+@router.get("/bookings/{booking_id}/tracking")
+def booking_tracking(booking_id: str, claims: dict = Depends(require_customer)):
+    """Where the assigned provider is right now, for this customer's map.
+
+    Returns a position only when the booking is this customer's *and* the
+    journey is genuinely live, so a booking that was never started, or has since
+    been started / completed / cancelled, stops feeding the map the moment its
+    status moves on. Shaped as `active: false` rather than a 404 so the screen
+    can render "location unavailable" without treating it as an error.
+    """
+    client = db()
+    booking = one(
+        client.table("bookings")
+        .select("id, status, professional_id")
+        .eq("id", booking_id)
+        .eq("customer_phone", customer_phone(claims))
+        .maybe_single()
+        .execute()
+    )
+    if not booking:
+        raise ApiError(404, "Booking not found")
+    idle = {"active": False, "latitude": None, "longitude": None, "accuracy_m": None, "updated_at": None}
+    if booking.get("status") != "on_the_way" or not booking.get("professional_id"):
+        return idle
+    row = one(
+        client.table("provider_tracking")
+        .select("latitude, longitude, accuracy_m, updated_at")
+        .eq("booking_id", booking_id)
+        .maybe_single()
+        .execute()
+    )
+    if not row:
+        return idle
+    return {
+        "active": True,
+        "latitude": row.get("latitude"),
+        "longitude": row.get("longitude"),
+        "accuracy_m": row.get("accuracy_m"),
+        "updated_at": row.get("updated_at"),
+    }
+
+
 @router.get("/bookings")
 def bookings(claims: dict = Depends(require_customer)):
     client = db()
@@ -839,6 +881,9 @@ def cancel_booking(booking_id: str, body: dict | None = None, claims: dict = Dep
     )
     if not res.data:
         raise ApiError(400, "Could not cancel booking")
+    # Defensive: a cancel is normally blocked once the journey is underway, but
+    # if one ever lands, the customer's map must stop immediately.
+    client.table("provider_tracking").delete().eq("booking_id", booking_id).execute()
     if existing.get("professional_id"):
         notify(
             "provider",
