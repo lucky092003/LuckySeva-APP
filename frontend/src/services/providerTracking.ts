@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { ApiError } from './api';
 
 /**
  * Location-sharing state for the provider app.
@@ -38,6 +39,33 @@ export const useLocationShareState = (): LocationShareSnapshot =>
   useSyncExternalStore(subscribe, getSnapshot);
 
 export type LocationFix = { latitude: number; longitude: number; accuracy?: number };
+
+/**
+ * Turns a failed position publish into something the provider can act on.
+ *
+ * "Could not reach the server" used to cover every case, which hid the two most
+ * common ones: a backend too old to know the tracking route (the app ships
+ * ahead of the deploy, and the publish 404s), and a journey the server no longer
+ * considers live. Naming them is what makes the report fixable.
+ */
+export const describeShareFailure = (err: unknown): string => {
+  if (err instanceof ApiError) {
+    if (err.status === 404 && /API 404/.test(err.message)) {
+      return 'This backend does not support live tracking yet. Deploy the latest backend, then tap Retry Sharing.';
+    }
+    if (err.code === 'tracking_not_active') {
+      return 'The server does not have this journey as on-the-way any more. Set the status again and retry.';
+    }
+    if (err.status === 404) {
+      return 'The server does not recognise this booking for you. Refresh the job and retry.';
+    }
+    if (err.status === 401 || err.status === 403) {
+      return 'Your session has expired. Log in again, then tap Retry Sharing.';
+    }
+    return err.message || 'Could not share your location.';
+  }
+  return 'Could not share your location.';
+};
 
 export type LocationPermission =
   | { status: 'granted'; coords: LocationFix }

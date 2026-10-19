@@ -53,6 +53,19 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   the lifecycle rules (leaving `on_the_way` clears the position; `on_the_way`
   keeps it).
 
+### Fixed
+- **"Could not reach the server to share your location" now reports what actually
+  failed** (`frontend/src/services/providerTracking.ts`,
+  `ProviderLocationPublisher.tsx`,
+  `frontend/src/screens/provider/ProviderDetailScreen.tsx`) — every failed
+  position publish used one generic line, which hid the case it hit in practice:
+  an app build that knows the tracking route talking to a backend that has not
+  been deployed with it yet (the publish 404s, and now says so). A booking the
+  server no longer treats as on-the-way, one it does not recognise for this
+  provider, an expired session and a genuine network failure are each named
+  separately. Sharing keeps retrying on the 20 s job poll, so it recovers on its
+  own once the backend catches up — no app restart needed.
+
 ## 2026-10-18
 
 ### Added

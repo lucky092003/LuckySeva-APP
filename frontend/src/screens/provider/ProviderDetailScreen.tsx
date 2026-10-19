@@ -2,7 +2,12 @@ import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
-import { requestLocationPermission, setLocationShareState, useLocationShareState } from '@/services/providerTracking';
+import {
+  describeShareFailure,
+  requestLocationPermission,
+  setLocationShareState,
+  useLocationShareState,
+} from '@/services/providerTracking';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -72,14 +77,12 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const startSharing = async (id: string) => {
     const permission = await requestLocationPermission();
     if (permission.status === 'granted') {
-      const published = await api.provider
-        .updateLocation(id, permission.coords)
-        .then(() => true)
-        .catch(() => false);
-      setLocationShareState(
-        published ? 'active' : 'unavailable',
-        published ? null : 'Could not reach the server to share your location.',
-      );
+      try {
+        await api.provider.updateLocation(id, permission.coords);
+        setLocationShareState('active');
+      } catch (err) {
+        setLocationShareState('unavailable', describeShareFailure(err));
+      }
       return;
     }
     setLocationShareState(

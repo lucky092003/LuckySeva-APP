@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useApp } from '@/context/app-context';
 import { api, ApiError } from '@/services/api';
-import { setLocationShareState } from '@/services/providerTracking';
+import { setLocationShareState, describeShareFailure } from '@/services/providerTracking';
 
 /** How often the job list is re-read to notice a journey starting or ending. */
 const JOB_POLL_MS = 20000;
@@ -73,7 +73,7 @@ export const ProviderLocationPublisher = () => {
             stopWatcher();
             return;
           }
-          setLocationShareState('unavailable', 'Could not reach the server to share your location.');
+          setLocationShareState('unavailable', describeShareFailure(err));
         });
     };
 
