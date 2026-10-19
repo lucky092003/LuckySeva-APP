@@ -176,23 +176,23 @@ PUBLIC:
 ANY VALID TOKEN:
   GET  /auth/me
 
-require_customer (20 routes):
+require_customer (21 routes):
   GET/PUT /customer/profile
   GET/POST/PUT/DELETE /customer/addresses
   GET/POST /customer/bookings
-  GET/PUT /customer/bookings/{id}/cancel, /payment, /reschedule
+  GET/PUT /customer/bookings/{id}/cancel, /payment, /reschedule, /tracking
   GET/POST /customer/favourites
   GET/PUT /customer/notifications
   GET/POST /customer/reviews, /tickets
   GET/POST /customer/referral (me + claim)
 
-require_provider (19 routes):
+require_provider (20 routes):
   GET/PUT /provider/me
   PUT /provider/kyc
   GET/PUT /provider/services, /provider/trade
   PUT /provider/availability
   GET /provider/bookings (feed), /provider/bookings/mine, /provider/bookings/{id}
-  POST /provider/bookings/{id}/accept, /decline
+  POST /provider/bookings/{id}/accept, /decline, /location
   PUT /provider/bookings/{id}/status
   GET /provider/earnings, /provider/dashboard
   GET/POST /provider/payouts
@@ -219,6 +219,21 @@ Accept: status='assigned', professional_id set, removed from all feeds
 Decline: booking_declines row, status unchanged, other providers still see it
 ```
 
+### 5.5.1 Live tracking
+
+```
+assigned --(provider taps Start Journey)--> on_the_way --(Start Service / cancel)--> started/completed/cancelled
+```
+
+`on_the_way` is the only status with a live position. The provider app streams GPS
+to `POST /provider/bookings/{id}/location` (throttled ~8 s, plus a 30 s resend so a
+stationary provider's fix doesn't look lost). The customer reads it through
+`GET /customer/bookings/{id}/tracking`, polled every 8 s by the tracking screen.
+The row lives in `provider_tracking` (one per booking) and is deleted as soon as the
+booking leaves `on_the_way`; the read endpoint also refuses to serve a position for
+any other status, so tracking stops on arrival / completion / cancel. `started` and
+`assigned` deliberately show no map pin.
+
 ### 5.6 Radius matching
 
 Backend does NO geo filtering. Frontend filters by Haversine distance client-side. Missing coords = "in range" (fail-open).
@@ -227,9 +242,9 @@ Backend does NO geo filtering. Frontend filters by Haversine distance client-sid
 
 ## 6. Database
 
-17 tables in Supabase PostgreSQL. Migrations in `backend/supabase/migrations/`, applied in filename order.
+27 tables in Supabase PostgreSQL. Migrations in `backend/supabase/migrations/`, applied in filename order.
 
-Key tables: `categories`, `services`, `professionals`, `professional_services`, `bookings`, `reviews`, `addresses`, `profiles` (phone=PK), `notifications`, `favourites`, `support_tickets`, `payouts`, `payments`, `refunds`, `coupons`, `coupon_redemptions`, `admin_settings`, `audit_logs`, `booking_declines`, `pr_review_settings`, `pr_reviews`, `changelog_entries`.
+Key tables: `categories`, `services`, `professionals`, `professional_services`, `bookings`, `reviews`, `addresses`, `profiles` (phone=PK), `notifications`, `favourites`, `support_tickets`, `payouts`, `payments`, `refunds`, `coupons`, `coupon_redemptions`, `admin_settings`, `audit_logs`, `booking_declines`, `provider_tracking`, `pr_review_settings`, `pr_reviews`, `changelog_entries`, `device_tokens`, `disputes`, `push_outbox`, `referrals`.
 
 ---
 

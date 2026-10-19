@@ -154,6 +154,15 @@ export type Booking = {
   longitude: number | null;
 };
 
+/** Live position of the assigned provider while a booking is `on_the_way`. */
+export type ProviderTracking = {
+  active: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy_m: number | null;
+  updated_at: string | null;
+};
+
 export type Payment = {
   id: string;
   booking_id: string;

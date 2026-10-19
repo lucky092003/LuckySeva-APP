@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
@@ -8,7 +8,7 @@ import { LiveMap } from '@/components/LiveMap';
 import { inr, formatRelativeDay } from '@/utils/format';
 import { haversineKm } from '@/services/location';
 import { fetchRoute, type RouteResult } from '@/services/routing';
-import type { Booking, BookingStatus, Professional } from '@/types';
+import type { Booking, BookingStatus, Professional, ProviderTracking } from '@/types';
 
 const STEPS: { key: BookingStatus; label: string; icon: string }[] = [
   { key: 'confirmed', label: 'Booking Confirmed', icon: 'CheckCircle' },
@@ -20,7 +20,26 @@ const STEPS: { key: BookingStatus; label: string; icon: string }[] = [
 
 const STATUS_FLOW: BookingStatus[] = ['confirmed', 'assigned', 'on_the_way', 'started', 'completed'];
 
-const LIVE_STATUSES: BookingStatus[] = ['assigned', 'on_the_way', 'started'];
+/**
+ * Statuses worth polling for. `confirmed` is included so the customer sees a
+ * provider accept the request (and then start the journey) without reloading.
+ * Once the job is completed or cancelled there is nothing left to poll.
+ */
+const POLL_STATUSES: BookingStatus[] = ['confirmed', 'assigned', 'on_the_way', 'started'];
+
+/**
+ * The map is shown only while the journey is genuinely underway. Accepting a
+ * booking (`assigned`) is not enough: nothing moves until the provider taps
+ * Start Journey, and `started`/`completed`/`cancelled` mean the provider has
+ * arrived, so live tracking stops there.
+ */
+const TRACKING_STATUSES: BookingStatus[] = ['on_the_way'];
+
+/** A fix older than this is treated as gone — the GPS stopped sharing. */
+const STALE_TRACKING_MS = 150000;
+
+/** Background refresh while the booking is still in motion (mobile-friendly). */
+const TRACKING_POLL_MS = 8000;
 
 export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const { navigate } = useApp();
@@ -28,66 +47,92 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tracking, setTracking] = useState<ProviderTracking | null>(null);
+  const [isLive, setIsLive] = useState(false);
+  const loadedProfessionalId = useRef<string | null>(null);
+
+  // Freshness is decided where the data arrives (an async callback), never
+  // during render: a fix older than the staleness window means sharing stopped
+  // (GPS off, permission revoked, app closed) and must not be drawn as live.
+  const applyTracking = (tr: ProviderTracking) => {
+    setTracking(tr);
+    const age = tr.updated_at ? Date.now() - Date.parse(tr.updated_at) : Number.NaN;
+    setIsLive(
+      Boolean(
+        tr.active &&
+          tr.latitude != null &&
+          tr.longitude != null &&
+          !Number.isNaN(age) &&
+          age < STALE_TRACKING_MS,
+      ),
+    );
+  };
+
+  // Fetch the provider profile once per assignment, not on every poll.
+  const loadProfessional = (id: string | null | undefined) => {
+    if (!id || id === loadedProfessionalId.current) return;
+    loadedProfessionalId.current = id;
+    api.catalog
+      .professional(id)
+      .then((res) => setProfessional(res.professional))
+      .catch(() => setProfessional(null));
+  };
 
   const load = () => {
     setLoading(true);
-    api.customer
-      .booking(bookingId)
-      .then((b) => {
+    Promise.all([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
+      .then(([b, t]) => {
         setBooking(b);
-        if (b.professional_id) {
-          api.catalog
-            .professional(b.professional_id)
-            .then((res) => setProfessional(res.professional))
-            .catch(() => setProfessional(null));
-        }
+        applyTracking(t);
+        loadProfessional(b.professional_id);
       })
-      .catch(() => setBooking(null))
+      .catch(() => {
+        setBooking(null);
+        setTracking(null);
+        setIsLive(false);
+        loadedProfessionalId.current = null;
+        setProfessional(null);
+      })
       .finally(() => setLoading(false));
   };
 
   // Silent refresh (no spinner) so a live in-progress job keeps the map fresh.
   useEffect(() => {
-    let t: ReturnType<typeof setInterval> | null = null;
-    const start = (status?: BookingStatus) => {
-      if (status && LIVE_STATUSES.includes(status) && !t) {
-        t = setInterval(() => {
-          api.customer
-            .booking(bookingId)
-            .then((b) => {
-              setBooking(b);
-              if (b.professional_id) {
-                api.catalog
-                  .professional(b.professional_id)
-                  .then((res) => setProfessional(res.professional))
-                  .catch(() => {});
-              }
-            })
-            .catch(() => {});
-        }, 15000);
-      }
-    };
-    start(booking?.status);
-    return () => {
-      if (t) clearInterval(t);
-      t = null;
-    };
+    if (!booking || !POLL_STATUSES.includes(booking.status)) return;
+    const t = setInterval(() => {
+      Promise.all([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
+        .then(([b, tr]) => {
+          setBooking(b);
+          applyTracking(tr);
+          loadProfessional(b.professional_id);
+        })
+        .catch(() => {});
+    }, TRACKING_POLL_MS);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.status, bookingId]);
 
   useEffect(load, [bookingId]);
 
+  // Live position, taken only from the tracking feed. `professionals.latitude`
+  // is the provider's saved base location, not where they are right now, so it
+  // is never used to draw the pin.
+  const livePro =
+    isLive && tracking?.latitude != null && tracking.longitude != null
+      ? { latitude: tracking.latitude, longitude: tracking.longitude }
+      : null;
+  const proLatKey = livePro ? Math.round(livePro.latitude * 500) : 0;
+  const proLngKey = livePro ? Math.round(livePro.longitude * 500) : 0;
+
   // Road route for the Blinkit-style line. Refetched only when the provider
   // moves ~200 m or the fix changes — the routing service caches close calls.
-  const proLatKey = Math.round((professional?.latitude ?? 0) * 500);
-  const proLngKey = Math.round((professional?.longitude ?? 0) * 500);
   useEffect(() => {
-    if (!booking || !professional) return;
-    if (!LIVE_STATUSES.includes(booking.status)) return;
+    if (!booking || !isLive || !livePro) return;
+    if (!TRACKING_STATUSES.includes(booking.status)) return;
     const { latitude: custLat, longitude: custLng } = booking;
     if (custLat == null || custLng == null) return;
-    if (professional.latitude == null || professional.longitude == null) return;
-    const proLat = professional.latitude;
-    const proLng = professional.longitude;
+    const proLat = livePro.latitude;
+    const proLng = livePro.longitude;
     let alive = true;
     const load = () =>
       fetchRoute(
@@ -103,7 +148,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
       clearInterval(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booking?.status, booking?.latitude, booking?.longitude, proLatKey, proLngKey]);
+  }, [booking?.status, booking?.latitude, booking?.longitude, proLatKey, proLngKey, isLive]);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /><Spinner className="py-20" /></div>;
   if (!booking) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /></div>;
@@ -113,20 +158,36 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const isCancelled = booking.status === 'cancelled';
 
   const hasCustomerCoords = booking.latitude != null && booking.longitude != null;
-  const hasProCoords = professional?.latitude != null && professional?.longitude != null;
-  // Full-bleed live map (Blinkit-style) while a pro is assigned and in motion.
-  const showLiveMap =
-    hasCustomerCoords && hasProCoords && LIVE_STATUSES.includes(booking.status);
-  const distanceKm = route ? route.distanceKm : showLiveMap
-    ? haversineKm(booking.latitude!, booking.longitude!, professional!.latitude!, professional!.longitude!)
+  // Only a fresh fix draws the provider pin; a stale or missing one leaves the
+  // destination alone rather than lying about where the provider is.
+  const proCoords = isLive ? livePro : null;
+  // Full-bleed live map only while the journey is actually underway.
+  const showLiveMap = hasCustomerCoords && TRACKING_STATUSES.includes(booking.status);
+  const distanceKm = proCoords && hasCustomerCoords
+    ? route
+      ? route.distanceKm
+      : haversineKm(booking.latitude!, booking.longitude!, proCoords.latitude, proCoords.longitude)
     : null;
   // Real road-route minutes when the route fetch succeeded; a ~20 km/h
   // straight-line estimate otherwise, floored so "1 min away" still says 2.
-  const etaMin = route
+  const etaMin = route && distanceKm != null
     ? route.durationMin
     : distanceKm == null
       ? null
       : Math.max(2, Math.round((distanceKm / 20) * 60));
+
+  // Requirement: never leave the customer guessing, and never hide the booking
+  // because the GPS is unavailable.
+  const locationNotice =
+    booking.status === 'on_the_way'
+      ? distanceKm != null
+        ? null
+        : tracking?.active
+          ? 'Live location has not updated for a few minutes — your provider may be out of network range. You can call them below.'
+          : "Live location will appear as soon as your provider's GPS reports in. They are on their way — call them below if you need an update."
+      : booking.status === 'assigned'
+        ? 'Live tracking starts when your provider taps Start Journey.'
+        : null;
 
   const banner = (
     tone: 'live' | 'done' | 'bad',
@@ -156,7 +217,16 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
       ? banner('bad', 'Booking Cancelled')
       : isCompleted
         ? banner('done', 'Service Completed!', booking.service_name)
-        : banner('live', 'Service in Progress', booking.service_name);
+        : booking.status === 'on_the_way'
+          ? banner('live', 'Provider is on the way', etaMin ? `Reaching in ~${etaMin} min` : booking.service_name, false)
+          : banner('live', 'Service in Progress', booking.service_name);
+
+  const noticeCard = locationNotice && (
+    <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-800">
+      <Icons.Info size={14} className="mt-0.5 shrink-0" />
+      <span>{locationNotice}</span>
+    </div>
+  );
 
   const proCard = professional && (
     <Card className="p-4">
@@ -256,28 +326,36 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
           <LiveMap
             className="absolute inset-0 z-0"
             customer={{ latitude: booking.latitude!, longitude: booking.longitude! }}
-            professional={{ latitude: professional!.latitude!, longitude: professional!.longitude! }}
+            professional={proCoords}
             route={route?.path ?? null}
           />
 
           {/* Floating status + ETA on top of the map */}
           <div className="pointer-events-none absolute inset-x-0 top-3 z-10 px-4">
             <div className="pointer-events-none">{bannerNode}</div>
-            <div className="mt-2 flex items-center gap-2 rounded-full bg-white/95 py-2 pl-3 pr-4 text-xs font-semibold text-gray-800 shadow-lg shadow-black/10 backdrop-blur">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              </span>
-              Live
-              <span className="text-gray-300">|</span>
-              {distanceKm == null ? (
-                <span className="text-gray-500">Locating provider...</span>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/95 py-2 pl-3 pr-4 text-xs font-semibold text-gray-800 shadow-lg shadow-black/10 backdrop-blur">
+              {proCoords ? (
+                <>
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  </span>
+                  Live
+                  <span className="text-gray-300">|</span>
+                  {distanceKm == null ? (
+                    <span className="text-gray-500">Measuring...</span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Icons.Truck size={13} className="text-emerald-600" />
+                      {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m away` : `${distanceKm.toFixed(1)} km away`}
+                    </span>
+                  )}
+                </>
               ) : (
-                <span className="flex items-center gap-1">
-                  <Icons.Truck size={13} className="text-emerald-600" />
-                  {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m away` : `${distanceKm.toFixed(1)} km away`}
-                  <span className="font-normal text-gray-400">· reaching in ~{etaMin} min</span>
-                </span>
+                <>
+                  <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+                  <span className="text-gray-500">Waiting for provider GPS</span>
+                </>
               )}
             </div>
           </div>
@@ -286,6 +364,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
           <div className="no-scrollbar absolute inset-x-0 bottom-0 z-10 max-h-[58%] overflow-y-auto rounded-t-3xl bg-white/95 px-4 pb-4 pt-2.5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)] backdrop-blur">
             <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
             <div className="space-y-3">
+              {noticeCard}
               {proCard}
               {timeline}
               {details}
@@ -303,6 +382,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {bannerNode}
         <div className="mt-4 space-y-4">
+          {noticeCard}
           {proCard}
           {timeline}
           {details}

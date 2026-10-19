@@ -106,6 +106,11 @@ export const LiveMap = ({
       proMarker.current.remove();
       proMarker.current = null;
     }
+    if (!professional && routeLine.current) {
+      // Location sharing stopped: a stale route would imply a live journey.
+      routeLine.current.remove();
+      routeLine.current = null;
+    }
 
     const pts: LatLng[] = professional ? [customer, professional] : [customer];
     // Fit both markers with just enough padding; skip if the view hasn't moved much.

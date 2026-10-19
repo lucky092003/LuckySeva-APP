@@ -5,6 +5,7 @@ import type {
   Payout,
   Professional,
   Profile,
+  ProviderTracking,
   Refund,
   Review,
   Service,
@@ -189,6 +190,7 @@ export const api = {
     deleteAddress: (id: string) => request<{ ok: boolean }>('customer', `/addresses/${id}`, 'DELETE'),
     bookings: () => request<Booking[]>('customer', '/bookings'),
     booking: (id: string) => request<Booking>('customer', `/bookings/${id}`),
+    bookingTracking: (id: string) => request<ProviderTracking>('customer', `/bookings/${id}/tracking`),
     createBooking: (b: Partial<Booking>) => request<Booking>('customer', '/bookings', 'POST', b),
     cancelBooking: (id: string) => request<Booking>('customer', `/bookings/${id}/cancel`, 'PUT', {}),
     rescheduleBooking: (id: string, payload: { scheduled_date: string; scheduled_time: string }) =>
@@ -273,6 +275,10 @@ export const api = {
     decline: (id: string) => request<{ ok: boolean }>('provider', `/bookings/${id}/decline`, 'POST'),
     updateStatus: (id: string, status: string) =>
       request<Booking>('provider', `/bookings/${id}/status`, 'PUT', { status }),
+    // Live GPS for a journey that is underway. Refused by the backend unless
+    // this provider owns the booking and its status is `on_the_way`.
+    updateLocation: (id: string, coords: { latitude: number; longitude: number; accuracy?: number }) =>
+      request<{ ok: boolean; updated_at: string }>('provider', `/bookings/${id}/location`, 'POST', coords),
     earnings: () => request<{ total_earnings: number; by_date: Record<string, number>; payouts: Payout[]; available: number }>('provider', '/earnings'),
     // The backend stores these on `professionals` as bank_account / bank_upi_id.
     // There is no IFSC column, so it reads back null and is not persisted.

@@ -2,6 +2,7 @@ import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
 import { api } from '@/services/api';
+import { requestLocationPermission, setLocationShareState, useLocationShareState } from '@/services/providerTracking';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, Badge } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -50,6 +51,7 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const [updating, setUpdating] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [showReject, setShowReject] = useState(false);
+  const share = useLocationShareState();
 
   const load = () => {
     setLoading(true);
@@ -66,6 +68,28 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   };
   useEffect(load, [bookingId]);
 
+  /** Ask for GPS, publish the first fix, and remember what the customer can see. */
+  const startSharing = async (id: string) => {
+    const permission = await requestLocationPermission();
+    if (permission.status === 'granted') {
+      const published = await api.provider
+        .updateLocation(id, permission.coords)
+        .then(() => true)
+        .catch(() => false);
+      setLocationShareState(
+        published ? 'active' : 'unavailable',
+        published ? null : 'Could not reach the server to share your location.',
+      );
+      return;
+    }
+    setLocationShareState(
+      permission.status === 'denied' ? 'denied' : 'unavailable',
+      permission.status === 'denied'
+        ? 'Location permission is blocked, so the customer cannot see you on the map.'
+        : 'No GPS fix yet — the customer will see your status but not your position.',
+    );
+  };
+
   const advance = async () => {
     if (!booking) return;
     const next = NEXT_STATUS[booking.status];
@@ -73,11 +97,24 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     setUpdating(true);
     if (next === 'assigned') {
       await api.provider.accept(booking.id).catch(() => {});
+    } else if (next === 'on_the_way') {
+      // The journey is what turns tracking on, so ask for location right here:
+      // the prompt makes sense in context, and the first fix reaches the
+      // customer's map immediately instead of waiting for the next poll.
+      await api.provider.updateStatus(booking.id, next).catch(() => {});
+      await startSharing(booking.id);
     } else {
       await api.provider.updateStatus(booking.id, next as BookingStatus).catch(() => {});
     }
     setUpdating(false);
     load();
+  };
+
+  const retrySharing = async () => {
+    if (!booking) return;
+    setUpdating(true);
+    await startSharing(booking.id);
+    setUpdating(false);
   };
 
   const confirmReject = async () => {
@@ -177,6 +214,51 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
             </button>
           )}
         </Card>
+
+        {/* Location sharing status */}
+        {booking.status === 'on_the_way' && (
+          <Card className="mb-3 p-4">
+            <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-gray-100">Location Sharing</h3>
+            {share.state === 'active' && (
+              <div className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <Icons.MapPin size={14} className="mt-0.5" />
+                <span>
+                  Live location is streaming to the customer. If the map doesn't show you, switch to high-accuracy GPS and disable battery-saving mode for this app.
+                </span>
+              </div>
+            )}
+            {share.state === 'denied' && (
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  <Icons.AlertCircle size={14} className="mt-0.5" />
+                  <span>
+                    {share.detail || 'Location permission is blocked, so the customer cannot see your position. Allow access in device settings and retry.'}
+                  </span>
+                </div>
+                <Button variant="outline" size="sm" onClick={retrySharing} disabled={updating} className="w-full">
+                  <Icons.RefreshCw size={14} /> Retry Sharing
+                </Button>
+              </div>
+            )}
+            {(share.state === 'unavailable' || share.state === 'idle') && share.detail && (
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  <Icons.AlertTriangle size={14} className="mt-0.5" />
+                  <span>{share.detail}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={retrySharing} disabled={updating} className="w-full">
+                  <Icons.RefreshCw size={14} /> Retry Sharing
+                </Button>
+              </div>
+            )}
+            {share.state === 'idle' && !share.detail && (
+              <div className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                <Icons.MapPin size={14} className="mt-0.5" />
+                <span>Waiting for a GPS fix to share with the customer.</span>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Payment */}
         <Card className="p-4">

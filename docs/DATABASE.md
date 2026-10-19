@@ -503,6 +503,36 @@ Queued push notifications (for retry/dead-letter).
 
 ---
 
+### 5.6 `provider_tracking`
+
+Live GPS for a journey that is underway. One row per booking, written by the assigned
+provider while `bookings.status = 'on_the_way'`, and deleted the moment the booking
+moves on (`started` / `completed` / `cancelled`) or is declined back to the pool.
+The customer's screen treats a fix older than ~150 s as lost.
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `booking_id` | `uuid` | PK, FK → `bookings(id)` ON DELETE CASCADE | Exactly one live position per journey |
+| `professional_id` | `uuid` | NOT NULL, FK → `professionals(id)` ON DELETE CASCADE | The assigned provider |
+| `customer_phone` | `text` | NOT NULL | Denormalized from the booking; drives the read policy |
+| `latitude` | `numeric` | NOT NULL | Current GPS latitude |
+| `longitude` | `numeric` | NOT NULL | Current GPS longitude |
+| `accuracy_m` | `numeric` | NULL | Device-reported accuracy, when available |
+| `updated_at` | `timestamptz` | NOT NULL DEFAULT `now()` | Refreshed on every fix |
+| `created_at` | `timestamptz` | DEFAULT `now()` | |
+
+**Indexes:** `idx_provider_tracking_professional`, `idx_provider_tracking_customer`
+
+**Written by:** `POST /provider/bookings/{id}/location`
+**Read by:** `GET /customer/bookings/{id}/tracking`
+
+**Why a separate table:** `professionals.latitude/longitude` is the provider's *base*
+location — radius matching and the provider feed read it — so live travel coordinates
+must not overwrite it. A booking-scoped row also has exactly one owner on each side,
+which is what makes the RLS policies expressible.
+
+---
+
 ## 6. PR Review Bot Tables
 
 ### 6.1 `pr_review_settings`
@@ -573,11 +603,19 @@ Source of truth for changelog generation.
 
 ## 7. Row Level Security
 
-All tables have RLS enabled with `TO anon, authenticated` policies that are `USING (true)`.
+All tables have RLS enabled with `TO anon, authenticated` policies.
+
+**Everything except `provider_tracking` uses `USING (true)`** — the default, permissive
+posture described in `docs/brain.md`. That is deliberately *not* good enough for live
+GPS, so `provider_tracking` ships ownership-scoped policies under the same `anon_*`
+names: only the customer whose booking owns a row may SELECT it, and only the assigned
+provider may INSERT/UPDATE/DELETE it. The bodies read the request claims through
+`luckyseva_jwt_claim()`, a wrapper over PostgREST's `request.jwt.claims` GUC so the
+migration still applies to the plain `postgres:15` CI runs (no `auth` schema there).
 
 **Important:** The backend uses the **service role** which bypasses RLS entirely. Therefore, **all access control is enforced in the backend layer**, not in RLS policies.
 
-**This is a known design trade-off** documented in `docs/brain.md`. Each `.eq("customer_phone", ...)` filter in route handlers is the actual access boundary.
+**This is a known design trade-off** documented in `docs/brain.md`. Each `.eq("customer_phone", ...)` filter in route handlers is the actual access boundary; the RLS policies are defense-in-depth for any client that ever talks to Supabase directly.
 
 ---
 
@@ -604,12 +642,15 @@ Migrations live in `backend/supabase/migrations/` and are applied in **filename 
 | `20261003000000_full_catalog_market_rates.sql` | Full 182-service catalog |
 | `20261005000000_platform_monetization.sql` | GST, disputes, push_outbox |
 | `20261017010000_add_referrals.sql` | Referral program: `referrals` table + `profiles.referral_code` |
+| `20261019000000_provider_tracking.sql` | `provider_tracking` table + ownership-scoped RLS + `luckyseva_jwt_claim()` |
 
 **Migration Rules:**
 1. All migrations must be **idempotent** (CI applies twice)
 2. Use `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`
 3. CI **fails** on `DROP TABLE`, `TRUNCATE`, `DELETE FROM <table>;`
-4. After adding a table, add the four `anon_*` policies or anon queries will return nothing
+4. After adding a table, add the four `anon_*` policies — `USING (true)` for ordinary
+   data, ownership-scoped for private data like `provider_tracking` — or anon queries
+   will return nothing
 
 ---
 
