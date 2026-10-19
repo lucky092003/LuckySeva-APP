@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useApp } from '@/context/app-context';
 import { api, getApiToken } from '@/services/api';
 import type { Notification, Professional, Refund, SupportTicket } from '@/types';
 
@@ -56,31 +57,35 @@ export const useCustomerCoords = () => {
 };
 
 export const useNotifications = (_customerPhone: string | null) => {
+  // The JWT decides which bell is read, so the same hook serves both apps:
+  // customers hit /customer/notifications, providers /provider/notifications.
+  const { role } = useApp();
   const [data, setData] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
   const load = useCallback(() => {
     setLoading(true);
-    api.customer
-      .notifications()
+    const request = role === 'provider' ? api.provider.notifications() : api.customer.notifications();
+    request
       .then((d) => setData(d))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [role]);
   useEffect(load, [load]);
   const unread = data.filter((n) => !n.read).length;
   const markAllRead = useCallback(async () => {
     if (unread === 0) return;
     setMarking(true);
     try {
-      await api.customer.markAllNotificationsRead();
+      if (role === 'provider') await api.provider.markAllNotificationsRead();
+      else await api.customer.markAllNotificationsRead();
       await load();
     } catch {
       /* ignore */
     } finally {
       setMarking(false);
     }
-  }, [unread, load]);
+  }, [unread, load, role]);
   return { notifications: data, unread, loading, marking, markAllRead, reload: load };
 };
 

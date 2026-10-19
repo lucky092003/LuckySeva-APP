@@ -16,10 +16,9 @@ from .. import ledger
 from .. import payments as gateway
 from ..db import db, one
 from ..dependencies import require_customer
-from ..events import insert_notification
+from ..events import insert_notification, notify_provider
 from ..exceptions import ApiError
 from ..pricing import round2
-from ..push import notify
 
 router = APIRouter(dependencies=[Depends(require_customer)])
 
@@ -174,13 +173,13 @@ def verify(booking_id: str, body: dict, claims: dict = Depends(require_customer)
     ).eq("id", booking_id).execute()
 
     if booking.get("professional_id"):
-        notify(
-            "provider",
+        notify_provider(
             booking["professional_id"],
+            "payment",
             "Payment received",
             f"Rs {round2(booking.get('total_amount') or 0):g} received for the "
             f"{booking.get('service_name')} booking.",
-            {"booking_id": booking_id},
+            booking_id,
         )
     insert_notification(
         booking.get("customer_phone"),
@@ -282,11 +281,11 @@ async def razorpay_webhook(request: Request, x_razorpay_signature: str = Header(
         }
     ).eq("id", booking["id"]).execute()
     if booking.get("professional_id"):
-        notify(
-            "provider",
+        notify_provider(
             booking["professional_id"],
+            "payment",
             "Payment received",
             f"Rs {round2(booking.get('total_amount') or 0):g} received for the {booking.get('service_name')} booking.",
-            {"booking_id": booking["id"]},
+            booking["id"],
         )
     return {"status": "ok"}

@@ -332,7 +332,7 @@ as the returned row.
 | `GET /catalog/search` | 10 per entity |
 | `GET /catalog/professionals` | `Query(default=50, le=100)` — parameterised |
 | `GET /provider/bookings` | DB `.limit(50)`, then `feed_rows[:30]` in Python |
-| `GET /customer/notifications` | 50 |
+| `GET /customer/notifications`, `GET /provider/notifications` | 50 |
 | `GET /admin/bookings` | 100 hardcoded |
 | `GET /admin/audit-logs` | `Query(default=50, le=200)` — parameterised |
 | `/admin/professionals`, `/customer/bookings`, `/customer/addresses`, `/customer/tickets`, `/customer/reviews`, `/customer/favourites`, `/provider/bookings/mine`, `/admin/services`, `/admin/categories` | **unbounded** |
@@ -452,7 +452,7 @@ require_admin  (no handler receives claims)
 | `profiles` | **`phone` is the PK.** `role` CHECK is `IN ('customer','provider')` — `admin` is **not** a valid value here even though `admin` is a valid JWT role. |
 | `addresses` | `customer_phone`, `label`, `full_address`, `is_default`, `latitude`/`longitude`. |
 | `favourites` | `UNIQUE (customer_phone, professional_id)`. |
-| `notifications` | `customer_phone`, `type` (`booking`/`alert`/`payment`/`provider`/`review`), `booking_id` FK CASCADE, `read`. |
+| `notifications` | Addressed to one side: `customer_phone` (customer bell) **or** `professional_id` (provider bell), never both. `type` (`booking`/`alert`/`payment`/`provider`/`review`/`success`), `booking_id` FK CASCADE, `read`. |
 | `support_tickets`, `payouts`, `admin_settings`, `audit_logs`, `booking_declines` | `booking_declines` = `(booking_id, professional_id)` with **no unique constraint**, so duplicates are possible. |
 | `pr_review_settings` | One row per repo for the PR review bot (section 12). `min_severity` / `comment_mode` are CHECKed, `rules text[]` is an allowlist (empty = all), `block_on_blocker` defaults **false** because `REQUEST_CHANGES` blocks the merge. Also holds `changelog_enabled` / `changelog_branch` / `changelog_file` (§12.1). Holds no secrets. |
 | `pr_reviews` | One row per webhook run. `UNIQUE (repo_full_name, pr_number, head_sha)` — that index *is* the webhook-replay guard, so the writer **upserts**. `changelog_status` / `changelog_pr_url` record the other half of the run. **No anon policies**: audit log, service-role only. |

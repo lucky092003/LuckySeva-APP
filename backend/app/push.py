@@ -117,33 +117,6 @@ def notify(role: str, owner_id: str, title: str, body: str, data: dict | None = 
         logger.warning("push notification dropped for %s/%s: %s", role, owner_id, exc)
 
 
-def notify_new_request(professional_ids: list[str], service_name: str, distance_km: float | None) -> None:
-    """Tell a professional a new job landed in their field (#25).
-
-    Only professionals who are actively accepting jobs are pinged, so switching
-    off the availability toggle really does stop the interruptions.
-    """
-    if not professional_ids:
-        return
-    client = db()
-    rows = (
-        client.table("professionals")
-        .select("id")
-        .in_("id", professional_ids)
-        .eq("accepting_jobs", True)
-        .execute()
-    ).data or []
-    for row in rows:
-        where = f" {distance_km:.1f} km away" if isinstance(distance_km, (int, float)) else ""
-        notify(
-            "provider",
-            row["id"],
-            "New request nearby",
-            f"{service_name}{where} - tap to accept before it expires.",
-            {"type": "new_request"},
-        )
-
-
 def _mark(outbox_id: str | None, status: str, error: str = "") -> None:
     if not outbox_id:
         return

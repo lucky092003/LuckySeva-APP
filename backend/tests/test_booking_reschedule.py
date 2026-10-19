@@ -57,7 +57,7 @@ class Client:
 
 @pytest.fixture()
 def env(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(customer, "notify", lambda *a, **k: None)
+    monkeypatch.setattr(customer, "notify_provider", lambda *a, **k: None)
     monkeypatch.setattr(customer, "insert_notification", lambda *a, **k: None)
     row = {
         "id": "booking-1",

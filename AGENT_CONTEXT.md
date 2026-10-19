@@ -96,7 +96,7 @@ When you add an endpoint, add the scoping filter in the same commit.
 
 ### 3.5 Route order is load-bearing
 
-`/provider/bookings/mine` MUST be declared before `/provider/bookings/{booking_id}`. Same hazard in `customer.py` with `/customer/notifications/read-all`.
+`/provider/bookings/mine` MUST be declared before `/provider/bookings/{booking_id}`. Same hazard in `customer.py` with `/customer/notifications/read-all` and in `provider.py` with `/provider/notifications/read-all` — declare the literal path before the `/{notification_id}` route.
 
 ### 3.6 Nobody pushes to master directly
 
@@ -164,7 +164,7 @@ Every body is `body: dict` and fields are hand-checked. Column allow-lists repla
 | purpose-built dict | composite endpoints |
 | `{"ok": true}` | mutation acks |
 
-### 5.4 Route table (64 app routes + 4 framework)
+### 5.4 Route table (67 app routes + 4 framework)
 
 ```
 PUBLIC:
@@ -186,7 +186,7 @@ require_customer (21 routes):
   GET/POST /customer/reviews, /tickets
   GET/POST /customer/referral (me + claim)
 
-require_provider (20 routes):
+require_provider (23 routes):
   GET/PUT /provider/me
   PUT /provider/kyc
   GET/PUT /provider/services, /provider/trade
@@ -194,6 +194,7 @@ require_provider (20 routes):
   GET /provider/bookings (feed), /provider/bookings/mine, /provider/bookings/{id}
   POST /provider/bookings/{id}/accept, /decline, /location
   PUT /provider/bookings/{id}/status
+  GET/PUT /provider/notifications (list, read, read-all)
   GET /provider/earnings, /provider/dashboard
   GET/POST /provider/payouts
 
@@ -322,7 +323,7 @@ backend/app/
   routers/admin.py             — admin CRUD
   links.py                     — professional-to-service linking
   ledger.py                    — payouts, refunds
-  events.py                    — push notifications
+  events.py                    — notifications + push (both roles), deadline sweep
   pricing.py                   — commission calculations
   otp.py                       — OTP generation (dev)
 

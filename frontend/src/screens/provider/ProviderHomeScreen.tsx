@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
-import { useProfessionalWithFallback } from '@/hooks';
+import { useProfessionalWithFallback, useUnreadNotifications } from '@/hooks';
 import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Button } from '@/components/ui';
@@ -30,6 +30,7 @@ const SORTS = [
 export const ProviderHomeScreen = () => {
   const { navigate, providerId } = useApp();
   const { professional, loading: proLoading } = useProfessionalWithFallback(providerId);
+  const { unread } = useUnreadNotifications(providerId);
   const [requests, setRequests] = useState<Booking[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [declined, setDeclined] = useState<Set<string>>(new Set());
@@ -191,13 +192,26 @@ export const ProviderHomeScreen = () => {
         title="Requests"
         showBack={false}
         right={
-          <button
-            onClick={() => setTick((n) => n + 1)}
-            aria-label="Refresh requests"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-          >
-            <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Phone/tablet bell — desktop reads it from WebTopNav instead. */}
+            <button
+              onClick={() => navigate({ name: 'notifications' })}
+              aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+            >
+              <Icons.Bell size={17} />
+              {unread > 0 && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />
+              )}
+            </button>
+            <button
+              onClick={() => setTick((n) => n + 1)}
+              aria-label="Refresh requests"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         }
       />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-4 pt-3 lg:py-4">

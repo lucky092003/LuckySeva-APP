@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
-import { useProfessionalWithFallback, useReviews } from '@/hooks';
+import { useProfessionalWithFallback, useReviews, useUnreadNotifications } from '@/hooks';
 import { ApiError, api, setApiToken } from '@/services/api';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
 import { TopBar } from '@/components/PhoneShell';
@@ -31,6 +31,7 @@ export const ProviderProfileScreen = () => {
   const { professional: pro, loading, reload } = useProfessionalWithFallback(providerId);
   const { reviews, loading: revLoading } = useReviews(pro?.id || null);
   const { reload: reloadPayouts } = usePayouts(pro?.id || null);
+  const { unread } = useUnreadNotifications(providerId);
   const [updatingAvail, setUpdatingAvail] = useState(false);
   const [sheet, setSheet] = useState<'services' | 'pricing' | 'reviews' | 'bank' | 'settings' | null>(null);
   const [bank, setBank] = useState({ bank_account_number: '', bank_ifsc: '', upi_id: '' });
@@ -380,6 +381,7 @@ export const ProviderProfileScreen = () => {
           <MenuRow icon={<Icons.Star size={18} />} label="Ratings & Reviews" value={`${pro.reviews_count}`} onClick={() => setSheet('reviews')} />
           <MenuRow icon={<Icons.Banknote size={18} />} label="Bank Details" value="Withdraw" onClick={() => setSheet('bank')} />
           <MenuRow icon={<Icons.Settings size={18} />} label="Settings" value="" onClick={() => setSheet('settings')} />
+          <MenuRow icon={<Icons.Bell size={18} />} label="Notifications" value={unread > 0 ? `${unread > 9 ? '9+' : unread} new` : ''} onClick={() => navigate({ name: 'notifications' })} />
           <MenuRow icon={<Icons.HeadphonesIcon size={18} />} label="Help & Support" value="" onClick={() => navigate({ name: 'help' })} />
         </div>
 

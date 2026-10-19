@@ -259,6 +259,9 @@ export const api = {
       request<{ ok: boolean; online: boolean }>('provider', '/heartbeat', 'POST', coords ?? {}),
     deviceToken: (token: string, platform = 'web') =>
       request<{ registered: boolean }>('provider', '/device-token', 'POST', { token, platform }),
+    notifications: () => request<Notification[]>('provider', '/notifications'),
+    markNotificationRead: (id: string) => request<Notification>('provider', `/notifications/${id}/read`, 'PUT'),
+    markAllNotificationsRead: () => request<{ ok: boolean; updated: number }>('provider', '/notifications/read-all', 'PUT'),
     myServices: () => request<{ category_slug: string; services: (Service & { offered: boolean })[] }>('provider', '/services'),
     setTrade: (category_slug: string) =>
       request<{ category_slug: string; category_name: string; linked: number; starting_price: number }>(

@@ -174,7 +174,7 @@ backend/
 │   │   └── admin.py          # Admin CRUD, settings, stats
 │   ├── links.py             # Professional-to-service linking
 │   ├── ledger.py            # Payout/refund logic
-│   ├── events.py            # Push notifications, deadline tracking
+│   ├── events.py            # Notifications (both roles) + push, deadline tracking
 │   ├── pricing.py           # Commission calculations
 │   └── otp.py               # OTP generation (dev mode)
 ├── tests/
@@ -197,7 +197,7 @@ backend/
 | `/auth` | None (OTP) | `POST /verify-otp` mints JWT, `GET /me` |
 | `/catalog` | None | Public: categories, services, professionals, reviews |
 | `/customer` | JWT (customer) | Profile, addresses, bookings, favourites, notifications |
-| `/provider` | JWT (provider) | Feed, accept/decline, status, earnings, payouts |
+| `/provider` | JWT (provider) | Feed, accept/decline, status, earnings, payouts, notifications |
 | `/admin` | JWT (admin) | Stats, professionals/services CRUD, settings |
 | `/payments` | None (webhook) | Razorpay webhook handler |
 | `/health` | None | Health check |

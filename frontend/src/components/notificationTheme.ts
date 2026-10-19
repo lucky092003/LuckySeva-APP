@@ -8,6 +8,7 @@ export const TYPE_ICON: Record<string, ComponentType<{ size?: number | string; c
   review: Icons.Star,
   offer: Icons.Percent,
   alert: Icons.AlertCircle,
+  success: Icons.CheckCircle2,
   bell: Icons.Bell,
 };
 
@@ -18,4 +19,5 @@ export const TYPE_TONE: Record<string, string> = {
   review: 'bg-amber-50 text-amber-600',
   offer: 'bg-pink-50 text-pink-600',
   alert: 'bg-red-50 text-red-600',
+  success: 'bg-teal-50 text-teal-600',
 };
