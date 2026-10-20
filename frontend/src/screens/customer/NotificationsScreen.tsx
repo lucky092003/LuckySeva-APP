@@ -9,16 +9,27 @@ import { timeAgo } from '@/utils/format';
 import type { Notification } from '@/types';
 
 export const NotificationsScreen = () => {
-  const { navigate } = useApp();
+  const { navigate, role } = useApp();
   const { notifications, unread: unreadCount, loading, marking, markAllRead, reload } = useNotifications(null);
 
   const open = async (n: Notification) => {
     if (!n.read) {
-      await api.customer.markNotificationRead(n.id).catch(() => {});
-      reload();
+      await (role === 'provider'
+        ? api.provider.markNotificationRead(n.id)
+        : api.customer.markNotificationRead(n.id)
+      ).catch(() => {});
+      // Silent: the row keeps its place, only the unread dot drops.
+      reload(true);
     }
-    if (n.booking_id) navigate({ name: 'tracking', bookingId: n.booking_id });
-    else if (n.type === 'review') navigate({ name: 'bookings' });
+    if (n.booking_id) {
+      navigate(
+        role === 'provider'
+          ? { name: 'provider-detail', bookingId: n.booking_id }
+          : { name: 'tracking', bookingId: n.booking_id }
+      );
+    } else if (role !== 'provider' && n.type === 'review') {
+      navigate({ name: 'bookings' });
+    }
   };
 
   return (

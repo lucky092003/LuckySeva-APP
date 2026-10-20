@@ -320,7 +320,7 @@ Shared 6-digit OTP component used by customer + provider auth:
 | Area | Screens |
 |---|---|
 | Customer | Home, Services, Service detail, Professional list/profile, Booking flow, My Bookings, Tracking, Addresses, Favourites, Notifications, Profile, Auth, Payments, Reviews, Help |
-| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location, **services offered**), Auth |
+| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location, **services offered**), Notifications, Auth |
 | Admin | Dashboard, Customers, Providers, Services, Bookings, Profile, Audit log, Add Provider/Service modals, Export CSV |
 
 Navigation is a simple hand-rolled screen-state machine in `frontend/src/context/app-context.tsx`

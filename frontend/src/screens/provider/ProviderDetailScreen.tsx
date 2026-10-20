@@ -1,7 +1,7 @@
 import * as Icons from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/app-context';
-import { api } from '@/services/api';
+import { api, ApiError } from '@/services/api';
 import {
   describeShareFailure,
   requestLocationPermission,
@@ -53,6 +53,8 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   const { back, navigate, providerId } = useApp();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [showReject, setShowReject] = useState(false);
@@ -64,10 +66,21 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
       .booking(bookingId)
       .then((data) => {
         setBooking(data);
+        setLoadError(null);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         setBooking(null);
+        // This screen is usually reached from a bell tap, so a 404 means the
+        // request vanished (taken, expired, no longer in this provider's
+        // field) - say that instead of leaving a header with nothing under it.
+        setLoadError(
+          err instanceof ApiError && err.status === 404
+            ? 'This request is no longer available. It may have been accepted by another provider or cancelled by the customer.'
+            : err instanceof Error
+              ? err.message
+              : 'Could not load this booking. Please try again.',
+        );
         setLoading(false);
       });
   };
@@ -98,18 +111,30 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
     const next = NEXT_STATUS[booking.status];
     if (!next) return;
     setUpdating(true);
-    if (next === 'assigned') {
-      await api.provider.accept(booking.id).catch(() => {});
-    } else if (next === 'on_the_way') {
-      // The journey is what turns tracking on, so ask for location right here:
-      // the prompt makes sense in context, and the first fix reaches the
-      // customer's map immediately instead of waiting for the next poll.
-      await api.provider.updateStatus(booking.id, next).catch(() => {});
-      await startSharing(booking.id);
-    } else {
-      await api.provider.updateStatus(booking.id, next as BookingStatus).catch(() => {});
+    setActionError(null);
+    try {
+      if (next === 'assigned') {
+        await api.provider.accept(booking.id);
+      } else if (next === 'on_the_way') {
+        // The journey is what turns tracking on, so ask for location right here:
+        // the prompt makes sense in context, and the first fix reaches the
+        // customer's map immediately instead of waiting for the next poll.
+        await api.provider.updateStatus(booking.id, next);
+        await startSharing(booking.id);
+      } else {
+        await api.provider.updateStatus(booking.id, next as BookingStatus);
+      }
+    } catch (err) {
+      // The backend explains the real reason ("expired", "someone else took
+      // this job", "turn on Accept new requests"). Swallowing it left the
+      // provider tapping Accept on a notification with nothing happening.
+      setActionError(
+        err instanceof Error ? err.message : 'Could not update this booking. Please try again.',
+      );
+    } finally {
+      setUpdating(false);
     }
-    setUpdating(false);
+    // Re-read either way: the failure usually means the booking moved on.
     load();
   };
 
@@ -130,7 +155,25 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
   };
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Booking Details" /><Spinner className="py-20" /></div>;
-  if (!booking) return <div className="flex flex-1 flex-col"><TopBar title="Booking Details" /></div>;
+  if (!booking) {
+    // Reached from a notification tap far more often than from a fresh feed,
+    // so the dead end needs an explanation and a way out, not a blank header.
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+        <TopBar title="Booking Details" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+          <Icons.AlertCircle size={40} className="text-gray-300 dark:text-gray-600" />
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Request unavailable</p>
+          <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+            {loadError || 'Could not load this booking. Please try again.'}
+          </p>
+          <Button variant="outline" onClick={back}>
+            Go back
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const nextStatus = NEXT_STATUS[booking.status];
   const isCancelled = booking.status === 'cancelled';
@@ -285,15 +328,23 @@ export const ProviderDetailScreen = ({ bookingId }: { bookingId: string }) => {
 
       {/* Actions */}
       {!isCancelled && !isCompleted && (
-        <div className="flex shrink-0 items-center gap-3 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
-          {booking.status === 'confirmed' && (
-            <Button variant="outline" onClick={() => setShowReject(true)} disabled={updating} className="text-red-500">
-              Reject
-            </Button>
+        <div className="shrink-0 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+          {actionError && (
+            <div className="mb-2.5 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-700 dark:bg-red-950/50 dark:text-red-300">
+              <Icons.AlertCircle size={14} className="mt-0.5 shrink-0" />
+              <span>{actionError}</span>
+            </div>
           )}
-          <Button onClick={advance} disabled={updating} className="flex-1">
-            {updating ? 'Updating...' : nextStatus === 'assigned' ? 'Accept Request' : nextStatus === 'on_the_way' ? 'Start Journey' : nextStatus === 'started' ? 'Start Service' : 'Mark Complete'}
-          </Button>
+          <div className="flex items-center gap-3">
+            {booking.status === 'confirmed' && (
+              <Button variant="outline" onClick={() => setShowReject(true)} disabled={updating} className="text-red-500">
+                Reject
+              </Button>
+            )}
+            <Button onClick={advance} disabled={updating} className="flex-1">
+              {updating ? 'Updating...' : nextStatus === 'assigned' ? 'Accept Request' : nextStatus === 'on_the_way' ? 'Start Journey' : nextStatus === 'started' ? 'Start Service' : 'Mark Complete'}
+            </Button>
+          </div>
         </div>
       )}
       {isCompleted && (

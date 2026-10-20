@@ -1,15 +1,20 @@
-"""Booking lifecycle events: customer notifications, accept-deadline expiry, push.
+"""Booking lifecycle events: notifications, accept-deadline expiry, push.
 
 Sits between the routers and the database so `customer.py` and `provider.py` do
 not each grow their own copy of "tell someone something happened". Every helper is
 best effort - a failed notification insert never fails the write that triggered
 it - except `sweep_expired_requests`, which is the one place a lazy, idempotent
 housekeeping pass belongs.
+
+Each side of the marketplace gets the same treatment: a bell row first, then a
+push (`insert_notification` / `notify_provider`). Customers read theirs through
+`/customer/notifications`, professionals through `/provider/notifications`.
 """
 
 import logging
 from datetime import datetime, timedelta, timezone
 
+from . import push
 from .config import ACCEPT_DEADLINE_MINUTES
 from .db import db
 
@@ -38,6 +43,49 @@ def insert_notification(customer_phone: str | None, type: str, title: str, messa
         ).execute()
     except Exception as exc:
         logger.warning("Could not insert notification for %s: %s", customer_phone, exc)
+
+
+def insert_provider_notification(professional_id: str | None, type: str, title: str, message: str,
+                                 booking_id: str | None = None) -> None:
+    """Write the provider's in-app bell entry. Swallowed on failure by design.
+
+    The mirror of `insert_notification`, addressed to a professional instead of
+    a customer: `professional_id` is set and `customer_phone` stays null, and the
+    `/provider/notifications` routes scope on `professional_id` the way the
+    customer routes scope on `customer_phone`.
+    """
+    if not professional_id:
+        return
+    try:
+        db().table("notifications").insert(
+            {
+                "professional_id": professional_id,
+                "type": type,
+                "title": title,
+                "message": message,
+                "booking_id": booking_id,
+                "read": False,
+            }
+        ).execute()
+    except Exception as exc:
+        logger.warning("Could not insert notification for provider %s: %s", professional_id, exc)
+
+
+def notify_provider(professional_id: str | None, type: str, title: str, message: str,
+                    booking_id: str | None = None, data: dict | None = None) -> None:
+    """Bell entry first, push second - a provider event is both, like the customer's.
+
+    Fire and forget: the row write is best effort and `push.notify` swallows its
+    own failures, so no caller has to care whether delivery worked.
+    """
+    if not professional_id:
+        return
+    insert_provider_notification(professional_id, type, title, message, booking_id)
+    payload: dict = {"type": type}
+    if booking_id:
+        payload["booking_id"] = booking_id
+    payload.update(data or {})
+    push.notify("provider", professional_id, title, message, payload)
 
 
 def setting_minutes(client, key: str, fallback: int) -> int:
@@ -154,3 +202,31 @@ def accepting_professionals(client, professional_ids: list[str]) -> list[str]:
         .execute()
     ).data or []
     return [r["id"] for r in rows if r.get("id")]
+
+
+def notify_new_request(professional_ids: list[str], service_name: str, distance_km: float | None,
+                       booking_id: str | None = None) -> None:
+    """Tell the field a new job landed: bell row then push, once per professional (#25).
+
+    Only professionals who are actively accepting jobs are pinged, so switching
+    off the availability toggle really does stop the interruptions. Lives here
+    rather than in `push.py` because the in-app entry and the push are one event
+    now - a provider must not see a push for a request their bell never recorded.
+    """
+    if not professional_ids:
+        return
+    try:
+        targets = accepting_professionals(db(), professional_ids)
+    except Exception as exc:
+        logger.warning("Could not resolve accepting professionals: %s", exc)
+        return
+    where = f" {distance_km:.1f} km away" if isinstance(distance_km, (int, float)) else ""
+    for pid in targets:
+        notify_provider(
+            pid,
+            "booking",
+            "New request nearby",
+            f"{service_name}{where} - tap to accept before it expires.",
+            booking_id,
+            {"type": "new_request"},
+        )

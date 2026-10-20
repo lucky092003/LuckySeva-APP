@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, Query
 from .. import ledger
 from ..db import db, one
 from ..dependencies import require_admin
+from ..events import notify_provider
 from ..exceptions import ApiError
 from ..links import cheapest_in_category, link_professional_to_category, relink_professional
 from ..pricing import compute_split, round2
-from ..push import notify
 
 router = APIRouter(dependencies=[Depends(require_admin)])
 
@@ -158,12 +158,12 @@ def settle_payout(payout_id: str, body: dict):
             "rejected": ("Payout rejected", note.strip() or "Your payout request could not be approved."),
         }
         title, body_text = messages[status]
-        notify(
-            "provider",
+        notify_provider(
             row["professional_id"],
+            "payment",
             title,
             body_text,
-            {"payout_id": payout_id},
+            data={"payout_id": payout_id},
         )
     return row
 
@@ -387,6 +387,14 @@ def review_kyc(professional_id: str, body: dict):
             "detail": f"{decision} KYC for {existing['name']}",
         }
     ).execute()
+    note_text = note.strip() if isinstance(note, str) and note.strip() else ""
+    if decision == "approved":
+        kyc_title = "KYC approved"
+        kyc_message = "Your documents were verified. You can start accepting jobs."
+    else:
+        kyc_title = "KYC rejected"
+        kyc_message = note_text or "Your documents could not be verified. Upload new documents and resubmit."
+    notify_provider(professional_id, "success" if decision == "approved" else "alert", kyc_title, kyc_message)
     return res.data[0]
 
 

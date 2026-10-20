@@ -254,18 +254,24 @@ Customer saved addresses with coordinates.
 
 ### 3.3 `notifications`
 
-Push notification records.
+Bell records for both apps. A row is addressed to exactly one side: a customer
+(`customer_phone`) or a professional (`professional_id`), never both.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
 | `id` | `uuid` | PK | |
-| `customer_phone` | `text` | NOT NULL | FK to `profiles.phone` |
-| `type` | `text` | NOT NULL | `booking`, `alert`, `payment`, `provider`, `review` |
+| `customer_phone` | `text` | NULL | Customer-addressed rows (NULL on provider rows) |
+| `professional_id` | `uuid` | NULL | FK → `professionals(id)` ON DELETE CASCADE. Provider-addressed rows |
+| `type` | `text` | NOT NULL | `booking`, `alert`, `payment`, `provider`, `review`, `success` |
 | `title` | `text` | NOT NULL | Notification title |
 | `message` | `text` | NOT NULL | Body text |
 | `booking_id` | `uuid` | FK → `bookings(id)` ON DELETE CASCADE, NULL | |
 | `read` | `boolean` | NOT NULL DEFAULT false | |
 | `created_at` | `timestamptz` | DEFAULT `now()` | |
+
+**Invariant:** `customer_phone` and `professional_id` are mutually exclusive, so
+every read route can scope on its own column (`/customer/notifications` filters
+on `customer_phone`, `/provider/notifications` on `professional_id`).
 
 ---
 

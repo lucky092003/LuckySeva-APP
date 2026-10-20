@@ -698,6 +698,28 @@ Register FCM token.
 
 ---
 
+#### `GET /provider/notifications`
+List this professional's notifications (the provider bell, mirroring
+`GET /customer/notifications`). Scoped to the caller's `professional_id`.
+
+**Response:** `Notification[]`
+
+---
+
+#### `PUT /provider/notifications/{notification_id}/read`
+Mark one of your notifications read. Returns `404` for another professional's row.
+
+**Response:** `Notification`
+
+---
+
+#### `PUT /provider/notifications/read-all`
+Mark all of your notifications read.
+
+**Response:** `{"ok": true, "updated": 5}`
+
+---
+
 #### `GET /provider/payout-account`
 Get payout account details.
 
@@ -1369,8 +1391,11 @@ Create manual audit log.
 ```typescript
 {
   id: string;
-  customer_phone: string;
-  type: "booking" | "alert" | "payment" | "provider" | "review";
+  // Exactly one side is set: a phone for customer rows, a professional id for
+  // provider rows.
+  customer_phone: string | null;
+  professional_id?: string | null;
+  type: "booking" | "alert" | "payment" | "provider" | "review" | "success";
   title: string;
   message: string;
   booking_id: string | null;

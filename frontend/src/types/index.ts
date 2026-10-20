@@ -59,7 +59,10 @@ export type Profile = {
 
 export type Notification = {
   id: string;
-  customer_phone: string;
+  // Addressed to exactly one side: a customer phone for the customer bell, or
+  // a professional id for the provider bell.
+  customer_phone: string | null;
+  professional_id?: string | null;
   type: string;
   title: string;
   message: string;

@@ -354,6 +354,58 @@ def register_device_token(body: dict, claims: dict = Depends(require_provider)):
     return {"registered": bool(res.data is not None)}
 
 
+@router.get("/notifications")
+def notifications(claims: dict = Depends(require_provider)):
+    """This professional's bell feed - the provider half of the customer's
+    `GET /customer/notifications`.
+
+    Scoped on `professional_id`: RLS is not the security boundary, the filter
+    in the route handler is (AGENT_CONTEXT 3.3).
+    """
+    client = db()
+    res = (
+        client.table("notifications")
+        .select("*")
+        .eq("professional_id", provider_id(claims))
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    return res.data or []
+
+
+# Declared before /{notification_id}/read so the literal `read-all` segment is
+# never shadowed by the path parameter (route order is load-bearing, 3.5).
+@router.put("/notifications/read-all")
+def mark_all_notifications_read(claims: dict = Depends(require_provider)):
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("professional_id", provider_id(claims))
+        .eq("read", False)
+        .select("id")
+        .execute()
+    )
+    return {"ok": True, "updated": len(res.data or [])}
+
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: str, claims: dict = Depends(require_provider)):
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("id", notification_id)
+        .eq("professional_id", provider_id(claims))
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(404, "Notification not found")
+    return res.data[0]
+
+
 @router.get("/payout-account")
 def get_payout_account(claims: dict = Depends(require_provider)):
     """Where this provider's settlements currently go.

@@ -8,15 +8,15 @@ from .. import payments as gateway
 from ..db import db, one
 from ..dependencies import require_customer
 from ..events import (
-    accepting_professionals,
     insert_notification,
     new_accept_deadline,
+    notify_new_request,
+    notify_provider,
     providers_for_service,
     sweep_expired_requests,
 )
 from ..exceptions import ApiError
 from ..pricing import category_slug_for_service, commission_pct_for, compute_split, discount_for, round2
-from ..push import notify, notify_new_request
 from .catalog import DEFAULT_NEARBY_RADIUS_KM, _as_float, _nearby_professionals
 
 router = APIRouter(dependencies=[Depends(require_customer)])
@@ -565,20 +565,22 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     )
 
     # Tell the professionals who can actually take this trade and are accepting
-    # jobs. Best effort: a push failure must not fail the booking.
+    # jobs. Each of them gets a bell entry and a push; best effort, a push
+    # failure must not fail the booking.
     if not professional_id:
         candidates = providers_for_service(
             client, service_id, category_slug_for_service(client, service_id)
         )
-        for pid in accepting_professionals(client, candidates):
-            notify_new_request([pid], service_name, body.get("_distance_km"))
+        notify_new_request(
+            candidates, service_name, body.get("_distance_km"), booking_row["id"]
+        )
     else:
-        notify(
-            "provider",
+        notify_provider(
             professional_id,
+            "booking",
             "New booking assigned to you",
             f"{service_name} for {scheduled_date.isoformat()} at {scheduled_time}. Accept before it expires.",
-            {"booking_id": booking_row["id"]},
+            booking_row["id"],
         )
 
     return booking_row
@@ -885,12 +887,12 @@ def cancel_booking(booking_id: str, body: dict | None = None, claims: dict = Dep
     # if one ever lands, the customer's map must stop immediately.
     client.table("provider_tracking").delete().eq("booking_id", booking_id).execute()
     if existing.get("professional_id"):
-        notify(
-            "provider",
+        notify_provider(
             existing["professional_id"],
+            "alert",
             "Booking cancelled",
             f"The {existing.get('service_name')} booking for {existing.get('scheduled_date')} was cancelled by the customer.",
-            {"booking_id": booking_id},
+            booking_id,
         )
     insert_notification(
         customer_phone(claims),
@@ -967,12 +969,12 @@ def reschedule_booking(booking_id: str, body: dict, claims: dict = Depends(requi
         raise ApiError(400, "Could not reschedule booking", "status_changed")
 
     if existing.get("professional_id"):
-        notify(
-            "provider",
+        notify_provider(
             existing["professional_id"],
+            "success",
             "Booking rescheduled",
             f"The {existing.get('service_name')} booking was moved to {new_date.isoformat()} {new_time} by the customer.",
-            {"booking_id": booking_id},
+            booking_id,
         )
     insert_notification(
         customer_phone(claims),
@@ -1025,12 +1027,12 @@ def pay_booking(booking_id: str, body: dict, claims: dict = Depends(require_cust
     row = one(client.table("bookings").select("*").eq("id", booking_id).maybe_single().execute())
 
     if existing.get("professional_id"):
-        notify(
-            "provider",
+        notify_provider(
             existing["professional_id"],
+            "payment",
             "Payment received",
             f"Rs {amount:g} collected in cash for your {existing.get('service_name')} job.",
-            {"booking_id": booking_id},
+            booking_id,
         )
     insert_notification(
         customer_phone(claims),

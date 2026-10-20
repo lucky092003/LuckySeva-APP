@@ -9,7 +9,7 @@ import { timeAgo } from '@/utils/format';
 import type { Notification } from '@/types';
 
 export const NotificationBell = () => {
-  const { screen, navigate, customer } = useApp();
+  const { screen, navigate, customer, role } = useApp();
   const { notifications, unread, loading, marking, markAllRead, reload } = useNotifications(
     customer?.phone || null
   );
@@ -37,11 +37,22 @@ export const NotificationBell = () => {
   const openNotification = async (n: Notification) => {
     setOpen(false);
     if (!n.read) {
-      await api.customer.markNotificationRead(n.id).catch(() => {});
-      reload();
+      await (role === 'provider'
+        ? api.provider.markNotificationRead(n.id)
+        : api.customer.markNotificationRead(n.id)
+      ).catch(() => {});
+      // Silent: the badge must update without blanking the open list.
+      reload(true);
     }
-    if (n.booking_id) navigate({ name: 'tracking', bookingId: n.booking_id });
-    else if (n.type === 'review') navigate({ name: 'bookings' });
+    if (n.booking_id) {
+      navigate(
+        role === 'provider'
+          ? { name: 'provider-detail', bookingId: n.booking_id }
+          : { name: 'tracking', bookingId: n.booking_id }
+      );
+    } else if (role !== 'provider' && n.type === 'review') {
+      navigate({ name: 'bookings' });
+    }
   };
 
   const viewAll = () => {

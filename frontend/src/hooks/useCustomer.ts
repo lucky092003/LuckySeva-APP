@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useApp } from '@/context/app-context';
 import { api, getApiToken } from '@/services/api';
 import type { Notification, Professional, Refund, SupportTicket } from '@/types';
 
@@ -56,31 +57,69 @@ export const useCustomerCoords = () => {
 };
 
 export const useNotifications = (_customerPhone: string | null) => {
+  // The JWT decides which bell is read, so the same hook serves both apps:
+  // customers hit /customer/notifications, providers /provider/notifications.
+  const { role } = useApp();
   const [data, setData] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
-  const load = useCallback(() => {
-    setLoading(true);
-    api.customer
-      .notifications()
-      .then((d) => setData(d))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, []);
-  useEffect(load, [load]);
+
+  // `silent` swaps the list in place without touching `loading`, so a
+  // background refresh never turns an open bell or list into a spinner.
+  const load = useCallback(
+    (silent = false) => {
+      if (!silent) setLoading(true);
+      const request = role === 'provider' ? api.provider.notifications() : api.customer.notifications();
+      request
+        .then((d) => setData(d))
+        .catch(() => {
+          // A flaky background poll must not wipe what is already on screen;
+          // only the first load is allowed to fall back to the empty state.
+          if (!silent) setData([]);
+        })
+        .finally(() => {
+          if (!silent) setLoading(false);
+        });
+    },
+    [role],
+  );
+
+  useEffect(() => {
+    load();
+    // A booking can land any second, and both apps used to learn about it only
+    // on remount - the desktop bell in WebTopNav never remounted, so its badge
+    // was frozen after the first load. Refresh on return to the tab plus a slow
+    // visible-only tick, mirroring the Requests feed's safety net.
+    const refresh = () => load(true);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', refresh);
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') refresh();
+    }, 60000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', refresh);
+      clearInterval(timer);
+    };
+  }, [load]);
+
   const unread = data.filter((n) => !n.read).length;
   const markAllRead = useCallback(async () => {
     if (unread === 0) return;
     setMarking(true);
     try {
-      await api.customer.markAllNotificationsRead();
-      await load();
+      if (role === 'provider') await api.provider.markAllNotificationsRead();
+      else await api.customer.markAllNotificationsRead();
+      load(true);
     } catch {
       /* ignore */
     } finally {
       setMarking(false);
     }
-  }, [unread, load]);
+  }, [unread, load, role]);
   return { notifications: data, unread, loading, marking, markAllRead, reload: load };
 };
 

@@ -19,13 +19,15 @@ const providerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
 ];
 
 export const WebTopNav = ({ role }: { role: Role }) => {
-  const { screen, navigate, customer } = useApp();
+  const { screen, navigate, customer, providerId } = useApp();
   if (isNative) return null;
   if (screen.name === 'auth' || screen.name === 'provider-auth') return null;
   const items = role === 'provider' ? providerItems : role === 'admin' ? [] : customerItems;
   if (!items.length) return null;
   const activeName = screen.name;
-  const showBell = role === 'customer' && !!customer;
+  // Both role apps own a bell: customers read /customer/notifications, providers
+  // read /provider/notifications - same component, JWT decides the endpoint.
+  const showBell = (role === 'customer' && !!customer) || (role === 'provider' && !!providerId);
 
   return (
     <div className="sticky top-0 z-50 border-b border-gray-200/70 bg-white/85 shadow-[0_8px_30px_-16px_rgba(17,24,39,0.25)] backdrop-blur-xl">
