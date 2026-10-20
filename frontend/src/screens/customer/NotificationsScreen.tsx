@@ -18,7 +18,8 @@ export const NotificationsScreen = () => {
         ? api.provider.markNotificationRead(n.id)
         : api.customer.markNotificationRead(n.id)
       ).catch(() => {});
-      reload();
+      // Silent: the row keeps its place, only the unread dot drops.
+      reload(true);
     }
     if (n.booking_id) {
       navigate(

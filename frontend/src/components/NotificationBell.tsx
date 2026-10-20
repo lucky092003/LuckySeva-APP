@@ -41,7 +41,8 @@ export const NotificationBell = () => {
         ? api.provider.markNotificationRead(n.id)
         : api.customer.markNotificationRead(n.id)
       ).catch(() => {});
-      reload();
+      // Silent: the badge must update without blanking the open list.
+      reload(true);
     }
     if (n.booking_id) {
       navigate(

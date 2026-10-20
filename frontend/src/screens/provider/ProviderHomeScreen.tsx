@@ -38,6 +38,7 @@ export const ProviderHomeScreen = () => {
   const [sort, setSort] = useState<(typeof SORTS)[number]['key']>('nearest');
   const [declining, setDeclining] = useState<Booking | null>(null);
   const [decliningBusy, setDecliningBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -146,7 +147,19 @@ export const ProviderHomeScreen = () => {
   const weekCompletedCount = completed.filter((b) => isToday(b.scheduled_date) || inLastSevenDays(b.scheduled_date)).length;
 
   const accept = async (b: Booking) => {
-    await api.provider.accept(b.id).catch(() => {});
+    setActionError(null);
+    try {
+      await api.provider.accept(b.id);
+    } catch (err) {
+      // Taken, expired or the availability toggle is off - the backend has
+      // the reason, and navigating on to a detail screen as if it worked is
+      // how "I accepted and nothing happened" happens.
+      setActionError(
+        err instanceof Error ? err.message : 'Could not accept this request. Please try again.',
+      );
+      setTick((n) => n + 1);
+      return;
+    }
     setTick((n) => n + 1);
     navigate({ name: 'provider-detail', bookingId: b.id });
   };
@@ -215,6 +228,13 @@ export const ProviderHomeScreen = () => {
         }
       />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-4 pt-3 lg:py-4">
+        {/* Why the last accept didn't go through (taken / expired / offline). */}
+        {actionError && (
+          <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs leading-relaxed text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
+            <Icons.AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+        )}
         {/* Earnings snapshot — compact strip on phone, stat cards on desktop */}
         <div className="mb-3 lg:mb-6">
           {/* Phone / tablet: compact 3-up strip */}
