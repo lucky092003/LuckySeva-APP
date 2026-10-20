@@ -258,7 +258,7 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
         <span className="flex items-center gap-1"><Icons.Clock size={12} />{booking.scheduled_time}</span>
         <span className="flex items-center gap-1"><Icons.Wallet size={12} />{inr(booking.total_amount)}</span>
       </div>
-      <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
+      <div className="mt-3 flex items-stretch gap-2 border-t border-gray-50 pt-3">
         {booking.status === 'completed' ? (
           <>
             <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReview}>
@@ -279,22 +279,36 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
           ) : null
         ) : (
           <>
+            {/* min-w-0 on the labels is what actually lets the row shrink: a
+                nowrap span defaults to min-width:auto, so without it the text
+                pushed its button wider than the flex share and the rightmost
+                button spilled out of the card. Icons stay fixed, the label
+                takes the ellipsis on the narrowest phones. */}
             <Button
               size="sm"
               variant="outline"
-              className="min-w-0 flex-1 text-red-500"
+              className="min-w-0 flex-1 gap-[6px] px-[8px] text-red-500"
               onClick={onCancel}
               disabled={cancelling}
             >
-              {cancelling ? 'Cancelling...' : <><Icons.X size={14} /> <span className="truncate">Cancel</span></>}
+              {cancelling ? (
+                <span className="min-w-0 truncate">Cancelling...</span>
+              ) : (
+                <>
+                  <Icons.X size={14} className="shrink-0" />
+                  <span className="min-w-0 truncate">Cancel</span>
+                </>
+              )}
             </Button>
             {['confirmed', 'assigned'].includes(booking.status) ? (
-              <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReschedule}>
-                <Icons.CalendarClock size={14} /> <span className="truncate">Reschedule</span>
+              <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onReschedule}>
+                <Icons.CalendarClock size={14} className="shrink-0" />
+                <span className="min-w-0 truncate">Reschedule</span>
               </Button>
             ) : null}
-            <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onTrack}>
-              <Icons.Navigation size={14} /> <span className="truncate">Track</span>
+            <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onTrack}>
+              <Icons.Navigation size={14} className="shrink-0" />
+              <span className="min-w-0 truncate">Track</span>
             </Button>
           </>
         )}
