@@ -7,7 +7,7 @@ import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, EmptyState, Badge, Button } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
-import type { Booking } from '@/types';
+import type { Booking, BookingStatus } from '@/types';
 
 const TABS: { key: BookingFilter; label: string }[] = [
   { key: 'upcoming', label: 'Upcoming' },
@@ -16,11 +16,27 @@ const TABS: { key: BookingFilter; label: string }[] = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
+/**
+ * The backend refuses a cancel once the professional has set off:
+ * `PUT /customer/bookings/{id}/cancel` answers 400 "Your professional has
+ * already started. Please contact support." for `on_the_way` and `started`.
+ * The card used to offer the Cancel button for those statuses anyway, so the
+ * tap always failed — and the error was swallowed, so the dialog just closed
+ * and the user was told nothing. Offer Cancel only where the backend accepts
+ * it, and let the surviving race (status flips between render and tap) report
+ * the real reason inside the dialog.
+ */
+const CANCELLABLE: BookingStatus[] = ['confirmed', 'assigned'];
+
+/** The journey has started: the only useful actions are Track and Support. */
+const ONGOING: BookingStatus[] = ['on_the_way', 'started'];
+
 export const MyBookingsScreen = () => {
   const { navigate, customer } = useApp();
   const [tab, setTab] = useState<BookingFilter>('upcoming');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancel, setPendingCancel] = useState<Booking | null>(null);
+  const [cancelError, setCancelError] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
   const [refundError, setRefundError] = useState('');
@@ -60,14 +76,29 @@ export const MyBookingsScreen = () => {
     }
   };
 
+  const openCancel = (b: Booking) => {
+    setPendingCancel(b);
+    setCancelError('');
+  };
+
   const cancel = async () => {
     if (!pendingCancel) return;
     const b = pendingCancel;
     setCancellingId(b.id);
-    const ok = await api.customer.cancelBooking(b.id).then(() => true).catch(() => false);
-    setCancellingId(null);
-    setPendingCancel(null);
-    if (ok) reload();
+    setCancelError('');
+    try {
+      await api.customer.cancelBooking(b.id);
+      setPendingCancel(null);
+      reload();
+    } catch (e) {
+      // Do not swallow this. The booking can turn uncancellable between the
+      // render and the tap (the professional accepts and sets off), and the
+      // user has to be told why the cancel did not happen instead of the
+      // dialog closing on them in silence.
+      setCancelError(e instanceof Error ? e.message : 'Could not cancel booking');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const requestRefund = async () => {
@@ -125,10 +156,11 @@ export const MyBookingsScreen = () => {
                 onTrack={() => navigate({ name: 'tracking', bookingId: b.id })}
                 onReview={() => navigate({ name: 'reviews', bookingId: b.id })}
                 onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })}
-                onCancel={() => setPendingCancel(b)}
+                onCancel={() => openCancel(b)}
                 cancelling={cancellingId === b.id}
                 onRefund={() => { setRefundBooking(b); setRefundReason(''); setRefundError(''); }}
                 onReschedule={() => openReschedule(b)}
+                onSupport={() => navigate({ name: 'help' })}
               />
             ))}
           </div>
@@ -151,7 +183,12 @@ export const MyBookingsScreen = () => {
         confirmLabel="Cancel booking"
         cancelLabel="Keep booking"
         onConfirm={cancel}
-        onCancel={() => setPendingCancel(null)}
+        onCancel={() => { setPendingCancel(null); setCancelError(''); }}
+        extra={
+          cancelError ? (
+            <p className="mt-2 text-xs leading-relaxed text-red-500">{cancelError}</p>
+          ) : undefined
+        }
       />
 
       <ConfirmDialog
@@ -214,7 +251,7 @@ export const MyBookingsScreen = () => {
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund, onReschedule }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void; onReschedule: () => void }) => {
+const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund, onReschedule, onSupport }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void; onReschedule: () => void; onSupport: () => void }) => {
   const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
     confirmed: 'info',
     assigned: 'info',
@@ -284,32 +321,43 @@ const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelli
                 pushed its button wider than the flex share and the rightmost
                 button spilled out of the card. Icons stay fixed, the label
                 takes the ellipsis on the narrowest phones. */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="min-w-0 flex-1 gap-[6px] px-[8px] text-red-500"
-              onClick={onCancel}
-              disabled={cancelling}
-            >
-              {cancelling ? (
-                <span className="min-w-0 truncate">Cancelling...</span>
-              ) : (
-                <>
-                  <Icons.X size={14} className="shrink-0" />
-                  <span className="min-w-0 truncate">Cancel</span>
-                </>
-              )}
-            </Button>
-            {['confirmed', 'assigned'].includes(booking.status) ? (
-              <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onReschedule}>
-                <Icons.CalendarClock size={14} className="shrink-0" />
-                <span className="min-w-0 truncate">Reschedule</span>
-              </Button>
+            {/* Cancel/Reschedule only exist for the statuses the backend will
+                accept — once the journey starts the row becomes Track +
+                Support, which is what the customer actually needs then. */}
+            {CANCELLABLE.includes(booking.status) ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="min-w-0 flex-1 gap-[6px] px-[8px] text-red-500"
+                  onClick={onCancel}
+                  disabled={cancelling}
+                >
+                  {cancelling ? (
+                    <span className="min-w-0 truncate">Cancelling...</span>
+                  ) : (
+                    <>
+                      <Icons.X size={14} className="shrink-0" />
+                      <span className="min-w-0 truncate">Cancel</span>
+                    </>
+                  )}
+                </Button>
+                <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onReschedule}>
+                  <Icons.CalendarClock size={14} className="shrink-0" />
+                  <span className="min-w-0 truncate">Reschedule</span>
+                </Button>
+              </>
             ) : null}
             <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onTrack}>
               <Icons.Navigation size={14} className="shrink-0" />
               <span className="min-w-0 truncate">Track</span>
             </Button>
+            {ONGOING.includes(booking.status) ? (
+              <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onSupport}>
+                <Icons.Headphones size={14} className="shrink-0" />
+                <span className="min-w-0 truncate">Support</span>
+              </Button>
+            ) : null}
           </>
         )}
       </div>
