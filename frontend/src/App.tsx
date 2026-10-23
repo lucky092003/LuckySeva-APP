@@ -53,8 +53,6 @@ import {
 
 function Router() {
   const { screen, role, adminAuthed } = useApp();
-  const wideScreens = ['home', 'services', 'bookings', 'tracking', 'professional', 'provider-home', 'provider-bookings', 'provider-earnings'];
-  const desktopCanvasWidth = wideScreens.includes(screen.name) ? 'md:max-w-[1280px]' : 'md:max-w-[960px]';
 
   if (role === 'admin') {
     if (!adminAuthed) {
@@ -82,11 +80,9 @@ function Router() {
       <WebTopNav role={role} />
       <div
         key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')}
-        className={`screen-enter flex min-h-0 flex-1 flex-col overflow-hidden md:mx-auto md:w-full ${desktopCanvasWidth} md:p-4 lg:p-5`}
+        className="screen-enter flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:rounded-[28px] md:border md:border-slate-200/80 md:bg-white md:shadow-[0_18px_50px_-34px_rgba(15,23,42,0.28)]">
-          {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
-        </div>
+        {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
       <BottomNav />
       {/* Silent GPS publisher so customers can track an in-progress job. */}

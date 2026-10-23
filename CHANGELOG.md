@@ -21,10 +21,12 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   have clearer hierarchy and a more premium feel. Tracking now loads booking
   details independently of live GPS, so a location-service failure no longer
   blanks the page; booking-load failures show a retry action instead.
-- **Desktop customer and provider layouts** now use a centered, bounded app canvas
-  with a soft desktop backdrop, matching navigation width, improved home/search
-  layouts and responsive grids for services, bookings and provider request cards.
-  Mobile and native app layouts remain unchanged.
+- **Desktop customer and provider layouts** now use the full browser viewport
+  instead of a floating app frame. The customer home has a dedicated desktop
+  dashboard layout (service discovery, popular services, bookings and professionals
+  in a two-column workspace); navigation and page content stay centered to a
+  comfortable max width. Services, bookings and provider request cards use
+  responsive grids. Mobile and native app layouts remain unchanged.
 
 ## 2026-10-19
 

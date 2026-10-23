@@ -8,6 +8,7 @@ import { fetchCurrentLocation } from '@/services/location';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Professional, Booking } from '@/types';
+import { DesktopHomeScreen } from '@/screens/customer/DesktopHomeScreen';
 
 export const HomeScreen = () => {
   const { navigate, customer, setCustomer } = useApp();
@@ -54,7 +55,29 @@ export const HomeScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
+    <>
+      <DesktopHomeScreen
+        categories={categories}
+        catLoading={catLoading}
+        popularServices={popularServices}
+        svcLoading={svcLoading}
+        topPros={topPros}
+        proLoading={proLoading}
+        recent={recent}
+        name={customer?.name?.split(' ')[0] || 'there'}
+        location={customer?.location || ''}
+        locating={locating}
+        onLocationClick={handleLocationTap}
+        onSearch={() => navigate({ name: 'search' })}
+        onCategory={(slug) => navigate({ name: 'category', slug })}
+        onService={(id) => navigate({ name: 'service', id })}
+        onBooking={(bookingId) => navigate({ name: 'tracking', bookingId })}
+        onSeeBookings={() => navigate({ name: 'bookings' })}
+        onSeeServices={() => navigate({ name: 'services' })}
+        onSupport={() => navigate({ name: 'help' })}
+        onProfessional={(id) => navigate({ name: 'professional', id })}
+      />
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50 lg:hidden">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white md:px-8 md:py-8">
         <div className="mx-auto w-full max-w-7xl md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] md:items-center md:gap-10">
@@ -94,7 +117,7 @@ export const HomeScreen = () => {
         {catLoading ? (
           <Spinner className="py-8" />
         ) : (
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-8 md:gap-5">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 md:gap-5">
             {categories.map((cat) => {
               const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[cat.icon] || Icons.Circle;
               return (
@@ -213,6 +236,7 @@ export const HomeScreen = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
