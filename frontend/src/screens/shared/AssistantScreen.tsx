@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useApp } from '@/context/app-context';
 import { TopBar } from '@/components/PhoneShell';
-import { api } from '@/services/api';
+import { ApiError, api } from '@/services/api';
 
 type ChatMessage = {
   id: string;
@@ -82,7 +82,11 @@ export const AssistantScreen = () => {
       );
       setMessages((current) => [...current, createMessage('assistant', response.reply)]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Lucky could not reply right now. Please try again.';
+      const message = error instanceof ApiError && error.status === 404
+        ? 'The AI assistant is not deployed on this backend yet. Deploy the chatbot backend update, then try again.'
+        : error instanceof Error
+          ? error.message
+          : 'Lucky could not reply right now. Please try again.';
       setMessages((current) => [...current, createMessage('assistant', message, true)]);
     } finally {
       setSending(false);
@@ -105,7 +109,13 @@ export const AssistantScreen = () => {
       const result = await api.assistant.transcribe(audio);
       setDraft((current) => current ? `${current} ${result.text}` : result.text);
     } catch (error) {
-      setVoiceError(error instanceof Error ? error.message : 'Could not transcribe your voice. Please try again.');
+      setVoiceError(
+        error instanceof ApiError && error.status === 404
+          ? 'Voice assistant is not deployed on this backend yet. Deploy the chatbot backend update, then try again.'
+          : error instanceof Error
+            ? error.message
+            : 'Could not transcribe your voice. Please try again.',
+      );
     } finally {
       setTranscribing(false);
     }
