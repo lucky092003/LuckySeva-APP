@@ -59,49 +59,77 @@ export const DesktopHomeScreen = ({
   onProfessional,
 }: Props) => {
   return (
-    <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto bg-[#f6f8f7] lg:flex">
-      <section className="relative overflow-hidden bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 text-white">
-        <div className="pointer-events-none absolute -right-20 -top-36 h-[420px] w-[420px] rounded-full border-[70px] border-white/[0.06]" />
-        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-12 px-10 py-7 xl:px-12">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8f7]">
+      <section className="border-b border-emerald-100/70 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-10 py-9 xl:px-12 xl:py-11">
           <div className="min-w-0">
             <button
               onClick={onLocationClick}
-              className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/15"
+              className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-100 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-emerald-800"
             >
-              <Icons.MapPin size={14} className="shrink-0" />
+              <Icons.MapPin size={14} className="shrink-0 text-emerald-700" />
               <span className="truncate">{locating ? 'Detecting location…' : location || 'Choose your location'}</span>
-              <Icons.ChevronDown size={13} className="shrink-0" />
+              <Icons.ChevronDown size={13} className="shrink-0 text-slate-400" />
             </button>
-            <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-100/80">Reliable help, right at home</p>
-            <h1 className="mt-1 text-[30px] font-extrabold tracking-tight">Good to see you, {name}</h1>
-            <p className="mt-1 text-sm text-white/75">Book trusted local professionals in just a few clicks.</p>
+            <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Trusted help for every corner of home</p>
+            <h1 className="mt-2 max-w-xl text-[38px] font-extrabold leading-[1.12] tracking-tight text-slate-950">A better home<br />starts with the right help.</h1>
+            <p className="mt-3 max-w-lg text-sm leading-6 text-slate-500">Good to see you, {name}. Book reliable local professionals with clear pricing and support at every step.</p>
+            <button
+              onClick={onSearch}
+              className="group mt-6 flex w-full max-w-[570px] items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2 text-left shadow-[0_14px_35px_-24px_rgba(15,23,42,0.4)] transition hover:border-emerald-200 hover:shadow-lg"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Icons.Search size={19} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-slate-800">What do you need help with?</span>
+                <span className="mt-0.5 block text-[11px] text-slate-400">Search services and professionals</span>
+              </span>
+              <span className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white transition group-hover:bg-emerald-800"><Icons.ArrowRight size={17} /></span>
+            </button>
+            <div className="mt-4 flex items-center gap-5 text-[10px] font-semibold text-slate-500">
+              <span className="flex items-center gap-1.5"><Icons.BadgeCheck size={14} className="text-emerald-600" />Verified professionals</span>
+              <span className="flex items-center gap-1.5"><Icons.CreditCard size={14} className="text-emerald-600" />Upfront pricing</span>
+            </div>
           </div>
 
-          <button
-            onClick={onSearch}
-            className="group flex w-[400px] shrink-0 items-center gap-3 rounded-2xl bg-white px-4 py-4 text-left shadow-xl shadow-emerald-950/15 transition hover:-translate-y-0.5 hover:shadow-2xl"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <Icons.Search size={19} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-slate-800">What do you need help with?</span>
-              <span className="mt-0.5 block text-xs text-slate-400">Search services and professionals</span>
-            </span>
-            <Icons.ArrowRight size={18} className="text-emerald-600 transition-transform group-hover:translate-x-1" />
-          </button>
+          <div className="relative h-[270px] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-600 p-6 shadow-xl shadow-emerald-950/15">
+            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[42px] border-white/[0.08]" />
+            <div className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-teal-400/20 blur-2xl" />
+            <div className="relative flex h-full flex-col justify-between">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/70">LuckySeva care</p>
+                  <p className="mt-1 text-lg font-bold text-white">Your home, in good hands.</p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white"><Icons.Sparkles size={20} /></span>
+              </div>
+              <div className="flex items-end justify-between gap-3">
+                <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-emerald-700"><Icons.Home size={20} /></span>
+                  <span>
+                    <span className="block text-xs font-bold text-white">One trusted place</span>
+                    <span className="mt-0.5 block text-[10px] text-white/65">For everyday home services</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[Icons.Wrench, Icons.Sparkles, Icons.Snowflake, Icons.PaintRoller].map((Icon, index) => (
+                    <span key={index} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white/90"><Icon size={17} /></span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-[minmax(0,1fr)_310px] gap-8 px-10 py-8 xl:px-12">
         <div className="min-w-0 space-y-8">
           <section>
-            <SectionTitle title="Explore services" action="View all" onAction={onSeeServices} />
+            <SectionTitle title="Explore categories" action="All services" onAction={onSeeServices} />
             {catLoading ? (
               <Spinner className="py-8" />
             ) : (
               <div className="grid grid-cols-3 gap-3 xl:grid-cols-4">
-                {categories.map((category) => {
+                {categories.slice(0, 8).map((category) => {
                   const Icon = iconFor(category.icon);
                   return (
                     <button

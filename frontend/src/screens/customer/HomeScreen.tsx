@@ -5,6 +5,7 @@ import { useApp } from '@/context/app-context';
 import { useCategories, usePopularServices } from '@/hooks';
 import { api } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
+import { isNative } from '@/utils/native';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Professional, Booking } from '@/types';
@@ -18,6 +19,18 @@ export const HomeScreen = () => {
   const [proLoading, setProLoading] = useState(true);
   const [recent, setRecent] = useState<Booking[]>([]);
   const [locating, setLocating] = useState(false);
+  const [isDesktopWeb, setIsDesktopWeb] = useState(
+    () => !isNative && typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    if (isNative) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const updateLayout = () => setIsDesktopWeb(media.matches);
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
   useEffect(() => {
     api.catalog
@@ -54,30 +67,32 @@ export const HomeScreen = () => {
     }
   };
 
+  const desktopProps = {
+    categories,
+    catLoading,
+    popularServices,
+    svcLoading,
+    topPros,
+    proLoading,
+    recent,
+    name: customer?.name?.split(' ')[0] || 'there',
+    location: customer?.location || '',
+    locating,
+    onLocationClick: handleLocationTap,
+    onSearch: () => navigate({ name: 'search' }),
+    onCategory: (slug: string) => navigate({ name: 'category', slug }),
+    onService: (id: string) => navigate({ name: 'service', id }),
+    onBooking: (bookingId: string) => navigate({ name: 'tracking', bookingId }),
+    onSeeBookings: () => navigate({ name: 'bookings' }),
+    onSeeServices: () => navigate({ name: 'services' }),
+    onSupport: () => navigate({ name: 'help' }),
+    onProfessional: (id: string) => navigate({ name: 'professional', id }),
+  };
+
+  if (isDesktopWeb) return <DesktopHomeScreen {...desktopProps} />;
+
   return (
-    <>
-      <DesktopHomeScreen
-        categories={categories}
-        catLoading={catLoading}
-        popularServices={popularServices}
-        svcLoading={svcLoading}
-        topPros={topPros}
-        proLoading={proLoading}
-        recent={recent}
-        name={customer?.name?.split(' ')[0] || 'there'}
-        location={customer?.location || ''}
-        locating={locating}
-        onLocationClick={handleLocationTap}
-        onSearch={() => navigate({ name: 'search' })}
-        onCategory={(slug) => navigate({ name: 'category', slug })}
-        onService={(id) => navigate({ name: 'service', id })}
-        onBooking={(bookingId) => navigate({ name: 'tracking', bookingId })}
-        onSeeBookings={() => navigate({ name: 'bookings' })}
-        onSeeServices={() => navigate({ name: 'services' })}
-        onSupport={() => navigate({ name: 'help' })}
-        onProfessional={(id) => navigate({ name: 'professional', id })}
-      />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50 lg:hidden">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white md:px-8 md:py-8">
         <div className="mx-auto w-full max-w-7xl md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] md:items-center md:gap-10">
@@ -90,7 +105,7 @@ export const HomeScreen = () => {
                 </span>
                 <ChevronRight size={14} className="shrink-0" />
               </button>
-              <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 md:hidden">
+              <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 lg:hidden">
                 <Icons.Bell size={18} />
               </button>
             </div>
@@ -237,6 +252,5 @@ export const HomeScreen = () => {
         )}
       </div>
       </div>
-    </>
   );
 };

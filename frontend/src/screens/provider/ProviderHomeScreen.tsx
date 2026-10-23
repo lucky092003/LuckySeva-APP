@@ -210,7 +210,7 @@ export const ProviderHomeScreen = () => {
             <button
               onClick={() => navigate({ name: 'notifications' })}
               aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
-              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
             >
               <Icons.Bell size={17} />
               {unread > 0 && (

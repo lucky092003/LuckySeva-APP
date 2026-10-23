@@ -22,11 +22,13 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   details independently of live GPS, so a location-service failure no longer
   blanks the page; booking-load failures show a retry action instead.
 - **Desktop customer and provider layouts** now use the full browser viewport
-  instead of a floating app frame. The customer home has a dedicated desktop
-  dashboard layout (service discovery, popular services, bookings and professionals
-  in a two-column workspace); navigation and page content stay centered to a
-  comfortable max width. Services, bookings and provider request cards use
-  responsive grids. Mobile and native app layouts remain unchanged.
+  instead of a floating app frame. The customer home uses a dedicated
+  `DesktopHomeScreen` with a light editorial hero, service search, category and
+  popular-service discovery, plus booking/professional side panels. Desktop
+  navigation spans the site with a centered content rail and moves to the desktop
+  breakpoint; tablets retain app-style bottom navigation. Other key pages use
+  bounded content widths and responsive grids, while native/mobile layouts remain
+  unchanged.
 
 ## 2026-10-19
 
