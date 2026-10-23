@@ -23,11 +23,11 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   blanks the page; booking-load failures show a retry action instead.
 - **Desktop customer and provider layouts** now use the full browser viewport
   instead of a floating app frame. The customer home uses a dedicated
-  `DesktopHomeScreen` with a light editorial hero, service search, category and
-  popular-service discovery, plus booking/professional side panels. Desktop
-  navigation spans the site and moves to the desktop breakpoint; tablets retain
-  app-style bottom navigation. Desktop pages now use 25px side gutters and
-  breakpoint-aware grids. Customer and provider auth pages
+  `DesktopHomeScreen` with a light editorial hero, service search, all service
+  categories and popular-service discovery, plus booking/professional side
+  panels. Desktop navigation spans the site and moves to the desktop breakpoint;
+  tablets retain app-style bottom navigation. Desktop pages now use 25px side
+  gutters and breakpoint-aware grids. Customer and provider auth pages
   now use the full browser viewport for the split-screen brand/form layout,
   instead of being clipped to the content max width. Native/mobile layouts remain
   unchanged. Desktop home scrolling remains available without displaying a

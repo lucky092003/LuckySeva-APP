@@ -129,7 +129,7 @@ export const DesktopHomeScreen = ({
               <Spinner className="py-8" />
             ) : (
               <div className="grid grid-cols-3 gap-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {categories.slice(0, 8).map((category) => {
+                {categories.map((category) => {
                   const Icon = iconFor(category.icon);
                   return (
                     <button
