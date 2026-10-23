@@ -201,32 +201,45 @@ export const ProviderHomeScreen = () => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <TopBar
-        title="Requests"
-        showBack={false}
-        right={
-          <div className="flex items-center gap-1">
-            {/* Phone/tablet bell — desktop reads it from WebTopNav instead. */}
-            <button
-              onClick={() => navigate({ name: 'notifications' })}
-              aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
-              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
-            >
-              <Icons.Bell size={17} />
-              {unread > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />
-              )}
-            </button>
-            <button
-              onClick={() => setTick((n) => n + 1)}
-              aria-label="Refresh requests"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-            >
-              <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+      <div className="lg:hidden">
+        <TopBar
+          title="Requests"
+          showBack={false}
+          right={
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigate({ name: 'notifications' })}
+                aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                <Icons.Bell size={17} />
+                {unread > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />}
+              </button>
+              <button onClick={() => setTick((n) => n + 1)} aria-label="Refresh requests" className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+                <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          }
+        />
+      </div>
+      <div className="hidden shrink-0 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-8 py-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">Partner workspace</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950 dark:text-gray-50">Requests & active jobs</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your work and find your next customer.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${professional?.status === 'available' ? 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'}`}>
+              <span className={`h-2 w-2 rounded-full ${professional?.status === 'available' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {professional?.status === 'available' ? 'Available for work' : 'Currently busy'}
+            </span>
+            <button onClick={() => setTick((n) => n + 1)} className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition hover:border-emerald-200 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <Icons.RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh feed
             </button>
           </div>
-        }
-      />
+        </div>
+      </div>
       <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-3 lg:mx-auto lg:w-full lg:max-w-7xl lg:px-8 lg:py-6">
         {/* Why the last accept didn't go through (taken / expired / offline). */}
         {actionError && (
@@ -292,8 +305,8 @@ export const ProviderHomeScreen = () => {
                 key={s.label}
                 className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group ${
                   s.highlight
-                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30'
-                    : 'bg-white text-gray-900 shadow-lg ring-1 ring-gray-200 hover:shadow-xl dark:bg-gray-900 dark:text-gray-100'
+                    ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-900/10 hover:shadow-xl'
+                    : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/80 hover:shadow-md dark:bg-gray-900 dark:text-gray-100'
                 }`}
               >
                 <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-100 dark:bg-emerald-900/30'}`} />
@@ -310,72 +323,83 @@ export const ProviderHomeScreen = () => {
           </div>
         </div>
 
-        {/* Section: Active Jobs */}
-        <SectionHeading title="Active Jobs" count={active.length} tone="sky" />
-        {active.length === 0 ? (
-          <p className="mb-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 px-4 py-3 text-center text-[11px] text-gray-400 dark:text-gray-500">
-            Nothing in progress. Accept a request below to start a job.
-          </p>
-        ) : (
-          <div className="mb-4 space-y-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-            {active.map((b) => (
-              <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-7">
+        {/* Incoming work is the primary desktop task; active jobs live in a stable side rail. */}
+        <section className="order-2 min-w-0 lg:order-1 lg:col-start-1 lg:row-start-1">
+          <SectionHeading title="New requests" count={newRequests.length} tone="emerald" hint={feedScope} />
+          <div className="mb-3 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800 lg:w-fit">
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSort(s.key)}
+                className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${sort === s.key ? 'bg-white text-emerald-700 shadow-sm dark:bg-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              >
+                {s.label}
+              </button>
             ))}
           </div>
-        )}
 
-        {/* Section: New Requests */}
-        <SectionHeading title="New Requests" count={newRequests.length} tone="emerald" hint={feedScope} />
-        <div className="mb-3 flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 lg:w-fit">
-          {SORTS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setSort(s.key)}
-              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                sort === s.key ? 'bg-white text-emerald-600 shadow-sm dark:bg-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="space-y-3 pb-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        ) : orderedRequests.length === 0 ? (
-          <Card className="px-5 py-2 text-center shadow-sm">
-            <div className="flex flex-col items-center py-2 text-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
-                <Icons.Inbox size={22} />
-              </div>
-              <p className="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">No new requests</p>
-              <p className="mt-0.5 max-w-xs text-[11px] leading-snug text-gray-500 dark:text-gray-400">
-                New {field || 'service'} requests {feedScope} will show up here automatically.
-              </p>
+          {loading ? (
+            <div className="space-y-3 pb-2 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+              <SkeletonCard /><SkeletonCard /><SkeletonCard />
             </div>
-            <Button variant="outline" onClick={() => setTick((n) => n + 1)} className="mb-2 mt-1 px-5 py-1.5 text-xs font-semibold">
-              <Icons.RefreshCw size={13} /> Check again
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-3 pb-2">
-            {orderedRequests.map((b) => (
-              <RequestCard
-                key={b.id}
-                booking={b}
-                km={distanceTo(b)}
-                myRadius={myRadius}
-                onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
-                onAccept={() => accept(b)}
-                onReject={() => setDeclining(b)}
-              />
-            ))}
-          </div>
-        )}
+          ) : orderedRequests.length === 0 ? (
+            <Card className="px-5 py-6 text-center shadow-sm">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"><Icons.Inbox size={22} /></div>
+                <p className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-100">No new requests right now</p>
+                <p className="mt-1 max-w-xs text-xs leading-relaxed text-gray-500 dark:text-gray-400">New {field || 'service'} requests {feedScope} will appear here automatically.</p>
+                <Button variant="outline" onClick={() => setTick((n) => n + 1)} className="mt-4 px-5 py-2 text-xs font-semibold"><Icons.RefreshCw size={13} /> Check again</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3 pb-2 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+              {orderedRequests.map((b) => (
+                <RequestCard
+                  key={b.id}
+                  booking={b}
+                  km={distanceTo(b)}
+                  myRadius={myRadius}
+                  onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
+                  onAccept={() => accept(b)}
+                  onReject={() => setDeclining(b)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="order-1 space-y-5 lg:order-2 lg:col-start-2 lg:row-start-1">
+          <section className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <SectionHeading title="Active jobs" count={active.length} tone="sky" />
+            {active.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center dark:border-gray-700 dark:bg-gray-950">
+                <Icons.BriefcaseBusiness size={21} className="mx-auto text-gray-300 dark:text-gray-600" />
+                <p className="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">No active jobs</p>
+                <p className="mt-1 text-[10px] leading-relaxed text-gray-400">Accept a request to see its progress here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {active.map((b) => <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />)}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"><Icons.MapPin size={18} /></span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Your service area</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{professional?.service_area || 'Your selected area'} · within {myRadius} km</p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[10px] dark:border-gray-800">
+              <span className="text-gray-400">Trade</span>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{field || 'Home services'}</span>
+            </div>
+          </section>
+        </aside>
+      </div>
       </div>
 
       <ConfirmDialog

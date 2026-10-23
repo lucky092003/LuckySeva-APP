@@ -31,6 +31,11 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   now use the full browser viewport for the split-screen brand/form layout,
   instead of being clipped to the content max width. Native/mobile layouts remain
   unchanged.
+- **Provider desktop workspace** now presents requests as the primary work feed,
+  active jobs and service coverage in a side rail, plus a dedicated workspace
+  heading and availability indicator. Provider bookings use a responsive card
+  grid, and the web navigation now includes role-aware active states and an
+  account identity control.
 
 ## 2026-10-19
 
