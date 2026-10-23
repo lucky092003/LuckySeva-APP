@@ -13,11 +13,12 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ## 2026-10-23
 
 ### Changed
-- **Customer booking tracking UI** (`frontend/src/screens/customer/TrackingScreen.tsx`)
-  now has a more polished, responsive layout: laptop users get a side-by-side live
-  map and booking-details rail, while phones retain the floating map status and
-  bottom sheet. Status banners and non-live tracking details have also been
-  refreshed for clearer hierarchy and a more premium feel.
+- **Customer booking screens** (`frontend/src/screens/customer/TrackingScreen.tsx`,
+  `frontend/src/screens/customer/BookingSuccessScreen.tsx`) now have a more polished,
+  responsive look: laptop users get a side-by-side live map and booking-details
+  rail, while phones retain the floating map status and bottom sheet. Tracking
+  banners and the booking confirmation’s success state, summary card, and actions
+  have clearer hierarchy and a more premium feel.
 
 ## 2026-10-19
 
