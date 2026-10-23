@@ -19,10 +19,20 @@ const MISSING_BASE =
 
 const TOKEN_KEY = 'luckyseva_api_token';
 
-export const getApiToken = (): string | null => localStorage.getItem(TOKEN_KEY);
+export const getApiToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
 export const setApiToken = (token: string | null) => {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* Keep auth UI responsive when browser storage is unavailable. */
+  }
 };
 
 /** Keeps the HTTP status and the backend's stable error code so callers can branch on them. */

@@ -40,6 +40,10 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   align with the account controls on the right. Page backgrounds span the
   viewport, while card grids add columns at wider breakpoints to keep the layout
   balanced.
+- **Login sessions survive refreshes** for customer, provider, and admin builds:
+  a stored profile plus token now restores the correct start screen. Temporary
+  API/network failures during session validation no longer erase the token;
+  explicit 401/403 auth failures still return the user to login.
 
 ## 2026-10-19
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { api, getApiToken, setApiToken } from '@/services/api';
+import { ApiError, api, getApiToken, setApiToken } from '@/services/api';
 import { registerPush } from '@/services/push';
 
 export type Role = 'customer' | 'provider' | 'admin';
@@ -101,16 +101,17 @@ const AppContext = createContext<AppState | null>(null);
 const initialCustomer = load<Customer>(LS_CUSTOMER, null);
 const initialProviderId = load<string | null>(LS_PROVIDER, null);
 const initialAdminAuthed = load<boolean>(LS_ADMIN, false);
+const initialApiToken = getApiToken();
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [stack, setStack] = useState<Screen[]>(() => {
     if (APP_ROLE === 'provider') {
-      return [{ name: initialProviderId ? 'provider-home' : 'provider-auth' }];
+      return [{ name: initialProviderId && initialApiToken ? 'provider-home' : 'provider-auth' }];
     }
     if (APP_ROLE === 'admin') {
-      return [{ name: initialAdminAuthed ? 'admin-dashboard' : 'admin-auth' }];
+      return [{ name: initialAdminAuthed && initialApiToken ? 'admin-dashboard' : 'admin-auth' }];
     }
-    return [{ name: 'auth' }];
+    return [{ name: initialCustomer && initialApiToken ? 'home' : 'auth' }];
   });
   const [customer, setCustomerState] = useState<Customer>(initialCustomer);
   const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);
@@ -156,9 +157,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           resetToAuth();
         }
       })
-      .catch(() => {
-        setApiToken(null);
-        resetToAuth();
+      .catch((error: unknown) => {
+        // A timeout, cold start, or 5xx must not sign the user out. Keep the
+        // persisted session and let normal screen requests recover when the API
+        // is reachable again; only an explicit auth rejection invalidates it.
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          setApiToken(null);
+          resetToAuth();
+        }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
