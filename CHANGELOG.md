@@ -27,7 +27,9 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   popular-service discovery, plus booking/professional side panels. Desktop
   navigation spans the site with a centered content rail and moves to the desktop
   breakpoint; tablets retain app-style bottom navigation. Other key pages use
-  bounded content widths and responsive grids, while native/mobile layouts remain
+  bounded content widths and responsive grids. Customer and provider auth pages
+  now use the full browser viewport for the split-screen brand/form layout,
+  instead of being clipped to the content max width. Native/mobile layouts remain
   unchanged.
 
 ## 2026-10-19

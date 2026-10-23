@@ -54,7 +54,12 @@ import {
 function Router() {
   const { screen, role, adminAuthed } = useApp();
   const desktopWideScreens = ['home', 'services', 'bookings', 'tracking', 'professional', 'provider-home', 'provider-bookings', 'provider-earnings'];
-  const desktopContentWidth = desktopWideScreens.includes(screen.name) ? 'md:max-w-[1440px]' : 'md:max-w-[1200px]';
+  const fullBleedScreens = ['auth', 'provider-auth'];
+  const desktopContentWidth = fullBleedScreens.includes(screen.name)
+    ? 'md:max-w-none'
+    : desktopWideScreens.includes(screen.name)
+      ? 'md:max-w-[1440px]'
+      : 'md:max-w-[1200px]';
 
   if (role === 'admin') {
     if (!adminAuthed) {
