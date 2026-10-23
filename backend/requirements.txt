@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 pydantic
-supabase==2.32.0
+supabase==2.33.0
 PyJWT
 python-dotenv
 firebase-admin
