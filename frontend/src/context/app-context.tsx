@@ -21,6 +21,7 @@ export type Screen =
   | { name: 'services' }
   | { name: 'search' }
   | { name: 'notifications' }
+  | { name: 'assistant' }
   | { name: 'category'; slug: string }
   | { name: 'service'; id: string }
   | { name: 'professionals'; slug: string }
