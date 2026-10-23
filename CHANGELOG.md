@@ -18,7 +18,9 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   responsive look: laptop users get a side-by-side live map and booking-details
   rail, while phones retain the floating map status and bottom sheet. Tracking
   banners and the booking confirmation’s success state, summary card, and actions
-  have clearer hierarchy and a more premium feel.
+  have clearer hierarchy and a more premium feel. Tracking now loads booking
+  details independently of live GPS, so a location-service failure no longer
+  blanks the page; booking-load failures show a retry action instead.
 
 ## 2026-10-19
 
