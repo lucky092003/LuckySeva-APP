@@ -115,6 +115,39 @@ Get current user profile.
 
 ---
 
+### AI Assistant (Customer or Provider JWT)
+
+#### `POST /assistant/chat`
+Send the recent conversation to the role-aware assistant. The server applies its
+customer/provider instructions and calls the configured OpenAI-compatible API.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "How do I track a booking?"}
+  ]
+}
+```
+
+The request accepts at most 16 messages, with a maximum of 2,000 characters per
+message. The server-side `AI_API_KEY` is never returned to the app. Without that
+key, the endpoint responds with `503` and code `ai_not_configured`.
+
+**Response:** `{"reply": "..."}`
+
+#### `POST /assistant/transcribe`
+Transcribe a raw audio request body (`Content-Type: audio/webm`, `audio/mp4`, etc.)
+into text for the chat composer. Maximum size: 8 MB. Requires an OpenAI-compatible
+`/audio/transcriptions` endpoint, `AI_API_KEY`, and optionally
+`AI_TRANSCRIPTION_MODEL` (default `gpt-4o-mini-transcribe`).
+
+**Response:** `{"text": "..."}`
+
+Both routes require a customer or provider JWT; admin tokens are rejected.
+
+---
+
 ### Catalog Endpoints (Public)
 
 #### `GET /catalog`

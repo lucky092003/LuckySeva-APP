@@ -319,8 +319,8 @@ Shared 6-digit OTP component used by customer + provider auth:
 
 | Area | Screens |
 |---|---|
-| Customer | Home, Services, Service detail, Professional list/profile, Booking flow, My Bookings, Tracking, Addresses, Favourites, Notifications, Profile, Auth, Payments, Reviews, Help |
-| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location, **services offered**), Notifications, Auth |
+| Customer | Home, Services, Service detail, Professional list/profile, Booking flow, My Bookings, Tracking, Addresses, Favourites, Notifications, Profile, Auth, Payments, Reviews, Help, AI Assistant (chat + voice) |
+| Provider | Requests (Home), Bookings, Earnings (with payout requests), Detail/status advance, Profile (availability, pricing, radius, location, **services offered**), Notifications, Auth, AI Assistant (chat + voice) |
 | Admin | Dashboard, Customers, Providers, Services, Bookings, Profile, Audit log, Add Provider/Service modals, Export CSV |
 
 Navigation is a simple hand-rolled screen-state machine in `frontend/src/context/app-context.tsx`
@@ -354,3 +354,21 @@ Backend commands run from `backend/`.
 
 See [README.md](../README.md) for setup, [PUBLISHING.md](../PUBLISHING.md) for releases,
 and `backend/` for the backend.
+
+## 11. AI Assistant (Customer + Provider)
+
+- The same assistant screen is available to signed-in customer and provider roles.
+- Text chat uses the authenticated `POST /assistant/chat` endpoint. The server
+  selects a role-specific prompt, limits conversation size, and calls an
+  OpenAI-compatible Chat Completions API.
+- Voice input records a short note with MediaRecorder and transcribes it through
+  the configured backend AI provider; assistant replies can be read aloud with
+  device speech synthesis. Typing remains available if microphone permission or
+  recording support is unavailable.
+- Configure `AI_API_KEY` on the backend (local `backend/.env` or Render
+  environment). `AI_BASE_URL`, `AI_MODEL`, and `AI_TRANSCRIPTION_MODEL` are
+  optional. The key is never sent to a client. Without a key, chat and voice
+  transcription show a clear “not configured” message.
+- The assistant is guidance-only: it cannot read live account data, create or
+  change bookings, accept provider jobs, or handle payments. Never share OTPs,
+  passwords, or payment PINs in chat.

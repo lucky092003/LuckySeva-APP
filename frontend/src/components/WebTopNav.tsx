@@ -1,4 +1,4 @@
-import { Home, CalendarCheck, LayoutGrid, User } from 'lucide-react';
+import { Home, CalendarCheck, LayoutGrid, User, Sparkles } from 'lucide-react';
 import { useApp, Screen, Role } from '@/context/app-context';
 import { Logo } from '@/components/Logo';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -8,6 +8,7 @@ const customerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: 'Home', icon: Home, screen: { name: 'home' } },
   { label: 'Bookings', icon: CalendarCheck, screen: { name: 'bookings' } },
   { label: 'Services', icon: LayoutGrid, screen: { name: 'services' } },
+  { label: 'Assistant', icon: Sparkles, screen: { name: 'assistant' } },
   { label: 'Profile', icon: User, screen: { name: 'profile' } },
 ];
 
@@ -15,6 +16,7 @@ const providerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: 'Requests', icon: Home, screen: { name: 'provider-home' } },
   { label: 'Bookings', icon: CalendarCheck, screen: { name: 'provider-bookings' } },
   { label: 'Earnings', icon: LayoutGrid, screen: { name: 'provider-earnings' } },
+  { label: 'Assistant', icon: Sparkles, screen: { name: 'assistant' } },
   { label: 'Profile', icon: User, screen: { name: 'provider-profile' } },
 ];
 

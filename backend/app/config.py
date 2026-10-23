@@ -69,6 +69,13 @@ PLATFORM_GST_PCT = float(os.getenv("PLATFORM_GST_PCT", "18"))
 FCM_PROJECT_ID = os.getenv("FCM_PROJECT_ID", "")
 FCM_CREDENTIALS_JSON = os.getenv("FCM_CREDENTIALS_JSON", "")
 
+# Optional OpenAI-compatible assistant. The secret stays on the API server and
+# is never sent to customer/provider clients.
+AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
+AI_BASE_URL = (os.getenv("AI_BASE_URL", "").strip() or "https://api.openai.com/v1").rstrip("/")
+AI_MODEL = os.getenv("AI_MODEL", "").strip() or "gpt-4o-mini"
+AI_TRANSCRIPTION_MODEL = os.getenv("AI_TRANSCRIPTION_MODEL", "").strip() or "gpt-4o-mini-transcribe"
+
 
 def is_payments_enabled() -> bool:
     return PAYMENTS_ENABLED

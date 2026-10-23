@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-23
+**Last updated:** 2026-10-24
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-24
+
+### Added
+- **Customer and provider AI assistant** (`frontend/src/screens/shared/AssistantScreen.tsx`,
+  `backend/app/routers/assistant.py`) adds authenticated, role-aware chat, voice
+  recording/transcription, and read-aloud responses. The OpenAI-compatible API
+  key stays on the backend (`AI_API_KEY`); without it, the app shows a setup
+  message. Chat cannot read or change live account data, bookings, or payments.
 
 ## 2026-10-23
 

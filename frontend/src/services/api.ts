@@ -74,6 +74,7 @@ async function request<T>(
   }
   const url = `${BASE}/${fn}${path}`;
   const token = getApiToken();
+  const blobBody = typeof Blob !== 'undefined' && body instanceof Blob ? body : null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -82,10 +83,10 @@ async function request<T>(
       res = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': blobBody?.type || (blobBody ? 'application/octet-stream' : 'application/json'),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: body === undefined ? undefined : blobBody || JSON.stringify(body),
         signal: controller.signal,
       });
     } catch (err) {
@@ -145,6 +146,12 @@ export const api = {
     verifyOtp: (input: { phone: string; code: string; role?: 'customer' | 'provider' | 'admin'; mode?: 'login' | 'signup'; name?: string; email?: string; location?: string; profession?: string; category_slug?: string; serviceArea?: string; experience?: number | string; latitude?: number | null; longitude?: number | null; service_radius_km?: number | string }) =>
       request<{ access_token: string; role: string; professional_id?: string; profile?: Profile | null }>('auth', '/verify-otp', 'POST', input),
     me: () => request<{ role: string; profile: Profile | null; professional?: Professional }>('auth', '/me'),
+  },
+
+  assistant: {
+    chat: (messages: { role: 'user' | 'assistant'; content: string }[]) =>
+      request<{ reply: string }>('assistant', '/chat', 'POST', { messages }),
+    transcribe: (audio: Blob) => request<{ text: string }>('assistant', '/transcribe', 'POST', audio),
   },
 
   catalog: {
