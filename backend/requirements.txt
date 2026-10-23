@@ -6,3 +6,4 @@ PyJWT
 python-dotenv
 firebase-admin
 httpx==0.28.1
+google-genai==2.33.0

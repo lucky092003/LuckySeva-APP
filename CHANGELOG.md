@@ -15,9 +15,10 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ### Added
 - **Customer and provider AI assistant** (`frontend/src/screens/shared/AssistantScreen.tsx`,
   `backend/app/routers/assistant.py`) adds authenticated, role-aware chat, voice
-  recording/transcription, and read-aloud responses. The OpenAI-compatible API
-  key stays on the backend (`AI_API_KEY`); without it, the app shows a setup
-  message. Chat cannot read or change live account data, bookings, or payments.
+  recording/transcription, and read-aloud responses via Google's Gemini
+  Interactions API. The Gemini API key stays on the backend (`AI_API_KEY`); without
+  it, the app shows a setup message. Chat cannot read or change live account
+  data, bookings, or payments.
 
 ## 2026-10-23
 

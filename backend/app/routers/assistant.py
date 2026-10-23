@@ -1,10 +1,13 @@
-"""Role-aware, OpenAI-compatible chat assistant for customers and providers."""
+"""Role-aware Gemini Interactions API for customer/provider chat and voice."""
 
+import base64
 import logging
 from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, Request
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field
 
 from .. import config
@@ -16,6 +19,7 @@ router = APIRouter()
 
 MAX_MESSAGES = 16
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
+AI_TIMEOUT_SECONDS = 40
 
 COMMON_INSTRUCTIONS = """You are LuckySeva's helpful home-services assistant.
 Reply in the language used by the user, including Hindi or Hinglish. Keep answers
@@ -45,71 +49,85 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=MAX_MESSAGES)
 
 
-@router.post("/chat")
-async def chat(body: ChatRequest, claims: dict = Depends(get_claims)):
+def _require_supported_role(claims: dict) -> str:
     role = claims.get("role")
     if role not in ROLE_INSTRUCTIONS:
         raise ApiError(403, "The assistant is available to customers and providers only.")
+    return role
+
+
+def _require_api_key() -> str:
     if not config.AI_API_KEY:
         raise ApiError(
             503,
             "The AI assistant is not configured yet. Add AI_API_KEY to the backend environment.",
             "ai_not_configured",
         )
+    return config.AI_API_KEY
 
-    messages = [
-        {"role": "system", "content": f"{COMMON_INSTRUCTIONS}\n\n{ROLE_INSTRUCTIONS[role]}"},
-        *[{"role": message.role, "content": message.content.strip()} for message in body.messages[-MAX_MESSAGES:]],
-    ]
-    if any(not message["content"] for message in messages[1:]):
+
+async def _create_interaction(**kwargs):
+    """Call Gemini without persisting chat content in Google's interaction store."""
+    client = genai.Client(api_key=_require_api_key())
+    try:
+        return await client.aio.interactions.create(
+            model=config.AI_MODEL,
+            store=False,
+            timeout=AI_TIMEOUT_SECONDS,
+            **kwargs,
+        )
+    finally:
+        await client.aio.aclose()
+
+
+def _upstream_error(exc: Exception, operation: str) -> ApiError:
+    logger.warning("Gemini %s request failed: %s", operation, type(exc).__name__)
+    upstream_code = getattr(exc, "code", None)
+    if upstream_code == 429 or upstream_code == "RESOURCE_EXHAUSTED":
+        return ApiError(503, "Lucky is busy right now. Please try again shortly.", "ai_rate_limited")
+    if isinstance(exc, (TimeoutError, httpx.TimeoutException)):
+        return ApiError(504, "Lucky took too long to respond. Please try again.", "ai_timeout")
+    return ApiError(502, "Lucky is temporarily unavailable. Please try again.", "ai_unavailable")
+
+
+@router.post("/chat")
+async def chat(body: ChatRequest, claims: dict = Depends(get_claims)):
+    role = _require_supported_role(claims)
+    _require_api_key()
+
+    # Use a stateless transcript as one user input. This avoids retaining user
+    # chats at the provider and avoids dropping Gemini's internal interaction steps.
+    speaker = "Customer" if role == "customer" else "Provider"
+    transcript = "\n".join(
+        f"{speaker if message.role == 'user' else 'Lucky'}: {message.content.strip()}"
+        for message in body.messages
+    )
+    if any(not message.content.strip() for message in body.messages):
         raise ApiError(422, "Messages cannot be empty.")
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(40.0, connect=10.0)) as client:
-            response = await client.post(
-                f"{config.AI_BASE_URL}/chat/completions",
-                headers={"Authorization": f"Bearer {config.AI_API_KEY}"},
-                json={"model": config.AI_MODEL, "messages": messages, "max_tokens": 500, "temperature": 0.4},
-            )
-    except httpx.TimeoutException as exc:
-        logger.warning("AI assistant request timed out: %s", type(exc).__name__)
-        raise ApiError(504, "The assistant took too long to respond. Please try again.", "ai_timeout") from exc
-    except httpx.HTTPError as exc:
-        logger.warning("AI assistant request failed: %s", type(exc).__name__)
-        raise ApiError(502, "The assistant is temporarily unavailable. Please try again.", "ai_unavailable") from exc
+        interaction = await _create_interaction(
+            input=transcript,
+            system_instruction=f"{COMMON_INSTRUCTIONS}\n\n{ROLE_INSTRUCTIONS[role]}",
+            generation_config=types.GenerationConfig(temperature=0.4, max_output_tokens=500),
+        )
+    except Exception as exc:
+        raise _upstream_error(exc, "chat") from exc
 
-    if response.is_error:
-        logger.warning("AI assistant upstream returned HTTP %s", response.status_code)
-        if response.status_code == 429:
-            raise ApiError(503, "The assistant is busy right now. Please try again shortly.", "ai_rate_limited")
-        raise ApiError(502, "The assistant is temporarily unavailable. Please try again.", "ai_unavailable")
-
-    try:
-        payload = response.json()
-        reply = payload["choices"][0]["message"]["content"]
-    except (ValueError, KeyError, IndexError, TypeError) as exc:
-        logger.warning("AI assistant returned an unexpected response shape")
-        raise ApiError(502, "The assistant returned an unreadable response. Please try again.", "ai_bad_response") from exc
-
+    reply = interaction.output_text
     if not isinstance(reply, str) or not reply.strip():
-        raise ApiError(502, "The assistant returned an empty response. Please try again.", "ai_empty_response")
+        raise ApiError(502, "Lucky returned an empty response. Please try again.", "ai_empty_response")
     return {"reply": reply.strip()}
 
 
 @router.post("/transcribe")
 async def transcribe(request: Request, claims: dict = Depends(get_claims)):
-    """Transcribe a short voice note without ever exposing the AI key to clients."""
-    if claims.get("role") not in ROLE_INSTRUCTIONS:
-        raise ApiError(403, "Voice assistant is available to customers and providers only.")
-    if not config.AI_API_KEY:
-        raise ApiError(
-            503,
-            "The AI assistant is not configured yet. Add AI_API_KEY to the backend environment.",
-            "ai_not_configured",
-        )
+    """Transcribe a short raw audio recording through Gemini Interactions."""
+    _require_supported_role(claims)
+    _require_api_key()
 
-    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    if not content_type.startswith("audio/"):
+    mime_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if not mime_type.startswith("audio/"):
         raise ApiError(415, "Please record an audio message and try again.", "audio_type_invalid")
 
     audio = bytearray()
@@ -120,39 +138,20 @@ async def transcribe(request: Request, claims: dict = Depends(get_claims)):
     if not audio:
         raise ApiError(400, "The voice recording was empty. Please try again.", "audio_empty")
 
-    extension = {
-        "audio/mp4": "mp4",
-        "audio/mpeg": "mp3",
-        "audio/mp3": "mp3",
-        "audio/ogg": "ogg",
-        "audio/wav": "wav",
-        "audio/webm": "webm",
-    }.get(content_type, "webm")
+    audio_input = [
+        {"type": "text", "text": "Generate a transcript of the speech. Return only the words spoken."},
+        {
+            "type": "audio",
+            "data": base64.b64encode(audio).decode("ascii"),
+            "mime_type": mime_type,
+        },
+    ]
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=10.0)) as client:
-            response = await client.post(
-                f"{config.AI_BASE_URL}/audio/transcriptions",
-                headers={"Authorization": f"Bearer {config.AI_API_KEY}"},
-                data={"model": config.AI_TRANSCRIPTION_MODEL},
-                files={"file": (f"voice.{extension}", bytes(audio), content_type)},
-            )
-    except httpx.TimeoutException as exc:
-        logger.warning("AI voice transcription timed out")
-        raise ApiError(504, "Voice transcription took too long. Please try again.", "ai_timeout") from exc
-    except httpx.HTTPError as exc:
-        logger.warning("AI voice transcription request failed: %s", type(exc).__name__)
-        raise ApiError(502, "Voice transcription is temporarily unavailable.", "ai_unavailable") from exc
+        interaction = await _create_interaction(input=audio_input)
+    except Exception as exc:
+        raise _upstream_error(exc, "voice transcription") from exc
 
-    if response.is_error:
-        logger.warning("AI transcription upstream returned HTTP %s", response.status_code)
-        if response.status_code == 429:
-            raise ApiError(503, "Voice service is busy right now. Please try again shortly.", "ai_rate_limited")
-        raise ApiError(502, "Voice transcription is temporarily unavailable.", "ai_unavailable")
-    try:
-        text = response.json().get("text")
-    except (ValueError, AttributeError) as exc:
-        logger.warning("AI transcription returned an unexpected response shape")
-        raise ApiError(502, "Voice transcription returned an unreadable response.", "ai_bad_response") from exc
+    text = interaction.output_text
     if not isinstance(text, str) or not text.strip():
         raise ApiError(502, "No speech was detected. Please try again.", "ai_no_speech")
     return {"text": text.strip()}

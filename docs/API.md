@@ -119,7 +119,7 @@ Get current user profile.
 
 #### `POST /assistant/chat`
 Send the recent conversation to the role-aware assistant. The server applies its
-customer/provider instructions and calls the configured OpenAI-compatible API.
+customer/provider instructions and calls the configured Gemini Interactions API.
 
 **Request:**
 ```json
@@ -131,16 +131,16 @@ customer/provider instructions and calls the configured OpenAI-compatible API.
 ```
 
 The request accepts at most 16 messages, with a maximum of 2,000 characters per
-message. The server-side `AI_API_KEY` is never returned to the app. Without that
-key, the endpoint responds with `503` and code `ai_not_configured`.
+message. The server uses the Gemini Interactions API with `store=false`, and the
+server-side `AI_API_KEY` is never returned to the app. Without that key, the
+endpoint responds with `503` and code `ai_not_configured`.
 
 **Response:** `{"reply": "..."}`
 
 #### `POST /assistant/transcribe`
 Transcribe a raw audio request body (`Content-Type: audio/webm`, `audio/mp4`, etc.)
-into text for the chat composer. Maximum size: 8 MB. Requires an OpenAI-compatible
-`/audio/transcriptions` endpoint, `AI_API_KEY`, and optionally
-`AI_TRANSCRIPTION_MODEL` (default `gpt-4o-mini-transcribe`).
+into text for the chat composer. Maximum size: 8 MB. Audio is sent inline to
+Gemini Interactions and is not stored as an interaction.
 
 **Response:** `{"text": "..."}`
 

@@ -360,15 +360,15 @@ and `backend/` for the backend.
 - The same assistant screen is available to signed-in customer and provider roles.
 - Text chat uses the authenticated `POST /assistant/chat` endpoint. The server
   selects a role-specific prompt, limits conversation size, and calls an
-  OpenAI-compatible Chat Completions API.
+  asynchronous Google Gemini Interactions API request.
 - Voice input records a short note with MediaRecorder and transcribes it through
   the configured backend AI provider; assistant replies can be read aloud with
   device speech synthesis. Typing remains available if microphone permission or
   recording support is unavailable.
 - Configure `AI_API_KEY` on the backend (local `backend/.env` or Render
-  environment). `AI_BASE_URL`, `AI_MODEL`, and `AI_TRANSCRIPTION_MODEL` are
-  optional. The key is never sent to a client. Without a key, chat and voice
-  transcription show a clear “not configured” message.
+  environment). `AI_MODEL` is optional and defaults to `gemini-3.8-flash`. The
+  key is never sent to a client. Without a key, chat and voice transcription
+  show a clear “not configured” message.
 - The assistant is guidance-only: it cannot read live account data, create or
   change bookings, accept provider jobs, or handle payments. Never share OTPs,
   passwords, or payment PINs in chat.
