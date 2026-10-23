@@ -30,7 +30,8 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   bounded content widths and responsive grids. Customer and provider auth pages
   now use the full browser viewport for the split-screen brand/form layout,
   instead of being clipped to the content max width. Native/mobile layouts remain
-  unchanged.
+  unchanged. Desktop home scrolling remains available without displaying a
+  scrollbar.
 - **Provider desktop workspace** now presents requests as the primary work feed,
   active jobs and service coverage in a side rail, plus a dedicated workspace
   heading and availability indicator. Provider bookings use a responsive card

@@ -59,7 +59,7 @@ export const DesktopHomeScreen = ({
   onProfessional,
 }: Props) => {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8f7]">
+    <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8f7]">
       <section className="border-b border-emerald-100/70 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-10 py-9 xl:px-12 xl:py-11">
           <div className="min-w-0">
