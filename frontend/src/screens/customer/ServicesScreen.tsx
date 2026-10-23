@@ -50,13 +50,13 @@ export const ServicesScreen = () => {
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="All Services" showBack={false} />
 
-      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3 lg:px-[10px]">
+      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3 lg:px-[25px]">
         <div className="w-full">
         <SearchBar value={query} onChange={setQuery} placeholder="Search services or categories" />
         </div>
       </div>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-4 lg:px-[10px] lg:py-6">
+      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-4 lg:px-[25px] lg:py-6">
         <div className="w-full">
         {loading ? (
           <Spinner className="py-10" />

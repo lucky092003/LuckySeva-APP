@@ -140,7 +140,7 @@ export const MyBookingsScreen = () => {
         </div>
       </div>
 
-      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:px-[10px] lg:py-7">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:px-[25px] lg:py-7">
         <div className="w-full">
         {loading ? (
           <Spinner className="py-16" />

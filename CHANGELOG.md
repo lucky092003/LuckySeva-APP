@@ -26,7 +26,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   `DesktopHomeScreen` with a light editorial hero, service search, category and
   popular-service discovery, plus booking/professional side panels. Desktop
   navigation spans the site and moves to the desktop breakpoint; tablets retain
-  app-style bottom navigation. Desktop pages now use 10px side gutters and
+  app-style bottom navigation. Desktop pages now use 25px side gutters and
   breakpoint-aware grids. Customer and provider auth pages
   now use the full browser viewport for the split-screen brand/form layout,
   instead of being clipped to the content max width. Native/mobile layouts remain

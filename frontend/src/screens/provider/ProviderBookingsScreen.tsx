@@ -34,7 +34,7 @@ export const ProviderBookingsScreen = () => {
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <div className="lg:hidden"><TopBar title="My Bookings" showBack={false} /></div>
       <div className="hidden shrink-0 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:block">
-        <div className="flex w-full items-center justify-between gap-6 px-[10px] py-6">
+        <div className="flex w-full items-center justify-between gap-6 px-[25px] py-6">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">Partner workspace</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950 dark:text-gray-50">Your bookings</h1>
@@ -43,7 +43,7 @@ export const ProviderBookingsScreen = () => {
           {professional && <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">{professional.name}</span>}
         </div>
       </div>
-      <div className="shrink-0 border-b border-gray-100 bg-white px-4 dark:border-gray-800 dark:bg-gray-900 lg:px-[10px]">
+      <div className="shrink-0 border-b border-gray-100 bg-white px-4 dark:border-gray-800 dark:bg-gray-900 lg:px-[25px]">
         <div className="flex w-full py-3">
           <div className="flex w-full gap-1 overflow-x-auto no-scrollbar lg:w-auto lg:rounded-xl lg:bg-gray-100 lg:p-1 dark:lg:bg-gray-800">
             {TABS.map((t) => (
@@ -58,7 +58,7 @@ export const ProviderBookingsScreen = () => {
           </div>
         </div>
       </div>
-      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:px-[10px] lg:py-7">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:px-[25px] lg:py-7">
         <div className="w-full">
         {loading ? (
           <Spinner className="py-16" />
