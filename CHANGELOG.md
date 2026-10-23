@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-23
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-23
+
+### Changed
+- **Customer booking screens** (`frontend/src/screens/customer/TrackingScreen.tsx`,
+  `frontend/src/screens/customer/BookingSuccessScreen.tsx`) now have a more polished,
+  responsive look: laptop users get a side-by-side live map and booking-details
+  rail, while phones retain the floating map status and bottom sheet. Tracking
+  banners and the booking confirmation’s success state, summary card, and actions
+  have clearer hierarchy and a more premium feel.
 
 ## 2026-10-19
 
