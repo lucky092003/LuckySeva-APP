@@ -193,21 +193,25 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
     tone: 'live' | 'done' | 'bad',
     title: string,
     subtitle?: string,
-    compact = false,
   ) => (
-    <div className={`rounded-2xl p-4 text-white ${tone === 'bad' ? 'bg-red-500' : tone === 'done' ? 'bg-emerald-600' : 'bg-gradient-to-r from-emerald-500 to-teal-600'} ${compact ? 'shadow-lg shadow-black/10' : ''}`}>
-      <div className="flex items-center gap-3">
+    <div className={`rounded-2xl border p-4 text-white shadow-lg shadow-slate-950/10 ${tone === 'bad' ? 'border-red-400/30 bg-gradient-to-r from-red-600 to-rose-500' : tone === 'done' ? 'border-emerald-400/30 bg-gradient-to-r from-emerald-700 to-teal-600' : 'border-emerald-400/30 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950'}`}>
+      <div className="flex items-center gap-3.5">
         {tone === 'done' ? (
-          <Icons.PartyPopper size={28} />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15"><Icons.PartyPopper size={22} /></span>
         ) : tone === 'bad' ? (
-          <Icons.XCircle size={28} />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15"><Icons.XCircle size={22} /></span>
         ) : (
-          <Icons.Loader size={28} className="animate-spin" />
+          <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 ring-1 ring-emerald-300/20">
+            <span className="absolute inset-2 animate-ping rounded-lg bg-emerald-400/20" />
+            <Icons.Navigation size={21} className="relative text-emerald-300" />
+          </span>
         )}
-        <div>
-          <p className="text-base font-bold">{title}</p>
-          {subtitle && <p className="text-xs text-white/80">{subtitle}</p>}
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{tone === 'live' ? 'Booking update' : tone === 'done' ? 'All wrapped up' : 'Booking update'}</p>
+          <p className="mt-0.5 text-base font-bold tracking-tight">{title}</p>
+          {subtitle && <p className="mt-0.5 truncate text-xs text-white/70">{subtitle}</p>}
         </div>
+        {tone === 'live' && <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-200"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" /> Live</span>}
       </div>
     </div>
   );
@@ -218,7 +222,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
       : isCompleted
         ? banner('done', 'Service Completed!', booking.service_name)
         : booking.status === 'on_the_way'
-          ? banner('live', 'Provider is on the way', etaMin ? `Reaching in ~${etaMin} min` : booking.service_name, false)
+          ? banner('live', 'Provider is on the way', etaMin ? `Estimated arrival in about ${etaMin} min` : booking.service_name)
           : banner('live', 'Service in Progress', booking.service_name);
 
   const noticeCard = locationNotice && (
@@ -317,59 +321,64 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   );
 
   if (showLiveMap) {
-    // Blinkit-style full-bleed map with floating status on top and details
-    // docked in a bottom sheet.
+    // On phones, keep the familiar floating status and bottom sheet. On wider
+    // screens, give the map and booking details their own side-by-side panels.
     return (
-      <div className="flex flex-1 flex-col overflow-hidden bg-gray-100">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
         <TopBar title="Track Booking" />
-        <div className="relative flex-1 overflow-hidden">
-          <LiveMap
-            className="absolute inset-0 z-0"
-            customer={{ latitude: booking.latitude!, longitude: booking.longitude! }}
-            professional={proCoords}
-            route={route?.path ?? null}
-          />
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div className="absolute inset-0 flex flex-col md:absolute md:inset-0 md:flex-row md:gap-6 md:overflow-y-auto md:p-6 lg:gap-7 lg:p-8">
+            <section className="relative min-h-0 flex-1 overflow-hidden bg-slate-200 md:min-h-[560px] md:rounded-[28px] md:border md:border-white md:shadow-xl md:shadow-slate-900/10">
+              <LiveMap
+                className="absolute inset-0 z-0 md:static md:h-full md:min-h-[560px]"
+                customer={{ latitude: booking.latitude!, longitude: booking.longitude! }}
+                professional={proCoords}
+                route={route?.path ?? null}
+              />
 
-          {/* Floating status + ETA on top of the map */}
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-10 px-4">
-            <div className="pointer-events-none">{bannerNode}</div>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/95 py-2 pl-3 pr-4 text-xs font-semibold text-gray-800 shadow-lg shadow-black/10 backdrop-blur">
-              {proCoords ? (
-                <>
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  </span>
-                  Live
-                  <span className="text-gray-300">|</span>
-                  {distanceKm == null ? (
-                    <span className="text-gray-500">Measuring...</span>
+              {/* Map context and live distance */}
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-10 px-4 md:top-5 md:px-5">
+                <div className="pointer-events-none mx-auto max-w-xl md:mx-0">{bannerNode}</div>
+                <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/95 py-2 pl-3 pr-4 text-xs font-semibold text-gray-800 shadow-lg shadow-slate-900/10 backdrop-blur-xl md:mt-3">
+                  {proCoords ? (
+                    <>
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                      </span>
+                      Live
+                      <span className="text-gray-300">|</span>
+                      {distanceKm == null ? (
+                        <span className="text-gray-500">Measuring...</span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Icons.Truck size={13} className="text-emerald-600" />
+                          {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m away` : `${distanceKm.toFixed(1)} km away`}
+                        </span>
+                      )}
+                    </>
                   ) : (
-                    <span className="flex items-center gap-1">
-                      <Icons.Truck size={13} className="text-emerald-600" />
-                      {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m away` : `${distanceKm.toFixed(1)} km away`}
-                    </span>
+                    <>
+                      <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+                      <span className="text-gray-500">Waiting for provider GPS</span>
+                    </>
                   )}
-                </>
-              ) : (
-                <>
-                  <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
-                  <span className="text-gray-500">Waiting for provider GPS</span>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {/* Bottom sheet with everything else */}
-          <div className="no-scrollbar absolute inset-x-0 bottom-0 z-10 max-h-[58%] overflow-y-auto rounded-t-3xl bg-white/95 px-4 pb-4 pt-2.5 shadow-[0_-10px_40px_rgba(0,0,0,0.18)] backdrop-blur">
-            <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-gray-200" />
-            <div className="space-y-3">
+            </section>
+
+            {/* Bottom sheet on mobile; a clean details rail on laptop. */}
+            <aside className="no-scrollbar absolute inset-x-0 bottom-0 z-10 max-h-[58%] overflow-y-auto rounded-t-3xl border-t border-white/80 bg-white/95 px-4 pb-4 pt-2.5 shadow-[0_-10px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl md:relative md:inset-auto md:flex md:max-h-full md:min-h-0 md:w-[360px] md:shrink-0 md:flex-col md:gap-3 md:overflow-y-auto md:rounded-[28px] md:border md:border-slate-200/80 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none lg:w-[390px]">
+            <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-gray-200 md:hidden" />
+            <div className="space-y-3 md:space-y-4">
               {noticeCard}
               {proCard}
               {timeline}
               {details}
               {isCompleted && finishCards}
             </div>
+            </aside>
           </div>
         </div>
       </div>
@@ -377,20 +386,27 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-slate-50">
       <TopBar title="Track Booking" />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
-        {bannerNode}
-        <div className="mt-4 space-y-4">
-          {noticeCard}
-          {proCard}
-          {timeline}
-          {details}
-          {isCompleted && (
-            <div className="space-y-0 pt-1">
-              {finishCards}
-            </div>
-          )}
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-5 py-5 md:px-8 md:py-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="mb-6 hidden md:block">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">LuckySeva · Booking #{booking.id.slice(0, 8)}</p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">Your service journey</h2>
+            <p className="mt-1 text-sm text-slate-500">Stay up to date with your professional and booking details.</p>
+          </div>
+          {bannerNode}
+          <div className="mt-5 grid gap-4 md:grid-cols-2 md:items-start md:gap-5">
+            {noticeCard}
+            {proCard}
+            {timeline}
+            {details}
+            {isCompleted && (
+              <div className="space-y-2 pt-1">
+                {finishCards}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
