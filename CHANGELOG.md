@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-23
+**Last updated:** 2026-10-24
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-24
+
+### Changed
+- **Session token validity is 20 minutes** for customer, provider, and admin
+  logins. Tokens include an issued-at claim, and legacy tokens without it are
+  rejected so old 30-day sessions cannot bypass the new limit. An expired-token
+  401 now clears the saved session and returns the app to login.
 
 ## 2026-10-23
 

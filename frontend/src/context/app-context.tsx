@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { ApiError, api, getApiToken, setApiToken } from '@/services/api';
+import { ApiError, api, getApiToken, SESSION_EXPIRED_EVENT, setApiToken } from '@/services/api';
 import { registerPush } from '@/services/push';
 
 export type Role = 'customer' | 'provider' | 'admin';
@@ -125,6 +125,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setAdminAuthedState(false);
       setStack(APP_ROLE === 'provider' ? [{ name: 'provider-auth' }] : APP_ROLE === 'admin' ? [{ name: 'admin-auth' }] : [{ name: 'auth' }]);
     };
+    window.addEventListener(SESSION_EXPIRED_EVENT, resetToAuth);
     if (!token) {
       if (initialCustomer || initialProviderId || initialAdminAuthed) {
         save(LS_CUSTOMER, null);
@@ -132,7 +133,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         save(LS_ADMIN, false);
         resetToAuth();
       }
-      return;
+      return () => window.removeEventListener(SESSION_EXPIRED_EVENT, resetToAuth);
     }
     api.auth
       .me()
@@ -166,6 +167,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           resetToAuth();
         }
       });
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, resetToAuth);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
