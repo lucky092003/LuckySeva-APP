@@ -53,13 +53,6 @@ import {
 
 function Router() {
   const { screen, role, adminAuthed } = useApp();
-  const desktopWideScreens = ['home', 'services', 'bookings', 'tracking', 'professional', 'provider-home', 'provider-bookings', 'provider-earnings'];
-  const fullBleedScreens = ['auth', 'provider-auth'];
-  const desktopContentWidth = fullBleedScreens.includes(screen.name)
-    ? 'md:max-w-none'
-    : desktopWideScreens.includes(screen.name)
-      ? 'md:max-w-[1440px]'
-      : 'md:max-w-[1200px]';
 
   if (role === 'admin') {
     if (!adminAuthed) {
@@ -87,7 +80,7 @@ function Router() {
       <WebTopNav role={role} />
       <div
         key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')}
-        className={`screen-enter mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden ${desktopContentWidth}`}
+        className="screen-enter flex min-h-0 w-full flex-1 flex-col overflow-hidden"
       >
         {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
