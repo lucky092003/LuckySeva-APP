@@ -56,36 +56,40 @@ export const HomeScreen = () => {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
-        <div className="flex items-center justify-between">
-          <button onClick={handleLocationTap} className="flex min-w-0 items-center gap-1.5 text-left">
-            <MapPin size={14} className="shrink-0" />
-            <span className="max-w-[160px] truncate text-xs font-medium text-white/90">
-              {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
-            </span>
-            <ChevronRight size={14} className="shrink-0" />
-          </button>
-          <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 md:hidden">
-            <Icons.Bell size={18} />
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white md:px-8 md:py-8">
+        <div className="mx-auto w-full max-w-7xl md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] md:items-center md:gap-10">
+          <div>
+            <div className="flex items-center justify-between">
+              <button onClick={handleLocationTap} className="flex min-w-0 items-center gap-1.5 text-left">
+                <MapPin size={14} className="shrink-0" />
+                <span className="max-w-[160px] truncate text-xs font-medium text-white/90 md:max-w-sm md:text-sm">
+                  {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
+                </span>
+                <ChevronRight size={14} className="shrink-0" />
+              </button>
+              <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 md:hidden">
+                <Icons.Bell size={18} />
+              </button>
+            </div>
+            <h1 className="mt-3 text-xl font-bold md:mt-5 md:text-3xl">
+              Hi {customer?.name?.split(' ')[0] || 'there'} 👋
+            </h1>
+            <p className="text-sm text-white/80 md:mt-1 md:text-base">What service do you need today?</p>
+          </div>
+
+          {/* Search stays compact beside the greeting on desktop. */}
+          <button
+            onClick={() => navigate({ name: 'search' })}
+            className="mt-4 flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-left text-sm text-gray-400 shadow-lg transition-transform active:scale-[0.98] md:mt-0 md:py-4"
+          >
+            <Search size={18} />
+            What service do you need?
           </button>
         </div>
-        <h1 className="mt-3 text-xl font-bold">
-          Hi {customer?.name?.split(' ')[0] || 'there'} 👋
-        </h1>
-        <p className="text-sm text-white/80">What service do you need today?</p>
-
-        {/* Search */}
-        <button
-          onClick={() => navigate({ name: 'search' })}
-          className="mt-4 flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-left text-sm text-gray-400 shadow-lg transition-transform active:scale-[0.98]"
-        >
-          <Search size={18} />
-          What service do you need?
-        </button>
       </div>
 
       {/* Categories */}
-      <div className="px-5 pt-5">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-5 md:px-8 md:pt-7">
         <SectionTitle title="Service Categories" />
         {catLoading ? (
           <Spinner className="py-8" />
@@ -114,7 +118,7 @@ export const HomeScreen = () => {
       </div>
 
       {/* Popular services */}
-      <div className="px-5 pt-6">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-6 md:px-8 md:pt-8">
         <SectionTitle title="Popular Services" />
         {svcLoading ? (
           <Spinner className="py-8" />
@@ -157,9 +161,9 @@ export const HomeScreen = () => {
 
       {/* Recent bookings */}
       {recent.length > 0 && (
-        <div className="px-5 pt-6">
+        <div className="mx-auto w-full max-w-7xl px-5 pt-6 md:px-8 md:pt-8">
           <SectionTitle title="Your Recent Bookings" action="See all" onAction={() => navigate({ name: 'bookings' })} />
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {recent.slice(0, 2).map((b) => (
               <Card key={b.id} onClick={() => navigate({ name: 'tracking', bookingId: b.id })} className="flex items-center gap-3 p-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
@@ -179,7 +183,7 @@ export const HomeScreen = () => {
       )}
 
       {/* Top rated professionals */}
-      <div className="px-5 pt-6 pb-6">
+      <div className="mx-auto w-full max-w-7xl px-5 pb-6 pt-6 md:px-8 md:pb-10 md:pt-8">
         <SectionTitle title="Top Rated Near You" />
         {proLoading ? (
           <Spinner className="py-6" />

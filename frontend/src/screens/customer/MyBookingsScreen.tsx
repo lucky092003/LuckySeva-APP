@@ -125,7 +125,8 @@ export const MyBookingsScreen = () => {
         </button>
       } />
       {/* Tabs */}
-      <div className="flex shrink-0 gap-1 border-b border-gray-100 bg-white px-3">
+      <div className="flex shrink-0 justify-center gap-1 border-b border-gray-100 bg-white px-3 md:px-8">
+        <div className="flex w-full max-w-3xl gap-1">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -136,9 +137,11 @@ export const MyBookingsScreen = () => {
             {tab === t.key && <div className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-emerald-500" />}
           </button>
         ))}
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-4">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 md:px-8 md:py-7">
+        <div className="mx-auto w-full max-w-7xl">
         {loading ? (
           <Spinner className="py-16" />
         ) : bookings.length === 0 ? (
@@ -148,7 +151,7 @@ export const MyBookingsScreen = () => {
             subtitle="Your bookings will appear here."
           />
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {bookings.map((b) => (
               <BookingCard
                 key={b.id}
@@ -165,6 +168,7 @@ export const MyBookingsScreen = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       <ConfirmDialog

@@ -31,7 +31,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
 
   return (
     <div className="sticky top-0 z-50 border-b border-gray-200/70 bg-white/85 shadow-[0_8px_30px_-16px_rgba(17,24,39,0.25)] backdrop-blur-xl">
-      <nav className="hidden shrink-0 items-center justify-between gap-4 px-5 py-2.5 md:flex">
+      <nav className="mx-auto hidden w-full max-w-[1280px] shrink-0 items-center justify-between gap-4 px-6 py-2.5 md:flex lg:px-8">
         <button onClick={() => navigate(items[0].screen)} className="flex items-center gap-2.5">
           <Logo size={36} className="rounded-xl shadow-sm ring-1 ring-gray-200/80" />
           {/* Brand rule: "Seva" is always orange-500 in the LuckySeva wordmark. Never recolour it. */}

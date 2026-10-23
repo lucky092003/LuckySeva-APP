@@ -50,11 +50,14 @@ export const ServicesScreen = () => {
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="All Services" showBack={false} />
 
-      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3">
+      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3 md:px-8">
+        <div className="mx-auto w-full max-w-7xl">
         <SearchBar value={query} onChange={setQuery} placeholder="Search services or categories" />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-4">
+      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-4 md:px-8 md:py-6">
+        <div className="mx-auto w-full max-w-7xl">
         {loading ? (
           <Spinner className="py-10" />
         ) : failed ? (
@@ -64,7 +67,7 @@ export const ServicesScreen = () => {
             {matchedCats.length > 0 && (
               <>
                 <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-400">Browse by category</p>
-                <div className="mb-6 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div className="mx-auto mb-6 max-w-4xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
                   {matchedCats.map((cat, i) => {
                     const Icon = iconFor(cat.icon);
                     const count = countByCategory.get(cat.id) || 0;
@@ -100,7 +103,7 @@ export const ServicesScreen = () => {
             {matchedServices.length > 0 && (
               <>
                 <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-400">All Services</p>
-                <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {matchedServices.map((svc) => {
                     const cat = categories.find((c) => c.id === svc.category_id);
                     const color = cat?.color || '#10b981';
@@ -133,6 +136,7 @@ export const ServicesScreen = () => {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

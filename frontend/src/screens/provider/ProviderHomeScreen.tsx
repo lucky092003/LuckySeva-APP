@@ -227,7 +227,7 @@ export const ProviderHomeScreen = () => {
           </div>
         }
       />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-4 pt-3 lg:py-4">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-3 lg:mx-auto lg:w-full lg:max-w-7xl lg:px-8 lg:py-6">
         {/* Why the last accept didn't go through (taken / expired / offline). */}
         {actionError && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs leading-relaxed text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
@@ -317,7 +317,7 @@ export const ProviderHomeScreen = () => {
             Nothing in progress. Accept a request below to start a job.
           </p>
         ) : (
-          <div className="mb-4 space-y-2">
+          <div className="mb-4 space-y-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             {active.map((b) => (
               <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />
             ))}
@@ -341,7 +341,7 @@ export const ProviderHomeScreen = () => {
         </div>
 
         {loading ? (
-          <div className="space-y-3 pb-2">
+          <div className="space-y-3 pb-2 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
