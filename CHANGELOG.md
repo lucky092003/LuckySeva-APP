@@ -25,9 +25,9 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   instead of a floating app frame. The customer home uses a dedicated
   `DesktopHomeScreen` with a light editorial hero, service search, category and
   popular-service discovery, plus booking/professional side panels. Desktop
-  navigation spans the site with a centered content rail and moves to the desktop
-  breakpoint; tablets retain app-style bottom navigation. Other key pages use
-  bounded content widths and responsive grids. Customer and provider auth pages
+  navigation spans the site and moves to the desktop breakpoint; tablets retain
+  app-style bottom navigation. Desktop pages now use 10px side gutters and
+  breakpoint-aware grids. Customer and provider auth pages
   now use the full browser viewport for the split-screen brand/form layout,
   instead of being clipped to the content max width. Native/mobile layouts remain
   unchanged. Desktop home scrolling remains available without displaying a
@@ -36,8 +36,8 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   active jobs and service coverage in a side rail, plus a dedicated workspace
   heading and availability indicator. Provider bookings use a responsive card
   grid, and the web navigation now includes role-aware active states and an
-  account identity control. Desktop page backgrounds now span the viewport;
-  content sections retain their centered max-width to avoid stretching.
+  account identity control. Page backgrounds span the viewport, while card grids
+  add columns at wider breakpoints to keep the layout balanced.
 
 ## 2026-10-19
 

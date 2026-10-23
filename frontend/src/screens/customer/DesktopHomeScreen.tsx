@@ -61,7 +61,7 @@ export const DesktopHomeScreen = ({
   return (
     <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8f7]">
       <section className="border-b border-emerald-100/70 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-10 py-9 xl:px-12 xl:py-11">
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-[10px] py-9 xl:py-11">
           <div className="min-w-0">
             <button
               onClick={onLocationClick}
@@ -121,14 +121,14 @@ export const DesktopHomeScreen = ({
         </div>
       </section>
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-[minmax(0,1fr)_310px] gap-8 px-10 py-8 xl:px-12">
+      <main className="grid w-full flex-1 grid-cols-[minmax(0,1fr)_310px] gap-8 px-[10px] py-8">
         <div className="min-w-0 space-y-8">
           <section>
             <SectionTitle title="Explore categories" action="All services" onAction={onSeeServices} />
             {catLoading ? (
               <Spinner className="py-8" />
             ) : (
-              <div className="grid grid-cols-3 gap-3 xl:grid-cols-4">
+              <div className="grid grid-cols-3 gap-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {categories.slice(0, 8).map((category) => {
                   const Icon = iconFor(category.icon);
                   return (
@@ -160,7 +160,7 @@ export const DesktopHomeScreen = ({
             {svcLoading ? (
               <Spinner className="py-8" />
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 xl:grid-cols-3 2xl:grid-cols-4">
                 {popularServices.slice(0, 4).map((service) => {
                   const category = categories.find((item) => item.id === service.category_id);
                   const color = category?.color || '#10b981';

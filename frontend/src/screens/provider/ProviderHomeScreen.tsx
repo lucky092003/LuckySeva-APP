@@ -223,7 +223,7 @@ export const ProviderHomeScreen = () => {
         />
       </div>
       <div className="hidden shrink-0 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-8 py-6">
+        <div className="flex w-full items-center justify-between gap-6 px-[10px] py-6">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">Partner workspace</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950 dark:text-gray-50">Requests & active jobs</h1>
@@ -240,7 +240,7 @@ export const ProviderHomeScreen = () => {
           </div>
         </div>
       </div>
-      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-3 lg:mx-auto lg:w-full lg:max-w-7xl lg:px-8 lg:py-6">
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-3 lg:w-full lg:px-[10px] lg:py-6">
         {/* Why the last accept didn't go through (taken / expired / offline). */}
         {actionError && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs leading-relaxed text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">

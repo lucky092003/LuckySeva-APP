@@ -45,7 +45,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
 
   return (
     <div className="sticky top-0 z-50 shrink-0 border-b border-slate-200/80 bg-white">
-      <nav className="mx-auto hidden h-[80px] w-full max-w-7xl items-center justify-between gap-6 px-8 lg:flex xl:px-10">
+      <nav className="hidden h-[80px] w-full items-center justify-between gap-6 px-[10px] lg:flex">
         <div className="flex min-w-0 shrink-0 items-center gap-3.5">
           <button onClick={() => navigate(items[0].screen)} className="flex shrink-0 items-center gap-3">
             <Logo size={40} className="rounded-xl shadow-sm ring-1 ring-gray-200/80" />

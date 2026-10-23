@@ -50,14 +50,14 @@ export const ServicesScreen = () => {
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
       <TopBar title="All Services" showBack={false} />
 
-      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3 md:px-8">
-        <div className="mx-auto w-full max-w-7xl">
+      <div className="shrink-0 border-b border-gray-100 bg-white px-5 pb-3 lg:px-[10px]">
+        <div className="w-full">
         <SearchBar value={query} onChange={setQuery} placeholder="Search services or categories" />
         </div>
       </div>
 
-      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-4 md:px-8 md:py-6">
-        <div className="mx-auto w-full max-w-7xl">
+      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-4 lg:px-[10px] lg:py-6">
+        <div className="w-full">
         {loading ? (
           <Spinner className="py-10" />
         ) : failed ? (
@@ -103,7 +103,7 @@ export const ServicesScreen = () => {
             {matchedServices.length > 0 && (
               <>
                 <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-gray-400">All Services</p>
-                <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                   {matchedServices.map((svc) => {
                     const cat = categories.find((c) => c.id === svc.category_id);
                     const color = cat?.color || '#10b981';
