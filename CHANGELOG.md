@@ -13,6 +13,8 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ## 2026-10-24
 
 ### Changed
+- **Customer and provider screens** now share polished, accessible UI primitives,
+  clearer navigation states, and more consistent mobile/desktop styling.
 - **Session token validity is 20 minutes** for customer, provider, and admin
   logins. Tokens include an issued-at claim, and legacy tokens without it are
   rejected so old 30-day sessions cannot bypass the new limit. An expired-token
