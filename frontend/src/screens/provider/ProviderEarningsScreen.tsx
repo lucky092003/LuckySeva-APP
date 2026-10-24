@@ -177,11 +177,11 @@ export const ProviderEarningsScreen = () => {
         showBack={false}
         right={
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-gray-400 dark:text-gray-500 lg:block">{today}</span>
-            <Button variant="outline" onClick={() => setShowStatement(true)} className="gap-1.5 px-2 py-1 text-xs">
+            <span className="hidden text-xs text-slate-500 dark:text-slate-400 lg:block">{today}</span>
+            <Button variant="outline" onClick={() => setShowStatement(true)} ariaLabel="View earnings statement" className="gap-1.5 px-2.5 py-1.5 text-xs">
               <Icons.FileText size={13} />
             </Button>
-            <Button onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="gap-1.5 bg-emerald-500 px-2 py-1 text-xs hover:bg-emerald-600 disabled:opacity-50">
+            <Button onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="gap-1.5 px-2.5 py-1.5 text-xs">
               <Icons.ArrowDownToLine size={13} /> {withdrawing ? '...' : hasPendingWithdraw ? 'Pending' : 'Withdraw'}
             </Button>
           </div>
@@ -192,17 +192,20 @@ export const ProviderEarningsScreen = () => {
         {/* Mobile: Balance card | Desktop: Stats grid */}
         <div className="lg:mb-6">
           {/* Mobile Balance Card */}
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg lg:hidden">
-            <p className="text-sm text-white/80">Available Balance</p>
-            <p className="mt-1 text-3xl font-extrabold">{inr(available)}</p>
-            {hasPendingWithdraw && <p className="mt-1 text-[11px] text-white/80">Withdrawal of {inr(withdrawn)} requested — processing</p>}
-            <div className="mt-4 flex gap-2">
-              <Button variant="secondary" onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
-                {withdrawing ? 'Requesting...' : <><Icons.ArrowDownToLine size={15} /> {hasPendingWithdraw ? 'Withdrawal Pending' : 'Withdraw'}</>}
-              </Button>
-              <Button variant="secondary" onClick={() => setShowStatement(true)} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
-                <Icons.FileText size={15} /> Statement
-              </Button>
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 p-5 text-white shadow-lg shadow-emerald-900/15 lg:hidden">
+            <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
+            <div className="relative">
+              <p className="text-sm text-white/80">Available Balance</p>
+              <p className="mt-1 text-3xl font-extrabold tracking-tight">{inr(available)}</p>
+              {hasPendingWithdraw && <p className="mt-1 text-[11px] text-white/80">Withdrawal of {inr(withdrawn)} requested — processing</p>}
+              <div className="mt-4 flex gap-2">
+                <Button variant="secondary" onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
+                  {withdrawing ? 'Requesting...' : <><Icons.ArrowDownToLine size={15} /> {hasPendingWithdraw ? 'Withdrawal Pending' : 'Withdraw'}</>}
+                </Button>
+                <Button variant="secondary" onClick={() => setShowStatement(true)} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
+                  <Icons.FileText size={15} /> Statement
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -211,15 +214,15 @@ export const ProviderEarningsScreen = () => {
             {stats.map((s) => {
               const Icon = s.icon;
               return (
-                <Card key={s.label} className={`group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.highlight ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25' : 'shadow-md hover:shadow-lg'}`}>
+                <Card key={s.label} className={`group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.highlight ? 'border-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25' : 'shadow-sm hover:shadow-lg dark:border-gray-800'}`}>
                   {/* Decorative circle */}
                   <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-gray-50 dark:bg-gray-800'} transition-transform duration-300 group-hover:scale-110`} />
                   <div className="relative">
                     <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${s.grad} text-white shadow-lg shadow-gray-200/50`}>
                       <Icon size={20} />
                     </div>
-                    <p className={`mt-4 text-2xl font-bold tracking-tight ${s.highlight ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{s.value}</p>
-                    <p className={`mt-0.5 text-xs font-medium ${s.highlight ? 'text-white/75' : 'text-gray-400 dark:text-gray-500'}`}>{s.label}</p>
+                    <p className={`mt-4 text-2xl font-extrabold tracking-tight ${s.highlight ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{s.value}</p>
+                    <p className={`mt-0.5 text-xs font-medium ${s.highlight ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{s.label}</p>
                   </div>
                 </Card>
               );
@@ -234,11 +237,11 @@ export const ProviderEarningsScreen = () => {
             <div className="mb-3 flex items-start justify-between">
               <div>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Earnings Overview</h3>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500">{periodLabel}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{periodLabel}</p>
               </div>
               <div className="text-right">
                 <p className="text-lg font-extrabold leading-tight tracking-tight text-gray-900 dark:text-gray-100">{inr(periodTotal)}</p>
-                <p className="text-[9px] font-medium text-gray-400 dark:text-gray-500">
+                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                   {trendPct === null ? (
                     'no data to compare'
                   ) : (

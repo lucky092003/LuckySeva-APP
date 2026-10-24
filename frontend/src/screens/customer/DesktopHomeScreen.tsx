@@ -58,67 +58,73 @@ export const DesktopHomeScreen = ({
 }: Props) => {
   return (
     <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f8f7]">
-      <section className="border-b border-emerald-100/70 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-        <div className="grid w-full grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-[25px] py-9 xl:py-11">
+      <section className="relative isolate shrink-0 overflow-hidden border-b border-emerald-100 bg-[linear-gradient(135deg,#e7f7f0_0%,#f7fbf9_52%,#dff2e9_100%)] text-slate-950">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-48 h-[34rem] w-[34rem] rounded-full bg-emerald-300/25 blur-3xl" />
+          <div className="absolute right-[22%] top-[-15rem] h-[32rem] w-[32rem] rounded-full bg-teal-200/30 blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.2),transparent_52%,rgba(16,185,129,0.05))]" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+        </div>
+        <div className="relative grid w-full grid-cols-[minmax(0,1fr)_420px] items-center gap-12 px-[25px] py-9 xl:py-11">
           <div className="min-w-0">
             <button
               onClick={onLocationClick}
-              className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-100 bg-white/90 px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-emerald-800"
+              className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/80 bg-white/75 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm shadow-emerald-900/5 backdrop-blur-md transition hover:border-emerald-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <Icons.MapPin size={14} className="shrink-0 text-emerald-700" />
               <span className="truncate">{locating ? 'Detecting location…' : location || 'Choose your location'}</span>
               <Icons.ChevronDown size={13} className="shrink-0 text-slate-400" />
             </button>
 
-            <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 ring-1 ring-emerald-100">
-              <Icons.Sparkles size={12} /> Trusted help for every corner of home
+            <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/65 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800 shadow-sm shadow-emerald-900/5">
+              <Icons.Sparkles size={13} className="text-emerald-600" /> Trusted home services
             </span>
 
-            <h1 className="mt-4 max-w-2xl text-[40px] font-extrabold leading-[1.1] tracking-tight text-slate-950 xl:text-[44px]">
-              A better home<br />
-              starts with the <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">right help.</span>
+            <h1 className="mt-4 max-w-2xl text-[42px] font-extrabold leading-[1.08] tracking-[-0.04em] text-slate-950 xl:text-[50px]">
+              Home care,<br />
+              <span className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 bg-clip-text text-transparent">made effortless.</span>
             </h1>
 
-            <p className="mt-4 max-w-lg text-[15px] leading-7 text-slate-500">
-              Good to see you, {name}. Book verified local professionals with clear pricing and support at every step.
+            <p className="mt-4 max-w-lg text-[15px] leading-7 text-slate-600">
+              Welcome back, {name}. Book verified local professionals with transparent pricing and dependable support at every step.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <button
                 onClick={onSeeServices}
-                className="group flex h-12 items-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-900/25"
+                className="group flex h-12 items-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:from-emerald-700 hover:to-teal-800 hover:shadow-xl hover:shadow-emerald-900/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
               >
                 Book a service
                 <Icons.ArrowRight size={17} className="transition group-hover:translate-x-0.5" />
               </button>
             </div>
 
-            <div className="mt-8 flex items-center gap-7 border-t border-emerald-100/80 pt-5 text-xs text-slate-500">
+            <div className="mt-8 flex items-center gap-7 border-t border-emerald-200/70 pt-5 text-xs text-slate-600">
               {[
                 { icon: Icons.BadgeCheck, label: 'Verified professionals' },
                 { icon: Icons.CreditCard, label: 'Upfront pricing' },
                 { icon: Icons.ShieldCheck, label: 'Secure payments' },
               ].map((item) => (
                 <span key={item.label} className="flex items-center gap-2 font-semibold">
-                  <item.icon size={16} className="text-emerald-600" />
+                  <item.icon size={16} className="text-emerald-700" />
                   {item.label}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="relative h-[300px] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-600 p-6 shadow-xl shadow-emerald-950/20 ring-1 ring-emerald-900/10">
-            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[42px] border-white/[0.08]" />
-            <div className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-teal-400/20 blur-2xl" />
+          <div className="relative h-[300px] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 shadow-[0_28px_70px_-28px_rgba(0,0,0,0.75)] ring-1 ring-white/15">
+            <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[42px] border-white/[0.1]" />
+            <div className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-teal-300/25 blur-2xl" />
             <div className="relative flex h-full flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-50">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-50">
                     <Icons.ShieldCheck size={11} /> LuckySeva care
                   </span>
                   <p className="mt-2.5 text-xl font-bold leading-snug text-white">Your home,<br />in good hands.</p>
                 </div>
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white backdrop-blur-sm"><Icons.Sparkles size={20} /></span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white shadow-inner backdrop-blur-sm"><Icons.Sparkles size={20} /></span>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -139,7 +145,7 @@ export const DesktopHomeScreen = ({
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700"><Icons.Home size={20} /></span>
                 <span>
                   <span className="block text-xs font-bold text-white">One trusted place</span>
-                  <span className="mt-0.5 block text-[10px] text-white/65">For everyday home services</span>
+                  <span className="mt-0.5 block text-[11px] text-white/75">For everyday home services</span>
                 </span>
               </div>
             </div>

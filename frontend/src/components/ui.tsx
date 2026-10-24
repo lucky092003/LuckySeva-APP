@@ -4,7 +4,7 @@ import { inr } from '@/utils/format';
 
 export const Spinner = ({ className = '' }: { className?: string }) => (
   <div className={`flex items-center justify-center ${className}`}>
-    <div className="h-7 w-7 animate-spin rounded-full border-2 border-gray-200 border-t-emerald-500" />
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-emerald-500 dark:border-gray-700 dark:border-t-emerald-400" />
   </div>
 );
 
@@ -12,27 +12,39 @@ export const EmptyState = ({
   icon,
   title,
   subtitle,
+  action,
+  onAction,
 }: {
   icon: ReactNode;
   title: string;
   subtitle?: string;
+  action?: string;
+  onAction?: () => void;
 }) => (
-  <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+  <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400 ring-1 ring-gray-100 dark:from-gray-800 dark:to-gray-900 dark:text-gray-500 dark:ring-gray-800">
       {icon}
     </div>
-    <p className="text-base font-semibold text-gray-800">{title}</p>
-    {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+    <p className="text-base font-bold text-gray-900 dark:text-gray-100">{title}</p>
+    {subtitle && <p className="mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
+    {action && onAction && (
+      <button
+        onClick={onAction}
+        className="mt-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-emerald-500/20 transition hover:shadow-md hover:shadow-emerald-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
+      >
+        {action}
+      </button>
+    )}
   </div>
 );
 
 export const ErrorState = ({ message }: { message: string }) => (
-  <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-400">
+  <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 ring-1 ring-red-100 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-900/60">
       !
     </div>
-    <p className="text-base font-semibold text-gray-800">Something went wrong</p>
-    <p className="mt-1 text-sm text-gray-500">{message}</p>
+    <p className="text-base font-bold text-gray-900 dark:text-gray-100">Something went wrong</p>
+    <p className="mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">{message}</p>
   </div>
 );
 
@@ -45,7 +57,7 @@ export const Stars = ({ rating, size = 12 }: { rating: number; size?: number }) 
         className={
           i <= Math.round(rating)
             ? 'fill-amber-400 text-amber-400'
-            : 'fill-gray-200 text-gray-200'
+            : 'fill-gray-200 text-gray-200 dark:fill-gray-700 dark:text-gray-700'
         }
       />
     ))}
@@ -56,7 +68,7 @@ export const CountBadge = ({ count, className = '' }: { count: number; className
   if (count <= 0) return null;
   return (
     <span
-      className={`pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold leading-none text-gray-900 ${className}`}
+      className={`pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm shadow-emerald-500/40 ${className}`}
     >
       {count > 9 ? '9+' : count}
     </span>
@@ -73,14 +85,14 @@ export const Badge = ({
   className?: string;
 }) => {
   const tones: Record<string, string> = {
-    neutral: 'bg-gray-100 text-gray-600',
-    success: 'bg-emerald-50 text-emerald-700',
-    warning: 'bg-amber-50 text-amber-700',
-    info: 'bg-sky-50 text-sky-700',
-    danger: 'bg-red-50 text-red-700',
+    neutral: 'bg-gray-100 text-slate-600 dark:bg-gray-800 dark:text-slate-300',
+    success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+    warning: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+    info: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
+    danger: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400',
   };
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]} ${className}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tones[tone]} ${className}`}>
       {children}
     </span>
   );
@@ -88,13 +100,13 @@ export const Badge = ({
 
 export const PriceTag = ({ amount, label = 'Starts at' }: { amount: number; label?: string }) => (
   <div className="flex flex-col">
-    <span className="text-[11px] font-medium text-gray-400">{label}</span>
-    <span className="text-base font-bold text-gray-900">{inr(amount)}</span>
+    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{label}</span>
+    <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">{inr(amount)}</span>
   </div>
 );
 
 export const VerifiedBadge = () => (
-  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900/60">
     <BadgeCheck size={11} /> Verified
   </span>
 );
@@ -107,6 +119,7 @@ export const Button = ({
   disabled,
   type = 'button',
   size = 'md',
+  ariaLabel,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -115,25 +128,27 @@ export const Button = ({
   disabled?: boolean;
   type?: 'button' | 'submit';
   size?: 'sm' | 'md' | 'lg';
+  ariaLabel?: string;
 }) => {
   const variants: Record<string, string> = {
-    primary: 'bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-sm shadow-emerald-500/30',
-    secondary: 'bg-gray-900 text-white hover:bg-gray-800',
-    ghost: 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
-    outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 bg-white dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 dark:bg-gray-900',
-    danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700 shadow-sm shadow-red-500/30',
+    primary: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700 hover:shadow-md hover:shadow-emerald-500/30 active:scale-[0.99]',
+    secondary: 'bg-gray-900 text-white hover:bg-gray-800 active:bg-gray-950 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100',
+    ghost: 'text-gray-700 hover:bg-gray-100 active:bg-gray-200 dark:text-gray-200 dark:hover:bg-gray-800 dark:active:bg-gray-700',
+    outline: 'border border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100 bg-white dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60 dark:bg-gray-900',
+    danger: 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-sm shadow-red-500/25 hover:from-red-600 hover:to-rose-700 hover:shadow-md hover:shadow-red-500/30 active:scale-[0.99]',
   };
   const sizes: Record<string, string> = {
     sm: 'px-2.5 py-1.5 text-xs',
-    md: 'px-4 py-3 text-sm',
-    lg: 'px-5 py-3.5 text-base',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-5 py-3 text-base',
   };
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      aria-label={ariaLabel}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
     </button>
@@ -142,13 +157,13 @@ export const Button = ({
 
 export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => {
   if (!onClick) {
-    return <div className={`rounded-2xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 ${className}`}>{children}</div>;
+    return <div className={`rounded-2xl border border-gray-100 bg-white shadow-sm shadow-gray-100/70 dark:border-gray-800 dark:bg-gray-900 dark:shadow-none ${className}`}>{children}</div>;
   }
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`block w-full cursor-pointer rounded-2xl border border-gray-100 bg-white text-left transition-all hover:border-gray-200 hover:shadow-md active:scale-[0.995] dark:border-gray-800 dark:bg-gray-900 ${className}`}
+      className={`block w-full cursor-pointer rounded-2xl border border-gray-100 bg-white text-left shadow-sm shadow-gray-100/70 transition-all duration-200 hover:-translate-y-[1px] hover:border-gray-200 hover:shadow-md hover:shadow-gray-200/70 active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:border-gray-800 dark:bg-gray-900 dark:shadow-none dark:hover:border-gray-700 dark:hover:shadow-gray-950/40 dark:focus-visible:ring-offset-gray-950 ${className}`}
     >
       {children}
     </button>
@@ -166,17 +181,17 @@ export const SearchBar = ({
   placeholder?: string;
   autoFocus?: boolean;
 }) => (
-  <div className="flex items-center gap-2 rounded-xl bg-gray-100 px-3.5 py-2.5">
-    <Search size={18} className="shrink-0 text-gray-400" />
+  <div className="flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-gray-100 transition-all focus-within:ring-2 focus-within:ring-emerald-500/40 dark:bg-gray-900 dark:ring-gray-800">
+    <Search size={18} className="shrink-0 text-slate-400" />
     <input
       autoFocus={autoFocus}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+      className="flex-1 bg-transparent text-sm text-gray-900 placeholder:text-slate-400 focus:outline-none dark:text-gray-100"
     />
     {value && (
-      <button onClick={() => onChange('')} aria-label="Clear search" className="shrink-0 text-gray-400">
+      <button onClick={() => onChange('')} aria-label="Clear search" className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300">
         <X size={16} />
       </button>
     )}
@@ -207,17 +222,17 @@ export const Input = ({
     onChange={onChange}
     disabled={disabled}
     placeholder={placeholder}
-    className={`w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none ${className}`}
+    className={`w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 ${className}`}
   />
 );
 
 const AVATAR_TONES = [
-  'bg-emerald-100 text-emerald-700',
-  'bg-sky-100 text-sky-700',
-  'bg-amber-100 text-amber-700',
-  'bg-violet-100 text-violet-700',
-  'bg-rose-100 text-rose-700',
-  'bg-teal-100 text-teal-700',
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+  'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400',
+  'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+  'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-400',
+  'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+  'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
 ];
 
 const initials = (name: string) =>
@@ -270,16 +285,16 @@ export const Avatar = ({
       src={src as string}
       alt={name}
       onError={() => setBroken(true)}
-      className={`shrink-0 bg-gray-100 object-cover ${className}`}
+      className={`shrink-0 bg-gray-100 object-cover ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/5 ${className}`}
     />
   );
 };
 
 export const SectionTitle = ({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) => (
   <div className="mb-3 flex items-center justify-between">
-    <h2 className="text-base font-bold text-gray-900">{title}</h2>
+    <h2 className="text-base font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{title}</h2>
     {action && (
-      <button onClick={onAction} className="text-xs font-semibold text-emerald-600">
+      <button onClick={onAction} className="text-xs font-semibold text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">
         {action}
       </button>
     )}

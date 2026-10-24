@@ -252,18 +252,18 @@ export const ProviderProfileScreen = () => {
       />
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4 dark:bg-gray-950">
         {/* Profile header */}
-        <Card className="flex items-center gap-4 p-4">
-          <Avatar src={pro.avatar_url} name={pro.name} className="h-16 w-16 rounded-2xl text-lg" />
+        <Card className="flex items-center gap-4 border-gray-100 p-4 shadow-sm dark:border-gray-800">
+          <Avatar src={pro.avatar_url} name={pro.name} className="h-16 w-16 rounded-2xl text-lg ring-1 ring-black/5 dark:ring-white/10" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <p className="truncate text-base font-bold text-gray-900 dark:text-gray-100">{pro.name}</p>
+              <p className="truncate text-base font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{pro.name}</p>
               {kycStatus(pro) === 'approved' && <VerifiedBadge />}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{pro.skills.join(', ')}</p>
             <div className="mt-1 flex items-center gap-1.5">
               <Stars rating={pro.rating} size={12} />
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{pro.rating}</span>
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{pro.phone || 'No phone linked'}</span>
+              <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{pro.phone || 'No phone linked'}</span>
             </div>
           </div>
         </Card>
@@ -284,7 +284,9 @@ export const ProviderProfileScreen = () => {
           <button
             onClick={toggleAvailability}
             disabled={updatingAvail}
-            className={`relative h-7 w-12 rounded-full transition-colors ${pro.status === 'available' ? 'bg-emerald-500' : 'bg-gray-200'}`}
+            aria-label={`Set availability ${pro.status === 'available' ? 'busy' : 'available'}`}
+            aria-pressed={pro.status === 'available'}
+            className={`relative h-7 w-12 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 disabled:opacity-60 ${pro.status === 'available' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
           >
             <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${pro.status === 'available' ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
@@ -314,10 +316,10 @@ export const ProviderProfileScreen = () => {
             </Button>
           </div>
 
-          <div className="mt-4 border-t border-gray-50 pt-3">
+          <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
             <div className="mb-1 flex items-center justify-between">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Service Radius</p>
-              <span className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-0.5 text-xs font-bold text-emerald-600">{radius} km</span>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">{radius} km</span>
             </div>
             <p className="mb-3 text-[11px] text-gray-500 dark:text-gray-400">
               Receive booking requests from customers within this radius of your location.
@@ -327,7 +329,7 @@ export const ProviderProfileScreen = () => {
                 <button
                   key={n}
                   onClick={() => applyRadius(n)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                     String(n) === radius
                       ? 'border-emerald-500 bg-emerald-500 text-white'
                       : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:border-emerald-300'
@@ -349,7 +351,7 @@ export const ProviderProfileScreen = () => {
                 <button
                   onClick={saveRadius}
                   disabled={savingRadius || String(pro.service_radius_km || 60) === radius}
-                  className="rounded-full bg-emerald-500 px-2.5 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+                  className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-40 dark:focus-visible:ring-offset-gray-900"
                 >
                   {savingRadius ? '...' : 'Set'}
                 </button>
@@ -409,7 +411,7 @@ export const ProviderProfileScreen = () => {
         <Button
           variant="outline"
           onClick={() => { setApiToken(null); setProviderId(null); navigate({ name: 'provider-auth' }); }}
-          className="mt-4 w-full text-red-500"
+          className="mt-4 w-full text-red-600 dark:text-red-400"
         >
           <Icons.LogOut size={16} /> Logout
         </Button>
@@ -791,18 +793,18 @@ const KycCard = ({ pro, onComplete }: { pro: Professional; onComplete: () => voi
 };
 
 const StatBox = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
-  <Card className="flex flex-col items-center p-3 text-center">
-    <span className="text-emerald-500">{icon}</span>
+  <Card className="flex flex-col items-center p-3 text-center shadow-sm">
+    <span className="text-emerald-600 dark:text-emerald-400">{icon}</span>
     <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">{value}</p>
-    <p className="text-[10px] text-gray-400 dark:text-gray-500">{label}</p>
+    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{label}</p>
   </Card>
 );
 
 const MenuRow = ({ icon, label, value, onClick }: { icon: React.ReactNode; label: string; value: string; onClick: () => void }) => (
-  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 text-left transition-all hover:shadow-sm">
-    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{icon}</div>
+  <button onClick={onClick} className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all hover:border-emerald-100 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-slate-600 dark:bg-gray-800 dark:text-slate-300">{icon}</div>
     <span className="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">{label}</span>
-    {value && <span className="text-xs text-gray-400 dark:text-gray-500">{value}</span>}
+    {value && <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{value}</span>}
     <Icons.ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
   </button>
 );
@@ -813,12 +815,14 @@ const SettingRow = ({ label, storageKey }: { label: string; storageKey: string }
     <div className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
       <button
+        aria-label={`${label}: ${on ? 'on' : 'off'}`}
+        aria-pressed={on}
         onClick={() => {
           const next = !on;
           localStorage.setItem(storageKey, next ? 'on' : 'off');
           setOn(next);
         }}
-        className={`relative h-7 w-12 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-gray-200'}`}
+        className={`relative h-7 w-12 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${on ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
       >
         <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
       </button>
