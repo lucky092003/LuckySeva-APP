@@ -225,16 +225,16 @@ export const ProviderHomeScreen = () => {
       <div className="hidden shrink-0 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:block">
         <div className="flex w-full items-center justify-between gap-6 px-[25px] py-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">Partner workspace</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-950 dark:text-gray-50">Requests & active jobs</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your work and find your next customer.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-400">Partner Workspace</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-gray-950 dark:text-gray-50 lg:text-3xl">Requests & Active Jobs</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Respond faster to win more jobs near you.</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${professional?.status === 'available' ? 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'}`}>
               <span className={`h-2 w-2 rounded-full ${professional?.status === 'available' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               {professional?.status === 'available' ? 'Available for work' : 'Currently busy'}
             </span>
-            <button onClick={() => setTick((n) => n + 1)} className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition hover:border-emerald-200 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <button onClick={() => setTick((n) => n + 1)} aria-label="Refresh request feed" className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition hover:border-emerald-200 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
               <Icons.RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh feed
             </button>
           </div>
@@ -264,7 +264,7 @@ export const ProviderHomeScreen = () => {
                     <Icon size={14} className={s.text} />
                   </div>
                   <p className="mt-1 truncate text-sm font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
-                  <p className="mt-0.5 truncate text-[9px] font-medium text-gray-400 dark:text-gray-500">{s.label}</p>
+                  <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
                 </div>
               );
             })}
@@ -278,45 +278,35 @@ export const ProviderHomeScreen = () => {
                 value: inr(todayEarnings),
                 icon: Icons.Wallet,
                 highlight: true,
-                iconBg: 'bg-white/15',
-                iconText: '',
-                labelClass: 'text-white/80',
               },
               {
                 label: 'Jobs Done Today',
                 value: `${todayCompleted.length}`,
                 icon: Icons.CheckCircle2,
                 highlight: false,
-                iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-                iconText: 'text-emerald-600',
-                labelClass: 'text-gray-500 dark:text-gray-400',
               },
               {
                 label: 'This Week',
                 value: `${weekCompletedCount}`,
                 icon: Icons.Calendar,
                 highlight: false,
-                iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-                iconText: 'text-amber-600',
-                labelClass: 'text-gray-500 dark:text-gray-400',
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group ${
+                className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 group ${
                   s.highlight
-                    ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-900/10 hover:shadow-xl'
-                    : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/80 hover:shadow-md dark:bg-gray-900 dark:text-gray-100'
+                    ? 'bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/25'
+                    : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-100 hover:shadow-lg hover:shadow-gray-200/70 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800'
                 }`}
               >
-                <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-100 dark:bg-emerald-900/30'}`} />
-                <div className={`absolute -bottom-6 -left-6 h-32 w-32 rounded-full ${s.highlight ? 'bg-white/5' : 'bg-teal-50 dark:bg-teal-900/20'}`} />
+                <div className={`absolute -right-6 -top-8 h-28 w-28 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-50 dark:bg-emerald-950/40'}`} />
                 <div className="relative">
-                  <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 ${s.highlight ? s.iconBg : s.iconBg.replace('shadow-lg', 'shadow-sm')}`}>
-                    <s.icon size={28} className={s.iconText} />
+                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${s.highlight ? 'bg-white/15 backdrop-blur-sm' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'}`}>
+                    <s.icon size={24} className={s.highlight ? '' : 'text-emerald-600 dark:text-emerald-400'} />
                   </div>
-                  <p className={`mb-1 text-sm font-medium ${s.labelClass}`}>{s.label}</p>
-                  <p className="text-3xl font-bold xl:text-4xl">{s.value}</p>
+                  <p className={`mb-1 text-sm font-medium ${s.highlight ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{s.label}</p>
+                  <p className="text-3xl font-extrabold tracking-tight xl:text-4xl">{s.value}</p>
                 </div>
               </div>
             ))}
@@ -376,7 +366,7 @@ export const ProviderHomeScreen = () => {
               <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center dark:border-gray-700 dark:bg-gray-950">
                 <Icons.BriefcaseBusiness size={21} className="mx-auto text-gray-300 dark:text-gray-600" />
                 <p className="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">No active jobs</p>
-                <p className="mt-1 text-[10px] leading-relaxed text-gray-400">Accept a request to see its progress here.</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">Accept a request to see its progress here.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -393,8 +383,8 @@ export const ProviderHomeScreen = () => {
                 <p className="mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{professional?.service_area || 'Your selected area'} · within {myRadius} km</p>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[10px] dark:border-gray-800">
-              <span className="text-gray-400">Trade</span>
+            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] dark:border-gray-800">
+              <span className="text-slate-500 dark:text-slate-400">Trade</span>
               <span className="font-semibold text-gray-700 dark:text-gray-300">{field || 'Home services'}</span>
             </div>
           </section>
@@ -433,16 +423,16 @@ const SectionHeading = ({
 }) => (
   <div className="mb-2.5 flex items-center justify-between gap-3">
     <div className="flex shrink-0 items-center gap-2">
-      <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+      <h3 className="text-sm font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{title}</h3>
       <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-          tone === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+        className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+          tone === 'emerald' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400'
         }`}
       >
         {count}
       </span>
     </div>
-    {hint && <span className="truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">{hint}</span>}
+    {hint && <span className="truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">{hint}</span>}
   </div>
 );
 
@@ -491,7 +481,7 @@ const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => 
   const urgent = mins <= 3;
   return (
     <span
-      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
         urgent ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
       }`}
     >
@@ -525,7 +515,7 @@ const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => 
       </div>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="text-sm font-bold text-emerald-600">{inr(booking.total_amount)}</span>
-        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${meta.chip}`}>{meta.label}</span>
+        <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${meta.chip}`}>{meta.label}</span>
       </div>
       <Icons.ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-0.5" />
     </Card>
@@ -547,30 +537,30 @@ const RequestCard = ({
   onAccept: () => void;
   onReject: () => void;
 }) => (
-  <Card className="group relative overflow-hidden transition-shadow duration-200 hover:shadow-lg">
+  <Card className="group relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
     {/* Accent edge for jobs inside the provider's radius */}
     {km !== null && km <= myRadius && (
       <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-500 to-teal-600" />
     )}
 
-    <button type="button" onClick={onView} className="block w-full p-4 pl-5 text-left">
+    <button type="button" onClick={onView} className="block w-full p-4 pl-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset">
       {/* Headline: icon, service + NEW pulse, earnings */}
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/20">
           <Icons.Wrench size={18} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.service_name}</p>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
               <span className="h-1 w-1 animate-pulse rounded-full bg-amber-500" /> NEW
             </span>
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{booking.customer_name}</p>
+          <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">{booking.customer_name}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <ExpiryBanner deadline={booking.accept_deadline} />
-          <span className="shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
+          <span className="shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
             {inr(booking.total_amount)}
           </span>
         </div>
@@ -591,7 +581,7 @@ const RequestCard = ({
             <Icons.Navigation size={11} />
             {Math.round(km)} km
             {km <= myRadius && (
-              <span className="ml-0.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white">IN RADIUS</span>
+              <span className="ml-0.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold text-white">IN RADIUS</span>
             )}
           </span>
         )}
@@ -612,7 +602,7 @@ const RequestCard = ({
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-50 dark:border-gray-800 pt-3">
-        <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-gray-500">
+        <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
           <Icons.Lock size={11} /> Phone unlocks after you accept
         </span>
         <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-emerald-600 transition-transform group-hover:translate-x-0.5">
@@ -622,13 +612,13 @@ const RequestCard = ({
     </button>
 
     {/* Actions */}
-    <div className="flex gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/70 p-3 pl-5">
-      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+    <div className="flex gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/70 p-3 pl-5">
+      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
         Decline
       </Button>
       <Button
         onClick={onAccept}
-        className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 text-xs font-semibold text-white shadow-sm shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700"
+        className="flex-1 py-2.5 text-xs font-semibold"
       >
         Accept <Icons.ArrowRight size={14} />
       </Button>
