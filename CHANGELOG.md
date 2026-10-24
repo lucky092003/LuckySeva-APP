@@ -12,6 +12,11 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ## 2026-10-24
 
+### Added
+- **Stronger pull request CI** now runs for documentation-only changes too, builds
+  both customer and provider Android debug APKs, and requires the frontend,
+  backend, migrations, edge-functions, changelog, and Android checks before merge.
+
 ### Changed
 - **Customer and provider screens** now share polished, accessible UI primitives,
   clearer navigation states, and more consistent mobile/desktop styling.
