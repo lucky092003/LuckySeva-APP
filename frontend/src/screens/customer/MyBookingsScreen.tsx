@@ -118,56 +118,58 @@ export const MyBookingsScreen = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-[#f7f8f7]">
       <TopBar title="My Bookings" showBack={false} right={
-        <button onClick={() => navigate({ name: 'refunds' })} className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+        <button onClick={() => navigate({ name: 'refunds' })} className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700">
           <Icons.Undo2 size={14} /> Refunds
         </button>
       } />
-      {/* Tabs */}
-      <div className="flex shrink-0 justify-center gap-1 border-b border-gray-100 bg-white px-3 md:px-8">
-        <div className="flex w-full max-w-3xl gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`relative flex-1 py-3 text-xs font-semibold transition-colors ${tab === t.key ? 'text-emerald-600' : 'text-gray-400'}`}
-          >
-            {t.label}
-            {tab === t.key && <div className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-emerald-500" />}
-          </button>
-        ))}
+      <div className="shrink-0 border-b border-slate-200/70 bg-white px-5 lg:px-[25px]">
+        <div className="mx-auto flex w-full items-center gap-1">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition ${tab === t.key ? 'text-emerald-800' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              {t.label}
+              {tab === t.key && (
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{bookings.length}</span>
+              )}
+              {tab === t.key && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-emerald-600" />}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:px-[25px] lg:py-7">
-        <div className="w-full">
-        {loading ? (
-          <Spinner className="py-16" />
-        ) : bookings.length === 0 ? (
-          <EmptyState
-            icon={<Icons.CalendarCheck size={28} />}
-            title={`No ${tab} bookings`}
-            subtitle="Your bookings will appear here."
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {bookings.map((b) => (
-              <BookingCard
-                key={b.id}
-                booking={b}
-                onTrack={() => navigate({ name: 'tracking', bookingId: b.id })}
-                onReview={() => navigate({ name: 'reviews', bookingId: b.id })}
-                onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })}
-                onCancel={() => openCancel(b)}
-                cancelling={cancellingId === b.id}
-                onRefund={() => { setRefundBooking(b); setRefundReason(''); setRefundError(''); }}
-                onReschedule={() => openReschedule(b)}
-                onSupport={() => navigate({ name: 'help' })}
-              />
-            ))}
-          </div>
-        )}
+      <div className="no-scrollbar flex-1 overflow-y-auto px-5 py-5 lg:px-[25px] lg:py-7">
+        <div className="mx-auto w-full">
+          {loading ? (
+            <Spinner className="py-16" />
+          ) : bookings.length === 0 ? (
+            <EmptyState
+              icon={<Icons.CalendarCheck size={28} />}
+              title={`No ${tab} bookings`}
+              subtitle="Your bookings will appear here when scheduled."
+            />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {bookings.map((b) => (
+                <BookingCard
+                  key={b.id}
+                  booking={b}
+                  onTrack={() => navigate({ name: 'tracking', bookingId: b.id })}
+                  onReview={() => navigate({ name: 'reviews', bookingId: b.id })}
+                  onInvoice={() => navigate({ name: 'invoice', bookingId: b.id })}
+                  onCancel={() => openCancel(b)}
+                  cancelling={cancellingId === b.id}
+                  onRefund={() => { setRefundBooking(b); setRefundReason(''); setRefundError(''); }}
+                  onReschedule={() => openReschedule(b)}
+                  onSupport={() => navigate({ name: 'help' })}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

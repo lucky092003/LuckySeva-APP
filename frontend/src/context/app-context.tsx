@@ -19,7 +19,7 @@ export type Screen =
   | { name: 'auth' }
   | { name: 'home' }
   | { name: 'services' }
-  | { name: 'search' }
+  | { name: 'search'; q?: string }
   | { name: 'notifications' }
   | { name: 'category'; slug: string }
   | { name: 'service'; id: string }
@@ -193,6 +193,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Bottom-tab roots reset the stack
       const rootNames = ['home', 'services', 'bookings', 'profile', 'provider-home', 'provider-bookings', 'provider-earnings', 'provider-profile', 'admin-dashboard'];
       if (rootNames.includes(s.name)) return [s];
+      // Typing in the global nav search re-navigates on every keystroke; replace
+      // instead of push so Back returns to the previous screen, not every letter.
+      const top = prev[prev.length - 1];
+      if (top?.name === 'search' && s.name === 'search') return [...prev.slice(0, -1), s];
       return [...prev, s];
     });
   }, []);

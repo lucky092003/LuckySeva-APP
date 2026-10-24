@@ -79,7 +79,6 @@ export const HomeScreen = () => {
     location: customer?.location || '',
     locating,
     onLocationClick: handleLocationTap,
-    onSearch: () => navigate({ name: 'search' }),
     onCategory: (slug: string) => navigate({ name: 'category', slug }),
     onService: (id: string) => navigate({ name: 'service', id }),
     onBooking: (bookingId: string) => navigate({ name: 'tracking', bookingId }),
