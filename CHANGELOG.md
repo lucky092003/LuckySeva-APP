@@ -14,8 +14,9 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Added
 - **Stronger pull request CI** now runs for documentation-only changes too, builds
-  both customer and provider Android debug APKs, and requires the frontend,
-  backend, migrations, edge-functions, changelog, and Android checks before merge.
+  both customer and provider Android debug APKs plus the iOS Simulator app, and
+  requires the frontend, backend, migrations, edge-functions, changelog, Android,
+  and iOS checks before merge.
 
 ### Changed
 - **Customer and provider screens** now share polished, accessible UI primitives,
