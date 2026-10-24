@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { ApiError, api, getApiToken, SESSION_EXPIRED_EVENT, setApiToken } from '@/services/api';
 import { registerPush } from '@/services/push';
 
@@ -116,6 +116,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [customer, setCustomerState] = useState<Customer>(initialCustomer);
   const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);
   const [adminAuthed, setAdminAuthedState] = useState<boolean>(initialAdminAuthed);
+  const stackRef = useRef(stack);
+
+  useEffect(() => {
+    stackRef.current = stack;
+  }, [stack]);
+
+  useEffect(() => {
+    const guardKey = '__luckysevaBackGuard';
+    const guardState = { [guardKey]: true };
+    const currentState = window.history.state as Record<string, unknown> | null;
+
+    // Keep one same-URL history entry so browser/Android Back reaches the
+    // in-app screen stack before leaving the site or closing the WebView.
+    if (!currentState?.[guardKey]) {
+      window.history.pushState(guardState, '', window.location.href);
+    }
+
+    const handlePopState = () => {
+      if (stackRef.current.length <= 1) return;
+      setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+      // Restore the guard after consuming one in-app Back action.
+      window.history.pushState(guardState, '', window.location.href);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const token = getApiToken();
