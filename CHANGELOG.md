@@ -12,6 +12,15 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ## 2026-10-24
 
+### Added
+- **Required changelog CI check** for pull requests. Each PR must update
+  `CHANGELOG.md`; the dedicated check runs even when the regular CI workflow
+  skips documentation-only changes.
+
+### Fixed
+- **Browser and Android Back now return through the in-app screen stack** before
+  leaving the website or closing the WebView.
+
 ### Changed
 - **Customer and provider screens** now share polished, accessible UI primitives,
   clearer navigation states, and more consistent mobile/desktop styling.
