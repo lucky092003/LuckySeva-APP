@@ -5,9 +5,11 @@ import { useApp } from '@/context/app-context';
 import { useCategories, usePopularServices } from '@/hooks';
 import { api } from '@/services/api';
 import { fetchCurrentLocation } from '@/services/location';
+import { isNative } from '@/utils/native';
 import { Card, Spinner, SectionTitle } from '@/components/ui';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Professional, Booking } from '@/types';
+import { DesktopHomeScreen } from '@/screens/customer/DesktopHomeScreen';
 
 export const HomeScreen = () => {
   const { navigate, customer, setCustomer } = useApp();
@@ -17,6 +19,18 @@ export const HomeScreen = () => {
   const [proLoading, setProLoading] = useState(true);
   const [recent, setRecent] = useState<Booking[]>([]);
   const [locating, setLocating] = useState(false);
+  const [isDesktopWeb, setIsDesktopWeb] = useState(
+    () => !isNative && typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    if (isNative) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const updateLayout = () => setIsDesktopWeb(media.matches);
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
   useEffect(() => {
     api.catalog
@@ -53,44 +67,71 @@ export const HomeScreen = () => {
     }
   };
 
+  const desktopProps = {
+    categories,
+    catLoading,
+    popularServices,
+    svcLoading,
+    topPros,
+    proLoading,
+    recent,
+    name: customer?.name?.split(' ')[0] || 'there',
+    location: customer?.location || '',
+    locating,
+    onLocationClick: handleLocationTap,
+    onCategory: (slug: string) => navigate({ name: 'category', slug }),
+    onService: (id: string) => navigate({ name: 'service', id }),
+    onBooking: (bookingId: string) => navigate({ name: 'tracking', bookingId }),
+    onSeeBookings: () => navigate({ name: 'bookings' }),
+    onSeeServices: () => navigate({ name: 'services' }),
+    onSupport: () => navigate({ name: 'help' }),
+    onProfessional: (id: string) => navigate({ name: 'professional', id }),
+  };
+
+  if (isDesktopWeb) return <DesktopHomeScreen {...desktopProps} />;
+
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
+      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white">
-        <div className="flex items-center justify-between">
-          <button onClick={handleLocationTap} className="flex min-w-0 items-center gap-1.5 text-left">
-            <MapPin size={14} className="shrink-0" />
-            <span className="max-w-[160px] truncate text-xs font-medium text-white/90">
-              {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
-            </span>
-            <ChevronRight size={14} className="shrink-0" />
-          </button>
-          <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 md:hidden">
-            <Icons.Bell size={18} />
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-5 pb-6 pt-4 text-white md:px-8 md:py-8">
+        <div className="mx-auto w-full max-w-7xl md:grid md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] md:items-center md:gap-10">
+          <div>
+            <div className="flex items-center justify-between">
+              <button onClick={handleLocationTap} className="flex min-w-0 items-center gap-1.5 text-left">
+                <MapPin size={14} className="shrink-0" />
+                <span className="max-w-[160px] truncate text-xs font-medium text-white/90 md:max-w-sm md:text-sm">
+                  {locating ? 'Detecting location...' : customer?.location || 'Detect my location'}
+                </span>
+                <ChevronRight size={14} className="shrink-0" />
+              </button>
+              <button onClick={() => navigate({ name: 'notifications' })} aria-label="Notifications" className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 lg:hidden">
+                <Icons.Bell size={18} />
+              </button>
+            </div>
+            <h1 className="mt-3 text-xl font-bold md:mt-5 md:text-3xl">
+              Hi {customer?.name?.split(' ')[0] || 'there'} 👋
+            </h1>
+            <p className="text-sm text-white/80 md:mt-1 md:text-base">What service do you need today?</p>
+          </div>
+
+          {/* Search stays compact beside the greeting on desktop. */}
+          <button
+            onClick={() => navigate({ name: 'search' })}
+            className="mt-4 flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-left text-sm text-gray-400 shadow-lg transition-transform active:scale-[0.98] md:mt-0 md:py-4"
+          >
+            <Search size={18} />
+            What service do you need?
           </button>
         </div>
-        <h1 className="mt-3 text-xl font-bold">
-          Hi {customer?.name?.split(' ')[0] || 'there'} 👋
-        </h1>
-        <p className="text-sm text-white/80">What service do you need today?</p>
-
-        {/* Search */}
-        <button
-          onClick={() => navigate({ name: 'search' })}
-          className="mt-4 flex w-full items-center gap-2 rounded-2xl bg-white px-4 py-3.5 text-left text-sm text-gray-400 shadow-lg transition-transform active:scale-[0.98]"
-        >
-          <Search size={18} />
-          What service do you need?
-        </button>
       </div>
 
       {/* Categories */}
-      <div className="px-5 pt-5">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-5 md:px-8 md:pt-7">
         <SectionTitle title="Service Categories" />
         {catLoading ? (
           <Spinner className="py-8" />
         ) : (
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-8 md:gap-5">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 md:gap-5">
             {categories.map((cat) => {
               const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[cat.icon] || Icons.Circle;
               return (
@@ -114,7 +155,7 @@ export const HomeScreen = () => {
       </div>
 
       {/* Popular services */}
-      <div className="px-5 pt-6">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-6 md:px-8 md:pt-8">
         <SectionTitle title="Popular Services" />
         {svcLoading ? (
           <Spinner className="py-8" />
@@ -157,9 +198,9 @@ export const HomeScreen = () => {
 
       {/* Recent bookings */}
       {recent.length > 0 && (
-        <div className="px-5 pt-6">
+        <div className="mx-auto w-full max-w-7xl px-5 pt-6 md:px-8 md:pt-8">
           <SectionTitle title="Your Recent Bookings" action="See all" onAction={() => navigate({ name: 'bookings' })} />
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {recent.slice(0, 2).map((b) => (
               <Card key={b.id} onClick={() => navigate({ name: 'tracking', bookingId: b.id })} className="flex items-center gap-3 p-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
@@ -179,7 +220,7 @@ export const HomeScreen = () => {
       )}
 
       {/* Top rated professionals */}
-      <div className="px-5 pt-6 pb-6">
+      <div className="mx-auto w-full max-w-7xl px-5 pb-6 pt-6 md:px-8 md:pb-10 md:pt-8">
         <SectionTitle title="Top Rated Near You" />
         {proLoading ? (
           <Spinner className="py-6" />
@@ -209,6 +250,6 @@ export const HomeScreen = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
   );
 };

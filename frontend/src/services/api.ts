@@ -18,11 +18,22 @@ const MISSING_BASE =
   'VITE_API_URL is not set. Set it in the Vercel project environment variables to your Render backend URL.';
 
 const TOKEN_KEY = 'luckyseva_api_token';
+export const SESSION_EXPIRED_EVENT = 'luckyseva:session-expired';
 
-export const getApiToken = (): string | null => localStorage.getItem(TOKEN_KEY);
+export const getApiToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
 export const setApiToken = (token: string | null) => {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* Keep auth UI responsive when browser storage is unavailable. */
+  }
 };
 
 /** Keeps the HTTP status and the backend's stable error code so callers can branch on them. */
@@ -97,6 +108,10 @@ async function request<T>(
     const raw = await res.text().catch(() => '');
     const data = (raw ? safeJsonParse(raw) : null) as (T & { error?: string; code?: string }) | null;
     if (!res.ok) {
+      if (res.status === 401 && token) {
+        setApiToken(null);
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+      }
       if (!data) {
         console.error(`[api] ${method} ${url} -> ${res.status} ${res.statusText}`, raw.slice(0, 300));
         throw new ApiError(

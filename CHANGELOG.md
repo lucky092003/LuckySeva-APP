@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-23
+**Last updated:** 2026-10-24
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
 
+## 2026-10-24
+
+### Changed
+- **Session token validity is 20 minutes** for customer, provider, and admin
+  logins. Tokens include an issued-at claim, and legacy tokens without it are
+  rejected so old 30-day sessions cannot bypass the new limit. An expired-token
+  401 now clears the saved session and returns the app to login.
+
 ## 2026-10-23
 
 ### Changed
@@ -18,7 +26,32 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   responsive look: laptop users get a side-by-side live map and booking-details
   rail, while phones retain the floating map status and bottom sheet. Tracking
   banners and the booking confirmation’s success state, summary card, and actions
-  have clearer hierarchy and a more premium feel.
+  have clearer hierarchy and a more premium feel. Tracking now loads booking
+  details independently of live GPS, so a location-service failure no longer
+  blanks the page; booking-load failures show a retry action instead.
+- **Desktop customer and provider layouts** now use the full browser viewport
+  instead of a floating app frame. The customer home uses a dedicated
+  `DesktopHomeScreen` with a light editorial hero, service search, all service
+  categories and popular-service discovery, plus booking/professional side
+  panels. Desktop navigation spans the site and moves to the desktop breakpoint;
+  tablets retain app-style bottom navigation. Desktop pages now use 25px side
+  gutters and breakpoint-aware grids. Customer and provider auth pages
+  now use the full browser viewport for the split-screen brand/form layout,
+  instead of being clipped to the content max width. Native/mobile layouts remain
+  unchanged. Desktop home scrolling remains available without displaying a
+  scrollbar.
+- **Provider desktop workspace** now presents requests as the primary work feed,
+  active jobs and service coverage in a side rail, plus a dedicated workspace
+  heading and availability indicator. Provider bookings use a responsive card
+  grid, and the web navigation now includes role-aware active states and an
+  account identity control without a duplicate Profile tab. Navigation links
+  align with the account controls on the right. Page backgrounds span the
+  viewport, while card grids add columns at wider breakpoints to keep the layout
+  balanced.
+- **Login sessions survive refreshes** for customer, provider, and admin builds:
+  a stored profile plus token now restores the correct start screen. Temporary
+  API/network failures during session validation no longer erase the token;
+  explicit 401/403 auth failures still return the user to login.
 
 ## 2026-10-19
 
