@@ -2,11 +2,8 @@ name: CI
 
 on:
   pull_request:
-    branches: [master]
-    paths-ignore: ['**.md', 'docs/**']
   push:
     branches: [master]
-    paths-ignore: ['**.md', 'docs/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -55,6 +52,52 @@ jobs:
       - name: Dependency audit (warning deta hai, fail nahi karta)
         run: npm audit --audit-level=high
         continue-on-error: true
+
+  android:
+    name: Android APK (${{ matrix.role }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [customer, provider]
+    env:
+      VITE_APP_ROLE: ${{ matrix.role }}
+      # Builds only bundle the app; no live API credentials are needed in CI.
+      VITE_API_URL: https://example.invalid
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build role-specific web bundle
+        working-directory: frontend
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon
 
   backend:
     name: Backend (FastAPI)
