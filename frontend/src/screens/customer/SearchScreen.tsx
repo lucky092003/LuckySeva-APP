@@ -11,12 +11,20 @@ import type { Service, Professional, Category } from '@/types';
 const TRENDING = ['AC Service', 'Deep Cleaning', 'Plumber', 'Mens Haircut', 'House Shifting'];
 
 export const SearchScreen = () => {
-  const { navigate, back } = useApp();
-  const [query, setQuery] = useState('');
+  const { navigate, back, screen } = useApp();
+  const initialQ = screen.name === 'search' ? screen.q || '' : '';
+  const [query, setQuery] = useState(initialQ);
   const [services, setServices] = useState<Service[]>([]);
   const [pros, setPros] = useState<Professional[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // The global nav search pushes a fresh query here on every keystroke; keep
+  // the screen input in sync without stealing focus from the user.
+  useEffect(() => {
+    if (screen.name === 'search' && (screen.q || '') !== query) setQuery(screen.q || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   useEffect(() => {
     Promise.all([api.catalog.services(), api.catalog.professionals(), api.catalog.categories()])

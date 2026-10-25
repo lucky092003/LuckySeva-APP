@@ -23,10 +23,10 @@ export const BottomNav = () => {
 
   const items = role === 'provider' ? providerTabs : tabs;
   const activeName = screen.name;
-  const hideOnDesktop = isNative ? '' : ' md:hidden';
+  const hideOnDesktop = isNative ? '' : ' lg:hidden';
 
   return (
-    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] pl-[max(0.75rem,var(--safe-area-left))] pr-[max(0.75rem,var(--safe-area-right))] pt-2 pb-[calc(var(--safe-area-bottom)+0.875rem)] min-h-[calc(4.5rem+var(--safe-area-bottom))] ${hideOnDesktop}`}>
+    <div className={`relative z-10 flex w-full flex-none shrink-0 items-stretch justify-around border-t border-gray-100 bg-white shadow-[0_-8px_30px_-20px_rgba(15,23,42,0.6)] dark:border-gray-800 dark:bg-gray-950 dark:shadow-[0_-8px_30px_-20px_rgba(0,0,0,0.9)] pl-[max(0.75rem,var(--safe-area-left))] pr-[max(0.75rem,var(--safe-area-right))] pt-1.5 pb-[calc(var(--safe-area-bottom)+0.9rem)] min-h-[calc(4.75rem+var(--safe-area-bottom))] ${hideOnDesktop}`}>
       {items.map((tab) => {
         const isActive = activeName === tab.screen.name;
         const Icon = tab.icon;
@@ -34,14 +34,17 @@ export const BottomNav = () => {
           <button
             key={tab.label}
             onClick={() => navigate(tab.screen)}
-            className="flex min-h-[3.25rem] flex-1 min-w-0 flex-col items-center justify-center gap-1 py-1 touch-manipulation active:scale-95 transition-transform"
+            aria-label={tab.label}
+            className="group flex min-h-[3.25rem] flex-1 min-w-0 flex-col items-center justify-center gap-1 py-1 touch-manipulation transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
           >
-            <Icon
-              size={23}
-              className={`shrink-0 ${isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'}`}
-              strokeWidth={isActive ? 2.4 : 2}
-            />
-            <span className={`max-w-full truncate text-xs leading-tight font-semibold tracking-tight ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${isActive ? 'bg-emerald-50 dark:bg-emerald-950/40' : ''}`}>
+              <Icon
+                size={22}
+                className={`shrink-0 transition-colors ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}
+                strokeWidth={isActive ? 2.6 : 2}
+              />
+            </div>
+            <span className={`max-w-full truncate text-[11px] leading-tight font-semibold tracking-tight transition-colors ${isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
               {tab.label}
             </span>
           </button>

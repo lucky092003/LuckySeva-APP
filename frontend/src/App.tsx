@@ -80,7 +80,10 @@ function Router() {
   return (
     <PhoneShell>
       <WebTopNav role={role} />
-      <div key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')} className="flex flex-1 flex-col overflow-hidden screen-enter">
+      <div
+        key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')}
+        className="screen-enter flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+      >
         {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
       <BottomNav />

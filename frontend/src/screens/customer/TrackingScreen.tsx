@@ -47,6 +47,7 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [tracking, setTracking] = useState<ProviderTracking | null>(null);
   const [isLive, setIsLive] = useState(false);
   const loadedProfessionalId = useRef<string | null>(null);
@@ -80,18 +81,29 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
 
   const load = () => {
     setLoading(true);
-    Promise.all([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
-      .then(([b, t]) => {
+    setLoadError('');
+    Promise.allSettled([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
+      .then(([bookingResult, trackingResult]) => {
+        // Booking details are the essential screen data. The live-location
+        // endpoint is optional and must never make the whole screen go blank.
+        if (bookingResult.status === 'rejected') throw bookingResult.reason;
+        const b = bookingResult.value;
         setBooking(b);
-        applyTracking(t);
         loadProfessional(b.professional_id);
+        if (trackingResult.status === 'fulfilled') {
+          applyTracking(trackingResult.value);
+        } else {
+          setTracking(null);
+          setIsLive(false);
+        }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         setBooking(null);
         setTracking(null);
         setIsLive(false);
         loadedProfessionalId.current = null;
         setProfessional(null);
+        setLoadError(error instanceof Error ? error.message : 'Please check your connection and try again.');
       })
       .finally(() => setLoading(false));
   };
@@ -100,11 +112,21 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   useEffect(() => {
     if (!booking || !POLL_STATUSES.includes(booking.status)) return;
     const t = setInterval(() => {
-      Promise.all([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
-        .then(([b, tr]) => {
-          setBooking(b);
-          applyTracking(tr);
-          loadProfessional(b.professional_id);
+      Promise.allSettled([api.customer.booking(bookingId), api.customer.bookingTracking(bookingId)])
+        .then(([bookingResult, trackingResult]) => {
+          if (bookingResult.status === 'fulfilled') {
+            const b = bookingResult.value;
+            setBooking(b);
+            loadProfessional(b.professional_id);
+          }
+          if (trackingResult.status === 'fulfilled') {
+            applyTracking(trackingResult.value);
+          } else {
+            // If location sharing can't be reached, don't leave a stale pin on
+            // the map; booking progress and details remain visible regardless.
+            setTracking(null);
+            setIsLive(false);
+          }
         })
         .catch(() => {});
     }, TRACKING_POLL_MS);
@@ -151,7 +173,28 @@ export const TrackingScreen = ({ bookingId }: { bookingId: string }) => {
   }, [booking?.status, booking?.latitude, booking?.longitude, proLatKey, proLngKey, isLive]);
 
   if (loading) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /><Spinner className="py-20" /></div>;
-  if (!booking) return <div className="flex flex-1 flex-col"><TopBar title="Track Booking" /></div>;
+  if (!booking) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
+        <TopBar title="Track Booking" />
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+            <Icons.ClipboardX size={28} />
+          </div>
+          <h2 className="mt-5 text-lg font-bold text-slate-900">Booking details unavailable</h2>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">
+            {loadError || 'We couldn’t load this booking. Please check your connection and try again.'}
+          </p>
+          <Button onClick={load} className="mt-6 w-full max-w-xs">
+            <Icons.RefreshCw size={16} /> Try again
+          </Button>
+          <Button variant="ghost" onClick={() => navigate({ name: 'bookings' })} className="mt-2 w-full max-w-xs text-slate-600">
+            Back to My Bookings
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const currentIdx = STATUS_FLOW.indexOf(booking.status);
   const isCompleted = booking.status === 'completed';

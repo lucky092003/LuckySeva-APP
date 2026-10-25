@@ -237,7 +237,7 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
             subtitle="Try widening your filters or searching a different name."
           />
         ) : (
-          <div className="grid grid-cols-1 gap-3 pb-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 pb-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((pro) => (
               <ProfessionalCard
                 key={pro.id}

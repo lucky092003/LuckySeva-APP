@@ -201,33 +201,46 @@ export const ProviderHomeScreen = () => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <TopBar
-        title="Requests"
-        showBack={false}
-        right={
-          <div className="flex items-center gap-1">
-            {/* Phone/tablet bell — desktop reads it from WebTopNav instead. */}
-            <button
-              onClick={() => navigate({ name: 'notifications' })}
-              aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
-              className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
-            >
-              <Icons.Bell size={17} />
-              {unread > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />
-              )}
-            </button>
-            <button
-              onClick={() => setTick((n) => n + 1)}
-              aria-label="Refresh requests"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-            >
-              <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+      <div className="lg:hidden">
+        <TopBar
+          title="Requests"
+          showBack={false}
+          right={
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigate({ name: 'notifications' })}
+                aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ''}`}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                <Icons.Bell size={17} />
+                {unread > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />}
+              </button>
+              <button onClick={() => setTick((n) => n + 1)} aria-label="Refresh requests" className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
+                <Icons.RefreshCw size={17} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          }
+        />
+      </div>
+      <div className="hidden shrink-0 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:block">
+        <div className="flex w-full items-center justify-between gap-6 px-[25px] py-6">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-400">Partner Workspace</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-gray-950 dark:text-gray-50 lg:text-3xl">Requests & Active Jobs</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Respond faster to win more jobs near you.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${professional?.status === 'available' ? 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300' : 'border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'}`}>
+              <span className={`h-2 w-2 rounded-full ${professional?.status === 'available' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              {professional?.status === 'available' ? 'Available for work' : 'Currently busy'}
+            </span>
+              <button onClick={() => setTick((n) => n + 1)} aria-label="Refresh request feed" className="flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 transition hover:border-emerald-200 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <Icons.RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh feed
             </button>
           </div>
-        }
-      />
-      <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-4 pt-3 lg:py-4">
+        </div>
+      </div>
+      <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-4 pb-4 pt-3 lg:w-full lg:px-[25px] lg:py-6">
         {/* Why the last accept didn't go through (taken / expired / offline). */}
         {actionError && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs leading-relaxed text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
@@ -251,7 +264,7 @@ export const ProviderHomeScreen = () => {
                     <Icon size={14} className={s.text} />
                   </div>
                   <p className="mt-1 truncate text-sm font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
-                  <p className="mt-0.5 truncate text-[9px] font-medium text-gray-400 dark:text-gray-500">{s.label}</p>
+                  <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
                 </div>
               );
             })}
@@ -265,117 +278,118 @@ export const ProviderHomeScreen = () => {
                 value: inr(todayEarnings),
                 icon: Icons.Wallet,
                 highlight: true,
-                iconBg: 'bg-white/15',
-                iconText: '',
-                labelClass: 'text-white/80',
               },
               {
                 label: 'Jobs Done Today',
                 value: `${todayCompleted.length}`,
                 icon: Icons.CheckCircle2,
                 highlight: false,
-                iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-                iconText: 'text-emerald-600',
-                labelClass: 'text-gray-500 dark:text-gray-400',
               },
               {
                 label: 'This Week',
                 value: `${weekCompletedCount}`,
                 icon: Icons.Calendar,
                 highlight: false,
-                iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-                iconText: 'text-amber-600',
-                labelClass: 'text-gray-500 dark:text-gray-400',
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group ${
+                className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 group ${
                   s.highlight
-                    ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30'
-                    : 'bg-white text-gray-900 shadow-lg ring-1 ring-gray-200 hover:shadow-xl dark:bg-gray-900 dark:text-gray-100'
+                    ? 'bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/25'
+                    : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-100 hover:shadow-lg hover:shadow-gray-200/70 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800'
                 }`}
               >
-                <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-100 dark:bg-emerald-900/30'}`} />
-                <div className={`absolute -bottom-6 -left-6 h-32 w-32 rounded-full ${s.highlight ? 'bg-white/5' : 'bg-teal-50 dark:bg-teal-900/20'}`} />
+                <div className={`absolute -right-6 -top-8 h-28 w-28 rounded-full ${s.highlight ? 'bg-white/10' : 'bg-emerald-50 dark:bg-emerald-950/40'}`} />
                 <div className="relative">
-                  <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 ${s.highlight ? s.iconBg : s.iconBg.replace('shadow-lg', 'shadow-sm')}`}>
-                    <s.icon size={28} className={s.iconText} />
+                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${s.highlight ? 'bg-white/15 backdrop-blur-sm' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'}`}>
+                    <s.icon size={24} className={s.highlight ? '' : 'text-emerald-600 dark:text-emerald-400'} />
                   </div>
-                  <p className={`mb-1 text-sm font-medium ${s.labelClass}`}>{s.label}</p>
-                  <p className="text-3xl font-bold xl:text-4xl">{s.value}</p>
+                  <p className={`mb-1 text-sm font-medium ${s.highlight ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{s.label}</p>
+                  <p className="text-3xl font-extrabold tracking-tight xl:text-4xl">{s.value}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Section: Active Jobs */}
-        <SectionHeading title="Active Jobs" count={active.length} tone="sky" />
-        {active.length === 0 ? (
-          <p className="mb-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 px-4 py-3 text-center text-[11px] text-gray-400 dark:text-gray-500">
-            Nothing in progress. Accept a request below to start a job.
-          </p>
-        ) : (
-          <div className="mb-4 space-y-2">
-            {active.map((b) => (
-              <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-7">
+        {/* Incoming work is the primary desktop task; active jobs live in a stable side rail. */}
+        <section className="order-2 min-w-0 lg:order-1 lg:col-start-1 lg:row-start-1">
+          <SectionHeading title="New requests" count={newRequests.length} tone="emerald" hint={feedScope} />
+          <div className="mb-3 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800 lg:w-fit">
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSort(s.key)}
+                className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${sort === s.key ? 'bg-white text-emerald-700 shadow-sm dark:bg-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+              >
+                {s.label}
+              </button>
             ))}
           </div>
-        )}
 
-        {/* Section: New Requests */}
-        <SectionHeading title="New Requests" count={newRequests.length} tone="emerald" hint={feedScope} />
-        <div className="mb-3 flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 lg:w-fit">
-          {SORTS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => setSort(s.key)}
-              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                sort === s.key ? 'bg-white text-emerald-600 shadow-sm dark:bg-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="space-y-3 pb-2">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        ) : orderedRequests.length === 0 ? (
-          <Card className="px-5 py-2 text-center shadow-sm">
-            <div className="flex flex-col items-center py-2 text-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">
-                <Icons.Inbox size={22} />
-              </div>
-              <p className="mt-2 text-sm font-semibold text-gray-800 dark:text-gray-100">No new requests</p>
-              <p className="mt-0.5 max-w-xs text-[11px] leading-snug text-gray-500 dark:text-gray-400">
-                New {field || 'service'} requests {feedScope} will show up here automatically.
-              </p>
+          {loading ? (
+            <div className="space-y-3 pb-2 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+              <SkeletonCard /><SkeletonCard /><SkeletonCard />
             </div>
-            <Button variant="outline" onClick={() => setTick((n) => n + 1)} className="mb-2 mt-1 px-5 py-1.5 text-xs font-semibold">
-              <Icons.RefreshCw size={13} /> Check again
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-3 pb-2">
-            {orderedRequests.map((b) => (
-              <RequestCard
-                key={b.id}
-                booking={b}
-                km={distanceTo(b)}
-                myRadius={myRadius}
-                onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
-                onAccept={() => accept(b)}
-                onReject={() => setDeclining(b)}
-              />
-            ))}
-          </div>
-        )}
+          ) : orderedRequests.length === 0 ? (
+            <Card className="px-5 py-6 text-center shadow-sm">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"><Icons.Inbox size={22} /></div>
+                <p className="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-100">No new requests right now</p>
+                <p className="mt-1 max-w-xs text-xs leading-relaxed text-gray-500 dark:text-gray-400">New {field || 'service'} requests {feedScope} will appear here automatically.</p>
+                <Button variant="outline" onClick={() => setTick((n) => n + 1)} className="mt-4 px-5 py-2 text-xs font-semibold"><Icons.RefreshCw size={13} /> Check again</Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3 pb-2 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+              {orderedRequests.map((b) => (
+                <RequestCard
+                  key={b.id}
+                  booking={b}
+                  km={distanceTo(b)}
+                  myRadius={myRadius}
+                  onView={() => navigate({ name: 'provider-detail', bookingId: b.id })}
+                  onAccept={() => accept(b)}
+                  onReject={() => setDeclining(b)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="order-1 space-y-5 lg:order-2 lg:col-start-2 lg:row-start-1">
+          <section className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <SectionHeading title="Active jobs" count={active.length} tone="sky" />
+            {active.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center dark:border-gray-700 dark:bg-gray-950">
+                <Icons.BriefcaseBusiness size={21} className="mx-auto text-gray-300 dark:text-gray-600" />
+                <p className="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">No active jobs</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">Accept a request to see its progress here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {active.map((b) => <ActiveJobCard key={b.id} booking={b} onClick={() => navigate({ name: 'provider-detail', bookingId: b.id })} />)}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"><Icons.MapPin size={18} /></span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Your service area</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{professional?.service_area || 'Your selected area'} · within {myRadius} km</p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] dark:border-gray-800">
+              <span className="text-slate-500 dark:text-slate-400">Trade</span>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{field || 'Home services'}</span>
+            </div>
+          </section>
+        </aside>
+      </div>
       </div>
 
       <ConfirmDialog
@@ -409,16 +423,16 @@ const SectionHeading = ({
 }) => (
   <div className="mb-2.5 flex items-center justify-between gap-3">
     <div className="flex shrink-0 items-center gap-2">
-      <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+      <h3 className="text-sm font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{title}</h3>
       <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-          tone === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+        className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+          tone === 'emerald' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400'
         }`}
       >
         {count}
       </span>
     </div>
-    {hint && <span className="truncate text-[10px] font-medium text-gray-400 dark:text-gray-500">{hint}</span>}
+    {hint && <span className="truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">{hint}</span>}
   </div>
 );
 
@@ -467,7 +481,7 @@ const ExpiryBanner = ({ deadline }: { deadline: string | null | undefined }) => 
   const urgent = mins <= 3;
   return (
     <span
-      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
         urgent ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
       }`}
     >
@@ -501,7 +515,7 @@ const ActiveJobCard = ({ booking, onClick }: { booking: Booking; onClick: () => 
       </div>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="text-sm font-bold text-emerald-600">{inr(booking.total_amount)}</span>
-        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${meta.chip}`}>{meta.label}</span>
+        <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold ${meta.chip}`}>{meta.label}</span>
       </div>
       <Icons.ChevronRight size={16} className="shrink-0 text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-0.5" />
     </Card>
@@ -523,30 +537,30 @@ const RequestCard = ({
   onAccept: () => void;
   onReject: () => void;
 }) => (
-  <Card className="group relative overflow-hidden transition-shadow duration-200 hover:shadow-lg">
+  <Card className="group relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
     {/* Accent edge for jobs inside the provider's radius */}
     {km !== null && km <= myRadius && (
       <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-500 to-teal-600" />
     )}
 
-    <button type="button" onClick={onView} className="block w-full p-4 pl-5 text-left">
+    <button type="button" onClick={onView} className="block w-full p-4 pl-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset">
       {/* Headline: icon, service + NEW pulse, earnings */}
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/20">
           <Icons.Wrench size={18} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{booking.service_name}</p>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
               <span className="h-1 w-1 animate-pulse rounded-full bg-amber-500" /> NEW
             </span>
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{booking.customer_name}</p>
+          <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">{booking.customer_name}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <ExpiryBanner deadline={booking.accept_deadline} />
-          <span className="shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
+          <span className="shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 text-sm font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
             {inr(booking.total_amount)}
           </span>
         </div>
@@ -567,7 +581,7 @@ const RequestCard = ({
             <Icons.Navigation size={11} />
             {Math.round(km)} km
             {km <= myRadius && (
-              <span className="ml-0.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[9px] font-bold text-white">IN RADIUS</span>
+              <span className="ml-0.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold text-white">IN RADIUS</span>
             )}
           </span>
         )}
@@ -588,7 +602,7 @@ const RequestCard = ({
       )}
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-50 dark:border-gray-800 pt-3">
-        <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-gray-500">
+        <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
           <Icons.Lock size={11} /> Phone unlocks after you accept
         </span>
         <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-emerald-600 transition-transform group-hover:translate-x-0.5">
@@ -598,13 +612,13 @@ const RequestCard = ({
     </button>
 
     {/* Actions */}
-    <div className="flex gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/70 p-3 pl-5">
-      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+    <div className="flex gap-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/70 p-3 pl-5">
+      <Button variant="outline" onClick={onReject} className="flex-1 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
         Decline
       </Button>
       <Button
         onClick={onAccept}
-        className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 text-xs font-semibold text-white shadow-sm shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700"
+        className="flex-1 py-2.5 text-xs font-semibold"
       >
         Accept <Icons.ArrowRight size={14} />
       </Button>
