@@ -20,6 +20,22 @@ router = APIRouter()
 MAX_MESSAGES = 16
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
 AI_TIMEOUT_SECONDS = 40
+SUPPORTED_AUDIO_MIME_TYPES = {
+    "audio/aac",
+    "audio/aiff",
+    "audio/alaw",
+    "audio/flac",
+    "audio/l16",
+    "audio/m4a",
+    "audio/mp3",
+    "audio/mpeg",
+    "audio/mulaw",
+    "audio/ogg",
+    "audio/opus",
+    "audio/wav",
+    "audio/webm",
+}
+AUDIO_MIME_ALIASES = {"audio/mp4": "audio/m4a", "audio/x-wav": "audio/wav"}
 
 COMMON_INSTRUCTIONS = """You are LuckySeva's helpful home-services assistant.
 Reply in the language used by the user, including Hindi or Hinglish. Keep answers
@@ -64,6 +80,13 @@ def _require_api_key() -> str:
             "ai_not_configured",
         )
     return config.AI_API_KEY
+
+
+def _normalize_audio_mime_type(content_type: str) -> str | None:
+    """Return a Gemini-supported audio MIME type, dropping browser codec parameters."""
+    mime_type = content_type.split(";", 1)[0].strip().lower()
+    mime_type = AUDIO_MIME_ALIASES.get(mime_type, mime_type)
+    return mime_type if mime_type in SUPPORTED_AUDIO_MIME_TYPES else None
 
 
 async def _create_interaction(**kwargs):
@@ -126,8 +149,8 @@ async def transcribe(request: Request, claims: dict = Depends(get_claims)):
     _require_supported_role(claims)
     _require_api_key()
 
-    mime_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    if not mime_type.startswith("audio/"):
+    mime_type = _normalize_audio_mime_type(request.headers.get("content-type", ""))
+    if mime_type is None:
         raise ApiError(415, "Please record an audio message and try again.", "audio_type_invalid")
 
     audio = bytearray()

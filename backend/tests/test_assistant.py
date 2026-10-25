@@ -101,7 +101,16 @@ def test_chat_uses_gemini_interactions_and_role_prompt(
     assert "Lucky: Of course." in interaction_request["input"]
 
 
-def test_voice_transcription_uses_gemini_inline_audio(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(
+    ("content_type", "expected_mime_type"),
+    [
+        ("audio/webm;codecs=opus", "audio/webm"),
+        ("audio/mp4;codecs=mp4a.40.2", "audio/m4a"),
+    ],
+)
+def test_voice_transcription_normalizes_browser_audio_types(
+    monkeypatch: pytest.MonkeyPatch, content_type: str, expected_mime_type: str
+) -> None:
     monkeypatch.setattr(config, "AI_API_KEY", "server-only-test-key")
     monkeypatch.setattr(config, "AI_MODEL", "gemini-test-model")
     captured: dict = {}
@@ -120,7 +129,7 @@ def test_voice_transcription_uses_gemini_inline_audio(monkeypatch: pytest.Monkey
             "path": "/assistant/transcribe",
             "raw_path": b"/assistant/transcribe",
             "query_string": b"",
-            "headers": [(b"content-type", b"audio/webm")],
+            "headers": [(b"content-type", content_type.encode())],
             "client": ("127.0.0.1", 1234),
             "server": ("testserver", 80),
         },
@@ -134,5 +143,10 @@ def test_voice_transcription_uses_gemini_inline_audio(monkeypatch: pytest.Monkey
     assert captured["api_key"] == "server-only-test-key"
     assert captured["request"]["model"] == "gemini-test-model"
     assert captured["request"]["store"] is False
-    assert audio_part["mime_type"] == "audio/webm"
+    assert audio_part["mime_type"] == expected_mime_type
     assert base64.b64decode(audio_part["data"]) == b"fake-audio-data"
+
+
+@pytest.mark.parametrize("content_type", ["application/octet-stream", "audio/unknown"])
+def test_voice_transcription_rejects_unsupported_audio_types(content_type: str) -> None:
+    assert assistant._normalize_audio_mime_type(content_type) is None
