@@ -28,8 +28,10 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
   data, bookings, or payments. Missing chatbot backend routes show a deployment
   hint instead of a generic API 404.
 - **Stronger pull request CI** now runs for documentation-only changes too, builds
-  both customer and provider Android debug APKs, and requires the frontend,
-  backend, migrations, edge-functions, changelog, and Android checks before merge.
+  both customer and provider Android debug APKs plus the iOS Simulator app, and
+  requires the frontend, backend, migrations, edge-functions, changelog, Android,
+  and iOS checks before merge. A shared Xcode scheme makes the iOS build
+  reproducible on CI runners.
 
 ### Changed
 - **Customer and provider screens** now share polished, accessible UI primitives,
