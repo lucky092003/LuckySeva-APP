@@ -51,6 +51,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
           Requests: ["provider-home", "provider-detail"],
           Bookings: ["provider-bookings", "invoice"],
           Earnings: ["provider-earnings"],
+          Assistant: ["assistant"],
         }
       : {
           Home: ["home"],
@@ -70,6 +71,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
             "booking",
             "payment",
           ],
+          Assistant: ["assistant"],
         };
   const showBell =
     (role === "customer" && !!customer) ||
