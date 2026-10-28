@@ -15,6 +15,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ### Fixed
 
 - Customer `/notifications/read-all` now declared before `/notifications/{notification_id}/read` so the literal `read-all` route is never shadowed by the path parameter (route order is load-bearing, invariant 3.5). Matches `provider.py`, which already had this correct.
+- **Customer All Services screen** now has a service search, clearer category filters, and roomier service cards with easier-to-scan duration and starting-price details.
 
 ## 2026-10-24
 
