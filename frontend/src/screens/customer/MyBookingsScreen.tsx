@@ -9,11 +9,31 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { inr, formatRelativeDay } from '@/utils/format';
 import type { Booking, BookingStatus } from '@/types';
 
-const TABS: { key: BookingFilter; label: string }[] = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'ongoing', label: 'Ongoing' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
+const TABS: {
+  key: BookingFilter;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}[] = [
+  {
+    key: 'upcoming',
+    label: 'Upcoming',
+    icon: Icons.Calendar as React.ComponentType<{ size?: number; className?: string }>,
+  },
+  {
+    key: 'ongoing',
+    label: 'Ongoing',
+    icon: Icons.Clock as React.ComponentType<{ size?: number; className?: string }>,
+  },
+  {
+    key: 'completed',
+    label: 'Completed',
+    icon: Icons.CheckCircle2 as React.ComponentType<{ size?: number; className?: string }>,
+  },
+  {
+    key: 'cancelled',
+    label: 'Cancelled',
+    icon: Icons.XCircle as React.ComponentType<{ size?: number; className?: string }>,
+  },
 ];
 
 /**
@@ -30,6 +50,30 @@ const CANCELLABLE: BookingStatus[] = ['confirmed', 'assigned'];
 
 /** The journey has started: the only useful actions are Track and Support. */
 const ONGOING: BookingStatus[] = ['on_the_way', 'started'];
+
+const STATUS_TONE: Record<BookingStatus, 'success' | 'warning' | 'info' | 'neutral'> = {
+  confirmed: 'info',
+  assigned: 'info',
+  on_the_way: 'warning',
+  started: 'warning',
+  completed: 'success',
+  cancelled: 'neutral',
+};
+
+const STATUS_LABEL: Record<BookingStatus, string> = {
+  confirmed: 'Confirmed',
+  assigned: 'Assigned',
+  on_the_way: 'On the way',
+  started: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const REFUND_LABEL: Record<string, { label: string; tone: 'success' | 'warning' }> = {
+  refund_pending: { label: 'Refund pending', tone: 'warning' },
+  refunded: { label: 'Refunded', tone: 'success' },
+  partially_refunded: { label: 'Partially refunded', tone: 'success' },
+};
 
 export const MyBookingsScreen = () => {
   const { navigate, customer } = useApp();
@@ -91,10 +135,6 @@ export const MyBookingsScreen = () => {
       setPendingCancel(null);
       reload();
     } catch (e) {
-      // Do not swallow this. The booking can turn uncancellable between the
-      // render and the tap (the professional accepts and sets off), and the
-      // user has to be told why the cancel did not happen instead of the
-      // dialog closing on them in silence.
       setCancelError(e instanceof Error ? e.message : 'Could not cancel booking');
     } finally {
       setCancellingId(null);
@@ -117,28 +157,44 @@ export const MyBookingsScreen = () => {
     }
   };
 
+  const TabButton = ({ t, count }: { t: typeof TABS[number]; count: number }) => {
+    const active = tab === t.key;
+    return (
+      <button
+        key={t.key}
+        onClick={() => setTab(t.key)}
+        aria-pressed={active}
+        className={`relative flex h-9 items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all ${active ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/25' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-200 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500'}`}
+      >
+        <t.icon size={12} className={`shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} />
+        <span className="shrink-0">{t.label}</span>
+        {active && count > 0 && (
+          <span className="ml-1 shrink-0 rounded-full bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white">
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-[#f7f8f7]">
       <TopBar title="My Bookings" showBack={false} right={
-        <button onClick={() => navigate({ name: 'refunds' })} className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700">
-          <Icons.Undo2 size={14} /> Refunds
+        <button
+          onClick={() => navigate({ name: 'refunds' })}
+          aria-label="Refunds"
+          className="flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+        >
+          <Icons.Undo2 size={13} className="shrink-0" /> Refunds
         </button>
       } />
       <div className="shrink-0 border-b border-slate-200/70 bg-white px-5 lg:px-[25px]">
-        <div className="mx-auto flex w-full items-center gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-semibold transition ${tab === t.key ? 'text-emerald-800' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              {t.label}
-              {tab === t.key && (
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{bookings.length}</span>
-              )}
-              {tab === t.key && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-emerald-600" />}
-            </button>
-          ))}
+        <div className="mx-auto w-full">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 sm:pb-0 sm:flex-wrap sm:overflow-x-visible lg:px-0">
+            {TABS.map((t) => (
+              <TabButton key={t.key} t={t} count={tab === t.key ? bookings.length : 0} />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -148,12 +204,20 @@ export const MyBookingsScreen = () => {
             <Spinner className="py-16" />
           ) : bookings.length === 0 ? (
             <EmptyState
-              icon={<Icons.CalendarCheck size={28} />}
+              icon={<Icons.CalendarCheck size={32} className="text-slate-400" />}
               title={`No ${tab} bookings`}
-              subtitle="Your bookings will appear here when scheduled."
+              subtitle={
+                tab === 'upcoming'
+                  ? 'Your upcoming appointments will appear here once scheduled.'
+                  : tab === 'completed'
+                  ? 'Your finished bookings will appear here.'
+                  : tab === 'cancelled'
+                  ? 'Cancelled bookings will appear here.'
+                  : 'Your active jobs will appear here once a professional accepts.'
+              }
             />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {bookings.map((b) => (
                 <BookingCard
                   key={b.id}
@@ -181,7 +245,7 @@ export const MyBookingsScreen = () => {
           pendingCancel
             ? `Your ${pendingCancel.service_name} booking will be cancelled and the professional will be informed.${
                 ['paid', 'cash', 'refund_pending'].includes(pendingCancel.payment_status)
-                  ? `\nA refund of ${inr(pendingCancel.total_amount)} has been paid and will be returned.`
+                  ? ` A refund of ${inr(pendingCancel.total_amount)} will be returned.`
                   : ''
               }`
             : ''
@@ -257,115 +321,148 @@ export const MyBookingsScreen = () => {
   );
 };
 
-const BookingCard = ({ booking, onTrack, onReview, onInvoice, onCancel, cancelling, onRefund, onReschedule, onSupport }: { booking: Booking; onTrack: () => void; onReview: () => void; onInvoice: () => void; onCancel: () => void; cancelling: boolean; onRefund: () => void; onReschedule: () => void; onSupport: () => void }) => {
-  const statusTone: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
-    confirmed: 'info',
-    assigned: 'info',
-    on_the_way: 'warning',
-    started: 'warning',
-    completed: 'success',
-    cancelled: 'neutral',
-  };
-  const statusLabel: Record<string, string> = {
-    confirmed: 'Confirmed',
-    assigned: 'Assigned',
-    on_the_way: 'On the way',
-    started: 'In progress',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-  };
-
-  const REFUND_LABEL: Record<string, { label: string; tone: 'success' | 'warning' }> = {
-    refund_pending: { label: 'Refund pending', tone: 'warning' },
-    refunded: { label: 'Refunded', tone: 'success' },
-    partially_refunded: { label: 'Partially refunded', tone: 'success' },
-  };
-  const refundInfo = booking.status === 'cancelled' || booking.status === 'completed'
-    ? REFUND_LABEL[booking.payment_status]
-    : undefined;
+const BookingCard = ({
+  booking,
+  onTrack,
+  onReview,
+  onInvoice,
+  onCancel,
+  cancelling,
+  onRefund,
+  onReschedule,
+  onSupport,
+}: {
+  booking: Booking;
+  onTrack: () => void;
+  onReview: () => void;
+  onInvoice: () => void;
+  onCancel: () => void;
+  cancelling: boolean;
+  onRefund: () => void;
+  onReschedule: () => void;
+  onSupport: () => void;
+}) => {
+  const refundInfo =
+    (booking.status === 'cancelled' || booking.status === 'completed') &&
+    booking.payment_status in REFUND_LABEL
+      ? REFUND_LABEL[booking.payment_status]
+      : undefined;
 
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between">
+    <Card className="relative overflow-hidden rounded-[20px] border border-slate-200/80 bg-white p-5 shadow-[0_4px_12px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-gray-900">{booking.service_name}</p>
-          <p className="text-[11px] text-gray-500">{booking.professional_name}</p>
+          <p className="truncate text-sm font-bold text-slate-900">{booking.service_name}</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">{booking.professional_name}</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <Badge tone={statusTone[booking.status]}>{statusLabel[booking.status]}</Badge>
-          {refundInfo && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${refundInfo.tone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{refundInfo.label}</span>}
+        <div className="flex flex-col items-end gap-2">
+          <Badge tone={STATUS_TONE[booking.status]} className="text-[11px]">
+            {STATUS_LABEL[booking.status]}
+          </Badge>
+          {refundInfo && (
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                refundInfo.tone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+              }`}
+            >
+              {refundInfo.label}
+            </span>
+          )}
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-4 text-[11px] text-gray-500">
-        <span className="flex items-center gap-1"><Icons.Calendar size={12} />{formatRelativeDay(booking.scheduled_date)}</span>
-        <span className="flex items-center gap-1"><Icons.Clock size={12} />{booking.scheduled_time}</span>
-        <span className="flex items-center gap-1"><Icons.Wallet size={12} />{inr(booking.total_amount)}</span>
+
+      {/* Booking meta row */ }
+      <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500 border-b border-slate-50 pb-2.5">
+        <span className="flex items-center gap-1 shrink-0">
+          <Icons.Calendar size={12} className="shrink-0" />
+          {formatRelativeDay(booking.scheduled_date)}
+        </span>
+        <span className="flex items-center gap-1 shrink-0">
+          <Icons.Clock size={12} className="shrink-0" />
+          {booking.scheduled_time}
+        </span>
+        <span className="ml-auto flex items-center gap-1 font-bold text-emerald-700">
+          <Icons.Wallet size={12} className="shrink-0" />
+          {inr(booking.total_amount)}
+        </span>
       </div>
-      <div className="mt-3 flex items-stretch gap-2 border-t border-gray-50 pt-3">
+
+      <div className="mt-3 flex items-stretch gap-2 border-t border-slate-50 pt-3">
+        {/* Primary actions */ }
         {booking.status === 'completed' ? (
           <>
             <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReview}>
-              <Icons.Star size={14} /> <span className="truncate">Rate Service</span>
+              <Icons.Star size={14} className="shrink-0" />
+              <span className="min-w-0 truncate">Rate Service</span>
             </Button>
             <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onInvoice}>
-              <Icons.Receipt size={14} /> <span className="truncate">Invoice</span>
+              <Icons.Receipt size={14} className="shrink-0" />
+              <span className="min-w-0 truncate">Invoice</span>
             </Button>
-            <Button size="sm" variant="outline" className="min-w-0 flex-1 text-amber-600" onClick={onRefund}>
-              <Icons.Undo2 size={14} /> <span className="truncate">Refund</span>
-            </Button>
+            {refundInfo && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="min-w-0 flex-1 text-amber-600"
+                onClick={onRefund}
+              >
+                <Icons.Undo2 size={14} className="shrink-0" />
+                <span className="min-w-0 truncate">{refundInfo.label === 'Refunded' ? 'Refunded' : 'Request Refund'}</span>
+              </Button>
+            )}
           </>
         ) : booking.status === 'cancelled' ? (
           ['paid', 'cash'].includes(booking.payment_status) ? (
-            <Button size="sm" variant="outline" className="min-w-0 flex-1 text-amber-600" onClick={onRefund}>
-              <Icons.Undo2 size={14} /> <span className="truncate">Request Refund</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-w-0 flex-1 text-amber-600"
+              onClick={onRefund}
+            >
+              <Icons.Undo2 size={14} className="shrink-0" />
+              <span className="min-w-0 truncate">Request Refund</span>
             </Button>
           ) : null
         ) : (
           <>
-            {/* min-w-0 on the labels is what actually lets the row shrink: a
-                nowrap span defaults to min-width:auto, so without it the text
-                pushed its button wider than the flex share and the rightmost
-                button spilled out of the card. Icons stay fixed, the label
-                takes the ellipsis on the narrowest phones. */}
-            {/* Cancel/Reschedule only exist for the statuses the backend will
-                accept — once the journey starts the row becomes Track +
-                Support, which is what the customer actually needs then. */}
             {CANCELLABLE.includes(booking.status) ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="min-w-0 flex-1 gap-[6px] px-[8px] text-red-500"
-                  onClick={onCancel}
-                  disabled={cancelling}
-                >
-                  {cancelling ? (
-                    <span className="min-w-0 truncate">Cancelling...</span>
-                  ) : (
-                    <>
-                      <Icons.X size={14} className="shrink-0" />
-                      <span className="min-w-0 truncate">Cancel</span>
-                    </>
-                  )}
-                </Button>
-                <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onReschedule}>
-                  <Icons.CalendarClock size={14} className="shrink-0" />
-                  <span className="min-w-0 truncate">Reschedule</span>
-                </Button>
-              </>
+              <Button
+                size="sm"
+                variant="outline"
+                className="min-w-0 flex-1 text-red-500"
+                onClick={onCancel}
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <span className="min-w-0 truncate">Cancelling...</span>
+                ) : (
+                  <>
+                    <Icons.X size={14} className="shrink-0" />
+                    <span className="min-w-0 truncate">Cancel</span>
+                  </>
+                )}
+              </Button>
             ) : null}
-            <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onTrack}>
-              <Icons.Navigation size={14} className="shrink-0" />
-              <span className="min-w-0 truncate">Track</span>
-            </Button>
-            {ONGOING.includes(booking.status) ? (
-              <Button size="sm" variant="outline" className="min-w-0 flex-1 gap-[6px] px-[8px]" onClick={onSupport}>
-                <Icons.Headphones size={14} className="shrink-0" />
-                <span className="min-w-0 truncate">Support</span>
+            {booking.status === 'confirmed' || booking.status === 'assigned' ? (
+              <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onReschedule}>
+                <Icons.CalendarClock size={14} className="shrink-0" />
+                <span className="min-w-0 truncate">Reschedule</span>
               </Button>
             ) : null}
           </>
         )}
+
+        {/* Track / Support actions */ }
+        <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onTrack}>
+          <Icons.Navigation size={14} className="shrink-0" />
+          <span className="min-w-0 truncate">Track Booking</span>
+        </Button>
+        {ONGOING.includes(booking.status) ? (
+          <Button size="sm" variant="outline" className="min-w-0 flex-1" onClick={onSupport}>
+            <Icons.Headphones size={14} className="shrink-0" />
+            <span className="min-w-0 truncate">Chat Support</span>
+          </Button>
+        ) : null}
       </div>
     </Card>
   );

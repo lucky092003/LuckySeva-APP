@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-25
+**Last updated:** 2026-10-28
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-28
+
+### Fixed
+
+- Customer `/notifications/read-all` now declared before `/notifications/{notification_id}/read` so the literal `read-all` route is never shadowed by the path parameter (route order is load-bearing, invariant 3.5). Matches `provider.py`, which already had this correct.
+- **Customer All Services screen** now has a service search, clearer category filters, and roomier service cards with easier-to-scan duration and starting-price details.
+- **Customer My Bookings screen** now has cleaner tabs with icon labels, roomier booking cards, and clearer action buttons (Cancel / Reschedule / Track / Invoice) laid out horizontally.
 
 ## 2026-10-25
 
