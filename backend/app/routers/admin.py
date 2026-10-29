@@ -62,6 +62,38 @@ def admin_notifications(status: str | None = None):
     return q.limit(200).execute().data or []
 
 
+# Declared before /{notification_id}/read so the literal `read-all` segment is
+# never shadowed by the path parameter (route order is load-bearing, 3.5).
+# Admin sees every notification platform-wide, so no `.eq(...)` scoping filter
+# here - the `require_admin` guard is the access boundary.
+@router.put("/notifications/read-all")
+def mark_all_notifications_read():
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("read", False)
+        .select("id")
+        .execute()
+    )
+    return {"ok": True, "updated": len(res.data or [])}
+
+
+@router.put("/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: str):
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("id", notification_id)
+        .select("*")
+        .execute()
+    )
+    if not res.data:
+        raise ApiError(404, "Notification not found")
+    return res.data[0]
+
+
 @router.get("/revenue")
 def revenue_summary_endpoint(days: int = Query(default=30, le=365)):
     """The number that actually matters: platform fee collected, not GMV.

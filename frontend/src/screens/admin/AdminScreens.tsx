@@ -1098,25 +1098,61 @@ export const AdminDisputes = () => {
 export const AdminNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marking, setMarking] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
 
-  const load = () => {
-    setLoading(true);
+  const load = (silent = false) => {
+    if (!silent) setLoading(true);
     api.admin.notifications(filter === 'all' ? undefined : filter)
       .then((d) => setNotifications(d || []))
       .catch(() => setNotifications([]))
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   };
 
   useEffect(() => { load(); }, [filter]);
 
   const unread = notifications.filter((n) => !n.read).length;
 
+  const markOneRead = async (n: Notification) => {
+    if (n.read) return;
+    try {
+      await api.admin.markNotificationRead(n.id);
+      setNotifications(notifications.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const markAllRead = async () => {
+    if (unread === 0) return;
+    setMarking(true);
+    try {
+      await api.admin.markAllNotificationsRead();
+      load(true);
+    } catch {
+      /* ignore */
+    } finally {
+      setMarking(false);
+    }
+  };
+
   return (
     <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
       <AdminHeader
         title="Notifications"
         subtitle={`${unread} unread · ${notifications.length} total`}
+        right={
+          unread > 0 ? (
+            <button
+              onClick={markAllRead}
+              disabled={marking}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-600 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+            >
+              {marking ? <Icons.Loader2 size={12} className="animate-spin" /> : <Icons.CheckCheck size={13} />}
+              Mark all read
+            </button>
+          ) : undefined
+        }
       />
       <div className="flex shrink-0 gap-1 border-b border-gray-200 bg-white px-6">
         {(['all', 'unread', 'read'] as const).map((f) => (
@@ -1141,7 +1177,11 @@ export const AdminNotifications = () => {
         ) : (
           <div className="space-y-3">
             {notifications.map((n) => (
-              <Card key={n.id} className={`p-4 ${!n.read ? 'border-l-4 border-l-emerald-500' : ''}`}>
+              <Card
+                key={n.id}
+                onClick={() => markOneRead(n)}
+                className={`cursor-pointer p-4 ${!n.read ? 'border-l-4 border-l-emerald-500' : ''}`}
+              >
                 <div className="flex items-start gap-3">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${n.read ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
                     <Icons.Bell size={18} />
