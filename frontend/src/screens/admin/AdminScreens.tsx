@@ -49,8 +49,13 @@ export const AdminNotificationBell = () => {
   const openNotification = async (n: Notification) => {
     setOpen(false);
     if (!n.read) {
-      api.admin.markNotificationRead(n.id).catch(() => {});
-      setNotifications((prev) => prev.filter((m) => m.id !== n.id));
+      try {
+        await api.admin.markNotificationRead(n.id);
+        setNotifications((prev) => prev.filter((m) => m.id !== n.id));
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : "Could not mark notification as read.");
+        return;
+      }
     }
     if (n.booking_id) {
       navigate({ name: 'admin-bookings' });
@@ -1146,8 +1151,13 @@ export const AdminNotifications = () => {
 
   const openNotification = async (n: Notification) => {
     if (!n.read) {
-      api.admin.markNotificationRead(n.id).catch(() => {});
-      setNotifications((prev) => prev.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
+      try {
+        await api.admin.markNotificationRead(n.id);
+        setNotifications((prev) => prev.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : "Could not mark notification as read.");
+        return;
+      }
     }
     if (n.booking_id) {
       navigate({ name: 'admin-bookings' });
@@ -1166,8 +1176,8 @@ export const AdminNotifications = () => {
     try {
       await api.admin.markAllNotificationsRead();
       load(true);
-    } catch {
-      /* ignore */
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Could not mark notifications as read.");
     } finally {
       setMarking(false);
     }
