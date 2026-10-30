@@ -33,6 +33,7 @@ const AdminHeader = ({
 );
 
 export const AdminNotificationBell = () => {
+  const { navigate } = useApp();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,12 +46,31 @@ export const AdminNotificationBell = () => {
       .finally(() => setLoading(false));
   };
 
+  const openNotification = async (n: Notification) => {
+    setOpen(false);
+    if (!n.read) {
+      api.admin.markNotificationRead(n.id).catch(() => {});
+      setNotifications((prev) => prev.filter((m) => m.id !== n.id));
+    }
+    if (n.booking_id) {
+      navigate({ name: 'admin-bookings' });
+    } else if (n.type === 'provider') {
+      navigate({ name: 'admin-providers' });
+    } else if (n.type === 'payment' || n.type === 'payout') {
+      navigate({ name: 'admin-payouts' });
+    } else if (n.type === 'refund') {
+      navigate({ name: 'admin-refunds' });
+    } else {
+      navigate({ name: 'admin-notifications' });
+    }
+  };
+
   const unread = notifications.length;
 
   return (
     <div className="relative">
       <button
-        onClick={() => { setOpen(!open); if (!open && unread === 0) load(); }}
+        onClick={() => { setOpen(!open); if (!open) load(); }}
         className="relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors"
         style={{ color: 'var(--admin-text-muted)' }}
       >
@@ -68,9 +88,14 @@ export const AdminNotificationBell = () => {
           <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-2xl shadow-2xl" style={{ backgroundColor: 'var(--admin-surface)', borderColor: 'var(--admin-border)', borderWidth: 1 }}>
             <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: 'var(--admin-border)' }}>
               <p className="text-sm font-bold" style={{ color: 'var(--admin-text)' }}>Notifications</p>
-              <button onClick={load} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
-                Refresh
-              </button>
+              <div className="flex items-center gap-3">
+                <button onClick={load} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold">
+                  Refresh
+                </button>
+                <button onClick={() => { setOpen(false); navigate({ name: 'admin-notifications' }); }} className="text-xs text-gray-400 hover:text-gray-600 font-semibold">
+                  View all
+                </button>
+              </div>
             </div>
             <div className="max-h-80 overflow-y-auto no-scrollbar">
               {loading ? (
@@ -84,7 +109,12 @@ export const AdminNotificationBell = () => {
                 </div>
               ) : (
                 notifications.slice(0, 10).map((n) => (
-                  <div key={n.id} className="border-b px-4 py-3 last:border-0" style={{ borderColor: 'var(--admin-border)' }}>
+                  <div
+                    key={n.id}
+                    onClick={() => openNotification(n)}
+                    className="cursor-pointer border-b px-4 py-3 last:border-0 hover:bg-gray-50/60 transition-colors"
+                    style={{ borderColor: 'var(--admin-border)' }}
+                  >
                     <p className="text-xs font-semibold" style={{ color: 'var(--admin-text)' }}>{n.title}</p>
                     <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'var(--admin-text-muted)' }}>{n.message}</p>
                     <p className="mt-1 text-[10px]" style={{ color: 'var(--admin-text-muted)', opacity: 0.7 }}>{formatDate(n.created_at)}</p>
@@ -1096,6 +1126,7 @@ export const AdminDisputes = () => {
 };
 
 export const AdminNotifications = () => {
+  const { navigate } = useApp();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
@@ -1113,13 +1144,19 @@ export const AdminNotifications = () => {
 
   const unread = notifications.filter((n) => !n.read).length;
 
-  const markOneRead = async (n: Notification) => {
-    if (n.read) return;
-    try {
-      await api.admin.markNotificationRead(n.id);
-      setNotifications(notifications.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
-    } catch {
-      /* ignore */
+  const openNotification = async (n: Notification) => {
+    if (!n.read) {
+      api.admin.markNotificationRead(n.id).catch(() => {});
+      setNotifications((prev) => prev.map((m) => (m.id === n.id ? { ...m, read: true } : m)));
+    }
+    if (n.booking_id) {
+      navigate({ name: 'admin-bookings' });
+    } else if (n.type === 'provider') {
+      navigate({ name: 'admin-providers' });
+    } else if (n.type === 'payment' || n.type === 'payout') {
+      navigate({ name: 'admin-payouts' });
+    } else if (n.type === 'refund') {
+      navigate({ name: 'admin-refunds' });
     }
   };
 
@@ -1179,7 +1216,7 @@ export const AdminNotifications = () => {
             {notifications.map((n) => (
               <Card
                 key={n.id}
-                onClick={() => markOneRead(n)}
+                onClick={() => openNotification(n)}
                 className={`cursor-pointer p-4 ${!n.read ? 'border-l-4 border-l-emerald-500' : ''}`}
               >
                 <div className="flex items-start gap-3">
