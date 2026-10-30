@@ -15,6 +15,7 @@ const MAIN: NavItem[] = [
   { label: 'Payouts', icon: Icons.Wallet, screen: { name: 'admin-payouts' } as Screen },
   { label: 'Refunds', icon: Icons.Undo, screen: { name: 'admin-refunds' } as Screen },
   { label: 'Disputes', icon: Icons.AlertTriangle, screen: { name: 'admin-disputes' } as Screen },
+  { label: 'Notifications', icon: Icons.Bell, screen: { name: 'admin-notifications' } as Screen },
 ];
 
 const ACCOUNT: NavItem[] = [

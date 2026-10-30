@@ -51,6 +51,7 @@ import {
   AdminPayouts,
   AdminRefunds,
   AdminDisputes,
+  AdminNotifications,
 } from '@/screens/admin/AdminScreens';
 
 function Router() {
@@ -155,6 +156,7 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
     case 'admin-payouts': return <AdminPayouts />;
     case 'admin-refunds': return <AdminRefunds />;
     case 'admin-disputes': return <AdminDisputes />;
+    case 'admin-notifications': return <AdminNotifications />;
     default: return <AdminDashboard />;
   }
 }

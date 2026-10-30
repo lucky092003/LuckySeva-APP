@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-28
+**Last updated:** 2026-10-30
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-10-30
+
+### Fixed
+- Admin notification read state is stored separately from customer/provider read state, preventing admin mark-read actions from changing another user's unread notifications.
+- Admin notification actions now report API failures and only update the UI after the backend confirms the change.
 
 ## 2026-10-28
 
