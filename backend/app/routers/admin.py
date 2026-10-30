@@ -56,23 +56,24 @@ def admin_notifications(status: str | None = None):
         .order("created_at", desc=True)
     )
     if status == "unread":
-        q = q.eq("read", False)
+        q = q.eq("admin_read", False)
     elif status == "read":
-        q = q.eq("read", True)
-    return q.limit(200).execute().data or []
+        q = q.eq("admin_read", True)
+    rows = q.limit(200).execute().data or []
+    # Admin read state is separate from customer/provider read state.
+    return [{**row, "read": bool(row.get("admin_read", False))} for row in rows]
 
 
 # Declared before /{notification_id}/read so the literal `read-all` segment is
 # never shadowed by the path parameter (route order is load-bearing, 3.5).
-# Admin sees every notification platform-wide, so no `.eq(...)` scoping filter
-# here - the `require_admin` guard is the access boundary.
+# Customer and provider notifications share this table, so admin state is separate.
 @router.put("/notifications/read-all")
 def mark_all_notifications_read():
     client = db()
     res = (
         client.table("notifications")
-        .update({"read": True})
-        .eq("read", False)
+        .update({"admin_read": True})
+        .eq("admin_read", False)
         .select("id")
         .execute()
     )
@@ -84,14 +85,14 @@ def mark_notification_read(notification_id: str):
     client = db()
     res = (
         client.table("notifications")
-        .update({"read": True})
+        .update({"admin_read": True})
         .eq("id", notification_id)
         .select("*")
         .execute()
     )
     if not res.data:
         raise ApiError(404, "Notification not found")
-    return res.data[0]
+    return {**res.data[0], "read": bool(res.data[0].get("admin_read", False))}
 
 
 @router.get("/revenue")
