@@ -336,6 +336,10 @@ export const api = {
     addAuditLog: (action: string, detail: string) => request<AuditLog>('admin', '/audit-logs', 'POST', { action, detail }),
     notifications: (status?: 'all' | 'unread' | 'read') =>
       request<Notification[]>('admin', `/notifications${status && status !== 'all' ? `?status=${status}` : ''}`),
+    markNotificationRead: (id: string) =>
+      request<Notification>('admin', `/notifications/${id}/read`, 'PUT'),
+    markAllNotificationsRead: () =>
+      request<{ ok: boolean; updated: number }>('admin', '/notifications/read-all', 'PUT'),
     coupons: () => request<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>('admin', '/coupons'),
     createCoupon: (c: { code: string; discount_pct: number; min_amount?: number; expires_at?: string | null }) =>
       request<unknown>('admin', '/coupons', 'POST', c),
