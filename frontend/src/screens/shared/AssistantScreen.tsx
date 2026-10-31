@@ -232,102 +232,90 @@ export const AssistantScreen = () => {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-gray-950">
-      <TopBar title="Lucky AI Assistant" />
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:gap-8 lg:px-[25px] lg:py-6">
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-5xl">
-          <header className="hidden shrink-0 items-center gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:flex">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-900/15">
-              <Icons.Sparkles size={22} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
-                {isProvider ? "Partner support" : "Customer support"}
-              </p>
-              <h1 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-gray-100">
-                Ask Lucky anything
-              </h1>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-gray-400">
-                Voice or chat, in English, Hindi, or Hinglish.
-              </p>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f8f6] dark:bg-gray-950">
+      <TopBar title="Lucky Assistant" />
+      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-3 pb-3 sm:px-5 lg:px-6 lg:py-5">
+        <header className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:mb-4 sm:px-5 sm:py-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm shadow-emerald-900/15">
+            <Icons.Sparkles size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100 sm:text-base">Ask Lucky</h1>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Here to help
+              </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-semibold text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Ready
-              to help
-            </span>
-          </header>
+            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-gray-400">
+              {isProvider ? "Partner help, whenever you need it" : "Help with services, bookings, and the app"}
+            </p>
+          </div>
+          <span className="hidden text-[10px] text-slate-400 sm:block">English / Hindi / Hinglish</span>
+        </header>
 
-          <section className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 lg:mt-4 lg:rounded-2xl lg:border lg:border-slate-200/80 lg:bg-white lg:px-6 lg:py-6 lg:shadow-sm dark:lg:border-gray-800 dark:lg:bg-gray-900">
-            {messages.length === 1 && (
-              <div className="mb-6 lg:mb-8">
-                <p className="text-xs font-semibold text-slate-500 dark:text-gray-400">
-                  Try asking
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {prompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => void sendMessage(prompt)}
-                      disabled={sending}
-                      className="rounded-full border border-slate-200 bg-white px-3.5 py-2 text-left text-xs font-medium text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 lg:bg-slate-50"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
+        <section className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:py-6">
+          {messages.length === 1 && (
+            <div className="mx-auto mb-6 w-full max-w-xl py-3 text-center sm:mb-8 sm:py-8">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <Icons.MessageCircle size={26} />
+              </span>
+              <h2 className="mt-4 text-lg font-bold tracking-tight text-slate-900 dark:text-gray-100 sm:text-xl">What can I help you with?</h2>
+              <p className="mx-auto mt-1.5 max-w-sm text-xs leading-5 text-slate-500 dark:text-gray-400">Ask a question or choose a suggestion to get started.</p>
+              <div className="mt-5 grid gap-2 text-left sm:grid-cols-2">
+                {prompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => void sendMessage(prompt)}
+                    disabled={sending}
+                    className="group flex min-h-12 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
+                  >
+                    <span>{prompt}</span>
+                    <Icons.ArrowUpRight size={14} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
+                  </button>
+                ))}
               </div>
-            )}
-            <div className="space-y-5">
-              {messages.map((message) => (
-                <article
-                  key={message.id}
-                  className={`flex items-start gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${message.role === "assistant" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}
-                  >
-                    {message.role === "assistant" ? (
-                      <Icons.Sparkles size={17} />
-                    ) : (
-                      <Icons.UserRound size={17} />
+            </div>
+          )}
+          {messages.length > 1 && (
+            <div className="space-y-5 sm:space-y-6">
+              {messages.slice(1).map((message) => (
+                <article key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[88%] sm:max-w-[78%] ${message.role === "assistant" ? "flex items-start gap-2.5" : ""}`}>
+                    {message.role === "assistant" && (
+                      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        <Icons.Sparkles size={14} />
+                      </span>
                     )}
-                  </span>
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed lg:max-w-[78%] ${message.role === "user" ? "rounded-tr-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md border border-slate-200 bg-white text-slate-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 lg:bg-slate-50 dark:lg:bg-gray-950"}`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    {message.role === "assistant" && !message.failed && (
-                      <button
-                        onClick={() => speak(message.content)}
-                        aria-label="Read response aloud"
-                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:bg-white hover:text-emerald-700 dark:hover:bg-gray-800 dark:hover:text-emerald-400"
-                      >
-                        <Icons.Volume2 size={13} /> Listen
-                      </button>
-                    )}
+                    <div className={`min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-gray-200"}`}>
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      {message.role === "assistant" && !message.failed && (
+                        <button onClick={() => speak(message.content)} aria-label="Read response aloud" className="mt-2 inline-flex items-center gap-1.5 rounded-lg py-1 text-[10px] font-semibold text-slate-400 transition hover:text-emerald-700 dark:hover:text-emerald-400">
+                          <Icons.Volume2 size={13} /> Listen
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </article>
               ))}
               {sending && (
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                    <Icons.Sparkles size={17} />
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <div className="flex items-center gap-2.5 text-xs text-slate-400">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><Icons.Sparkles size={14} /></span>
+                  <span className="inline-flex items-center gap-1 rounded-2xl bg-slate-100 px-4 py-3 dark:bg-gray-800">
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:120ms]" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:240ms]" />{" "}
-                    Lucky is thinking
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:240ms]" />
+                    <span className="ml-1">Lucky is thinking</span>
                   </span>
                 </div>
               )}
               <div ref={messagesEnd} />
             </div>
-          </section>
+          )}
+        </section>
 
-          <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-3 pt-3 dark:border-gray-800 dark:bg-gray-900 lg:mt-3 lg:rounded-2xl lg:border lg:px-4">
+        <div className="mt-3 shrink-0 rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-3">
             {voiceError && (
-              <p role="status" className="mb-2 text-xs text-amber-700">
+              <p role="status" className="mb-2 px-2 text-xs text-amber-700">
                 {voiceError}
               </p>
             )}
@@ -343,7 +331,7 @@ export const AssistantScreen = () => {
                       ? "Stop voice input"
                       : "Start voice input"
                 }
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-50 ${listening ? "border-red-200 bg-red-50 text-red-600" : "border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:text-emerald-700"}`}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-50 ${listening ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-800 dark:text-gray-300"}`}
               >
                 {transcribing ? (
                   <Icons.LoaderCircle size={17} className="animate-spin" />
@@ -372,13 +360,13 @@ export const AssistantScreen = () => {
                       : "Ask about services, bookings, or the app…"
                 }
                 aria-label="Message Lucky"
-                className="max-h-32 min-h-11 min-w-0 flex-1 resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
+                className="max-h-32 min-h-11 min-w-0 flex-1 resize-y rounded-xl border border-transparent bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
               />
               <button
                 type="submit"
                 disabled={!draft.trim() || sending}
                 aria-label="Send message"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {sending ? (
                   <Icons.LoaderCircle size={17} className="animate-spin" />
@@ -388,54 +376,10 @@ export const AssistantScreen = () => {
               </button>
             </form>
             <p className="mt-2 text-center text-[10px] text-slate-400 dark:text-gray-500">
-              Don’t share OTPs, passwords, or payment PINs with anyone.
+              Don’t share OTPs, passwords, or payment PINs.
             </p>
-          </div>
-        </main>
-
-        <aside className="hidden w-[250px] shrink-0 flex-col gap-4 xl:flex">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <Icons.ShieldCheck size={19} />
-            </span>
-            <h2 className="mt-3 text-sm font-bold text-slate-900 dark:text-gray-100">
-              Helpful, with boundaries
-            </h2>
-            <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-gray-400">
-              Lucky can guide you through the app, but cannot view private
-              booking details or make account changes.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-gray-100">
-              Quick tips
-            </h2>
-            <ul className="mt-3 space-y-3 text-xs leading-5 text-slate-500 dark:text-gray-400">
-              <li className="flex gap-2">
-                <Icons.Languages
-                  size={15}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                />
-                Ask in English, Hindi, or Hinglish.
-              </li>
-              <li className="flex gap-2">
-                <Icons.Mic
-                  size={15}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                />
-                Use the microphone to dictate a question.
-              </li>
-              <li className="flex gap-2">
-                <Icons.Volume2
-                  size={15}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                />
-                Tap Listen to hear a reply.
-              </li>
-            </ul>
-          </div>
-        </aside>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

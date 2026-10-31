@@ -132,7 +132,9 @@ async def chat(body: ChatRequest, claims: dict = Depends(get_claims)):
         interaction = await _create_interaction(
             input=transcript,
             system_instruction=f"{COMMON_INSTRUCTIONS}\n\n{ROLE_INSTRUCTIONS[role]}",
-            generation_config=types.GenerationConfig(temperature=0.4, max_output_tokens=500),
+            # Gemini 3.8 Flash rejects deprecated sampling controls such as
+            # temperature; keep only the supported output limit.
+            generation_config=types.GenerationConfig(max_output_tokens=500),
         )
     except Exception as exc:
         raise _upstream_error(exc, "chat") from exc
