@@ -6,7 +6,7 @@ import {
   ChevronDown,
   Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useApp, Screen, Role } from "@/context/app-context";
 import { Logo } from "@/components/Logo";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -37,6 +37,18 @@ export const WebTopNav = ({ role }: { role: Role }) => {
   const [searchValue, setSearchValue] = useState(
     screen.name === "search" ? screen.q || "" : "",
   );
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [profileOpen]);
   if (isNative) return null;
   if (screen.name === "auth" || screen.name === "provider-auth") return null;
   const items =
@@ -173,34 +185,73 @@ export const WebTopNav = ({ role }: { role: Role }) => {
               <NotificationBell />
             </div>
           )}
-          <button
-            onClick={() =>
-              navigate(
-                role === "provider"
-                  ? { name: "provider-profile" }
-                  : { name: "profile" },
-              )
-            }
-            aria-label={`Open ${role === "provider" ? "partner" : "account"} profile`}
-            className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${accountActive ? "border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/40" : "border-gray-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-900/60 dark:hover:bg-emerald-950/30"}`}
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-xs font-bold text-white shadow-inner">
-              {role === "provider" ? (
-                <BriefcaseBusiness size={15} />
-              ) : (
-                accountInitial
-              )}
-            </span>
-            <div className="flex flex-col items-start leading-none">
-              <span className="max-w-[150px] truncate text-left text-[11px] font-bold text-gray-800 dark:text-gray-100">
-                {accountName}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen((v) => !v)}
+              aria-label={`Open ${role === "provider" ? "partner" : "account"} profile`}
+              className={`flex items-center gap-1 rounded-full border py-1 pl-1 pr-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${accountActive ? "border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/40" : "border-gray-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-900/60 dark:hover:bg-emerald-950/30"}`}
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-xs font-bold text-white shadow-inner">
+                {role === "provider" ? (
+                  <BriefcaseBusiness size={15} />
+                ) : (
+                  accountInitial
+                )}
               </span>
-            </div>
-            <ChevronDown
-              size={13}
-              className="text-slate-400 dark:text-slate-500"
-            />
-          </button>
+              <ChevronDown
+                size={13}
+                className={`text-slate-400 transition-transform dark:text-slate-500 ${profileOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
+                {/* Short details */}
+                <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-4 dark:border-gray-800">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-sm font-bold text-white shadow-inner">
+                    {role === "provider" ? (
+                      <BriefcaseBusiness size={18} />
+                    ) : (
+                      accountInitial
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {accountName}
+                    </p>
+                    {role === "customer" && customer && (
+                      <div className="mt-1 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        {customer.phone && <p className="truncate">📞 {customer.phone}</p>}
+                        {customer.email && <p className="truncate">✉️ {customer.email}</p>}
+                        {customer.location && <p className="truncate">📍 {customer.location}</p>}
+                      </div>
+                    )}
+                    {role === "provider" && (
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        Partner workspace
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Full view profile */}
+                <button
+                  onClick={() => {
+                    setProfileOpen(false);
+                    navigate(
+                      role === "provider"
+                        ? { name: "provider-profile" }
+                        : { name: "profile" },
+                    );
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                >
+                  <span className="flex-1">View full profile</span>
+                  <ChevronDown size={14} className="-rotate-90" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
       <div className="hidden h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent md:block" />
