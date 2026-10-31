@@ -115,6 +115,39 @@ Get current user profile.
 
 ---
 
+### AI Assistant (Customer or Provider JWT)
+
+#### `POST /assistant/chat`
+Send the recent conversation to the role-aware assistant. The server applies its
+customer/provider instructions and calls the configured Gemini Interactions API.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "How do I track a booking?"}
+  ]
+}
+```
+
+The request accepts at most 16 messages, with a maximum of 2,000 characters per
+message. The server uses the Gemini Interactions API with `store=false`, and the
+server-side `AI_API_KEY` is never returned to the app. Without that key, the
+endpoint responds with `503` and code `ai_not_configured`.
+
+**Response:** `{"reply": "..."}`
+
+#### `POST /assistant/transcribe`
+Transcribe a raw audio request body (`Content-Type: audio/webm`, `audio/mp4`, etc.)
+into text for the chat composer. Maximum size: 8 MB. Audio is sent inline to
+Gemini Interactions and is not stored as an interaction.
+
+**Response:** `{"text": "..."}`
+
+Both routes require a customer or provider JWT; admin tokens are rejected.
+
+---
+
 ### Catalog Endpoints (Public)
 
 #### `GET /catalog`

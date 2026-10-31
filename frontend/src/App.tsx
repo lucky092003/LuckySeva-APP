@@ -5,6 +5,8 @@ import { PhoneShell } from '@/components/PhoneShell';
 import { BottomNav } from '@/components/BottomNav';
 import { WebTopNav } from '@/components/WebTopNav';
 import { ProviderLocationPublisher } from '@/components/ProviderLocationPublisher';
+import { AssistantLauncher } from '@/components/AssistantLauncher';
+import { AssistantScreen } from '@/screens/shared/AssistantScreen';
 import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 
 import { SplashScreen } from '@/screens/customer/SplashScreen';
@@ -86,6 +88,7 @@ function Router() {
         {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
       </div>
       <BottomNav />
+      <AssistantLauncher />
       {/* Silent GPS publisher so customers can track an in-progress job. */}
       {role === 'provider' && screen.name !== 'provider-auth' && <ProviderLocationPublisher />}
     </PhoneShell>
@@ -100,6 +103,7 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
     case 'services': return <ServicesScreen />;
     case 'search': return <SearchScreen />;
     case 'notifications': return <NotificationsScreen />;
+    case 'assistant': return <AssistantScreen />;
     case 'category': return <CategoryScreen slug={screen.slug} />;
     case 'service': return <ServiceDetailScreen id={screen.id} />;
     case 'professionals': return <ProfessionalListScreen slug={screen.slug} />;
@@ -131,6 +135,7 @@ function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
     // Shared with the customer app: the screen reads role from context, so it
     // shows this professional's bell, not a customer's.
     case 'notifications': return <NotificationsScreen />;
+    case 'assistant': return <AssistantScreen />;
     case 'help': return <HelpScreen />;
     case 'invoice': return <InvoiceScreen bookingId={screen.bookingId} />;
     default: return <ProviderHomeScreen />;

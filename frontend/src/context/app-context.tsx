@@ -21,6 +21,7 @@ export type Screen =
   | { name: 'services' }
   | { name: 'search'; q?: string }
   | { name: 'notifications' }
+  | { name: 'assistant' }
   | { name: 'category'; slug: string }
   | { name: 'service'; id: string }
   | { name: 'professionals'; slug: string }
@@ -197,6 +198,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Typing in the global nav search re-navigates on every keystroke; replace
       // instead of push so Back returns to the previous screen, not every letter.
       const top = prev[prev.length - 1];
+      if (top?.name === 'assistant' && s.name === 'assistant') return prev;
       if (top?.name === 'search' && s.name === 'search') return [...prev.slice(0, -1), s];
       return [...prev, s];
     });
