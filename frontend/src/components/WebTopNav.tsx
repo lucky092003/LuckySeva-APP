@@ -189,7 +189,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
             <button
               onClick={() => setProfileOpen((v) => !v)}
               aria-label={`Open ${role === "provider" ? "partner" : "account"} profile`}
-              className={`flex items-center gap-1 rounded-full border py-1 pl-1 pr-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${accountActive ? "border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/40" : "border-gray-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-900/60 dark:hover:bg-emerald-950/30"}`}
+              className={`flex items-center gap-1 rounded-full border py-1 pl-1 pr-1 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${accountActive ? "border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/40" : "border-gray-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-900/60 dark:hover:bg-emerald-950/30"}`}
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-xs font-bold text-white shadow-inner">
                 {role === "provider" ? (
@@ -198,10 +198,6 @@ export const WebTopNav = ({ role }: { role: Role }) => {
                   accountInitial
                 )}
               </span>
-              <ChevronDown
-                size={13}
-                className={`text-slate-400 transition-transform dark:text-slate-500 ${profileOpen ? "rotate-180" : ""}`}
-              />
             </button>
 
             {profileOpen && (
