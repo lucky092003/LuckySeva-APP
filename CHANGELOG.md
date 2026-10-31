@@ -14,12 +14,14 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Fixed
 - Notification bell badge now shows the real unread count (1, 2, … 10, 11…) instead of being capped at "9+", and the badge widens so two- and three-digit counts fit. The badge still hides when there are no unread notifications.
+- Customer professional list now filters by distance so a customer only sees professionals near their location (default 30 km), respecting each professional's own `service_radius_km`. Professionals from other cities (e.g. Ahmedabad shown to a Faridabad customer) are no longer returned, and customers without a saved address are prompted to add one instead of seeing an unfiltered list.
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
 - Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
 - Assistant back navigation now returns to the screen it was opened from.
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
+- iOS CI dependency caching in the main CI workflow now uses `actions/cache@v6` instead of `v4`.
 - AI Assistant heading and welcome suggestions are more compact, without the “Ask Lucky” label.
 - Frontend JavaScript dependencies received minor/patch updates, including `lucide-react` 1.60.0 → 1.62.0 (lockfile refreshed).
 

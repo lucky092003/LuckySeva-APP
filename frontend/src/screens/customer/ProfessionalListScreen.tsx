@@ -25,7 +25,6 @@ const SORTS: { key: SortKey; label: string }[] = [
 export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
   const { navigate } = useApp();
   const [category, setCategory] = useState<Category | null>(null);
-  const { professionals, loading } = useProfessionalsByCategory(slug);
   const coords = useCustomerCoords();
 
   const [sort, setSort] = useState<SortKey>('rating');
@@ -37,6 +36,7 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
   const [maxPrice, setMaxPrice] = useState(MAX_PRICE);
   const [minExp, setMinExp] = useState(0);
   const [maxDist, setMaxDist] = useState(DEFAULT_MAX_DIST);
+  const { professionals, loading } = useProfessionalsByCategory(slug, coords, maxDist);
 
   useEffect(() => {
     let active = true;
@@ -224,6 +224,12 @@ export const ProfessionalListScreen = ({ slug }: { slug: string }) => {
       <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar px-5 py-4">
         {loading ? (
           <Spinner className="py-16" />
+        ) : !coords ? (
+          <EmptyState
+            icon={<Icons.MapPin size={28} />}
+            title="Add your address to see nearby professionals"
+            subtitle="Save your address so we show professionals near you, not from other cities."
+          />
         ) : professionals.length === 0 ? (
           <EmptyState
             icon={<Icons.WifiOff size={28} />}

@@ -186,11 +186,14 @@ export const api = {
       const qs = q.toString();
       return request<ServiceDetailResponse>('catalog', `/services/${id}${qs ? `?${qs}` : ''}`);
     },
-    professionals: (opts?: { category_slug?: string; query?: string; limit?: number }) => {
+    professionals: (opts?: { category_slug?: string; query?: string; limit?: number; latitude?: number | null; longitude?: number | null; radius_km?: number }) => {
       const q = new URLSearchParams();
       if (opts?.category_slug) q.set('category_slug', opts.category_slug);
       if (opts?.query) q.set('query', opts.query);
       if (opts?.limit) q.set('limit', String(opts.limit));
+      if (opts?.latitude != null) q.set('latitude', String(opts.latitude));
+      if (opts?.longitude != null) q.set('longitude', String(opts.longitude));
+      if (opts?.radius_km != null) q.set('radius_km', String(opts.radius_km));
       const qs = q.toString();
       return request<Professional[]>(`catalog`, `/professionals${qs ? `?${qs}` : ''}`);
     },
