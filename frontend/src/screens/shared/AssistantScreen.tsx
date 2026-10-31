@@ -230,14 +230,27 @@ export const AssistantScreen = () => {
     window.speechSynthesis.speak(utterance);
   };
 
+  const steps = [
+    { key: "1", label: "Chat", active: true },
+    { key: "2", label: "Review", active: false },
+    { key: "3", label: "Vendors", active: false },
+    { key: "4", label: "Publish", active: false },
+  ];
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-end bg-black/40 backdrop-blur-sm sm:backdrop-blur-md" onClick={() => navigate({ name: "home" })}>
       <div
-        className="fixed inset-y-0 right-0 z-[61] w-full max-w-xs sm:max-w-md bg-white dark:bg-gray-950 shadow-2xl shadow-emerald-900/20 transform transition-transform duration-300 translate-x-0 sm:translate-x-0 flex flex-col border-l border-gray-100 dark:border-gray-800"
+        className="fixed inset-y-0 right-0 z-[61] w-full max-w-[420px] bg-white dark:bg-gray-950 shadow-2xl shadow-emerald-900/20 transform transition-transform duration-300 translate-x-0 sm:translate-x-0 flex flex-col border-l border-gray-100 dark:border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
+              <Icons.Sparkles size={16} />
+            </span>
+            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">Build with AI</h1>
+          </div>
           <button
             onClick={() => navigate({ name: "home" })}
             aria-label="Close assistant"
@@ -245,24 +258,34 @@ export const AssistantScreen = () => {
           >
             <Icons.X size={16} />
           </button>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
-            <Icons.Sparkles size={17} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">AI Assistant</h1>
-            <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-gray-400">
-              {isProvider ? "Partner support" : "Help with services and bookings"}
-            </p>
-          </div>
+        </div>
+
+        {/* Progress steps */}
+        <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-2.5 text-[10px]">
+          {steps.map((step, i) => (
+            <div key={step.key} className="flex items-center gap-1">
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold transition ${step.active ? "bg-emerald-700 text-white" : "bg-gray-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400"}`}
+              >
+                {step.key}
+              </span>
+              <span className={`font-medium ${step.active ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500 dark:text-gray-500"}`}>
+                {step.label}
+              </span>
+              {i < steps.length - 1 && (
+                <span className="w-px h-2 bg-gray-200 dark:bg-gray-700 mx-1" />
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Messages */}
         <section className="no-scrollbar flex min-h-[200px] flex-1 flex-col overflow-y-auto bg-[#f8fafc] dark:bg-gray-950 px-4 py-4 sm:px-5 sm:py-5">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-start gap-2.5">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
               <Icons.Sparkles size={14} />
             </span>
-            <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed">
+            <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed max-w-[85%]">
               Hi! I’m Lucky, your home-services assistant. Ask me about choosing a service, booking a visit, tracking a job, or anything else about the app.
             </p>
           </div>
@@ -365,7 +388,7 @@ export const AssistantScreen = () => {
                   ? "Transcribing voice note…"
                   : listening
                     ? "Listening…"
-                    : "Ask about services, bookings, tracking, or the app…"
+                    : "Describe the role… (Enter to send, Shift+Enter for a new line)"
               }
               aria-label="Message Lucky"
               className="max-h-32 min-h-10 min-w-0 flex-1 resize-y rounded-lg border border-transparent bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
