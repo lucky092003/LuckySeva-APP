@@ -5,7 +5,6 @@ import {
   BriefcaseBusiness,
   ChevronDown,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { useApp, Screen, Role } from "@/context/app-context";
@@ -16,7 +15,6 @@ import { isNative } from "@/utils/native";
 const customerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
   { label: "Home", icon: Home, screen: { name: "home" } },
   { label: "Services", icon: LayoutGrid, screen: { name: "services" } },
-  { label: "Assistant", icon: Sparkles, screen: { name: "assistant" } },
   { label: "Bookings", icon: CalendarCheck, screen: { name: "bookings" } },
 ];
 
@@ -32,7 +30,6 @@ const providerItems: { label: string; icon: typeof Home; screen: Screen }[] = [
     icon: LayoutGrid,
     screen: { name: "provider-earnings" },
   },
-  { label: "Assistant", icon: Sparkles, screen: { name: "assistant" } },
 ];
 
 export const WebTopNav = ({ role }: { role: Role }) => {
