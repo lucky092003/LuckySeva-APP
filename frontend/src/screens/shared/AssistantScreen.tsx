@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import * as Icons from "lucide-react";
 import { useApp } from "@/context/app-context";
-import { TopBar } from "@/components/PhoneShell";
-import { ApiError, api } from "@/services/api";
+import { api, ApiError } from "@/services/api";
 
 type ChatMessage = {
   id: string;
@@ -37,7 +36,7 @@ const createMessage = (
 });
 
 export const AssistantScreen = () => {
-  const { role } = useApp();
+  const { role, navigate } = useApp();
   const isProvider = role === "provider";
   const prompts = isProvider ? PROVIDER_PROMPTS : CUSTOMER_PROMPTS;
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -232,59 +231,69 @@ export const AssistantScreen = () => {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f8f6] dark:bg-gray-950">
-      <TopBar title="AI Assistant" />
-      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-3 pb-3 sm:px-5 lg:px-6 lg:py-4">
-        <header className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:mb-3 sm:px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-end bg-black/40 backdrop-blur-sm sm:backdrop-blur-md" onClick={() => navigate({ name: "home" })}>
+      <div
+        className="fixed inset-y-0 right-0 z-[61] w-full max-w-xs sm:max-w-md bg-white dark:bg-gray-950 shadow-2xl shadow-emerald-900/20 transform transition-transform duration-300 translate-x-0 sm:translate-x-0 flex flex-col border-l border-gray-100 dark:border-gray-800"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex shrink-0 items-center gap-2.5 rounded-none border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
+          <button
+            onClick={() => navigate({ name: "home" })}
+            aria-label="Close assistant"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white transition"
+          >
+            <Icons.X size={16} />
+          </button>
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
             <Icons.Sparkles size={17} />
           </span>
           <div className="min-w-0 flex-1">
             <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">AI Assistant</h1>
-            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-gray-400">
+            <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-gray-400">
               {isProvider ? "Partner support" : "Help with services and bookings"}
             </p>
           </div>
-          <span className="hidden text-[10px] text-slate-400 sm:block">English · Hindi · Hinglish</span>
-        </header>
+        </div>
 
-        <section className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:py-6">
+        {/* Messages */}
+        <section className="no-scrollbar flex min-h-[200px] flex-1 flex-col overflow-y-auto rounded-none bg-[#f5f8f6] dark:bg-gray-950 px-3 py-3 sm:px-4 sm:py-4">
           {messages.length === 1 && (
-            <div className="mx-auto mb-4 w-full max-w-xl py-1 text-center sm:mb-6 sm:py-4">
-              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <Icons.MessageCircle size={21} />
+            <div className="mx-auto mb-3 w-full py-1 text-center sm:mb-4 sm:py-2">
+              <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <Icons.MessageCircle size={20} />
               </span>
-              <h2 className="mt-3 text-base font-bold tracking-tight text-slate-900 dark:text-gray-100">How can I help?</h2>
-              <div className="mt-4 grid gap-2 text-left sm:grid-cols-2">
+              <h2 className="mt-2.5 text-sm font-bold tracking-tight text-slate-900 dark:text-gray-100">How can I help?</h2>
+              <div className="mt-3 grid gap-1.5 text-left sm:grid-cols-2">
                 {prompts.map((prompt) => (
                   <button
                     key={prompt}
                     onClick={() => void sendMessage(prompt)}
                     disabled={sending}
-                    className="group flex min-h-10 items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
+                    className="group flex min-h-9 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left text-[11px] font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
                   >
                     <span>{prompt}</span>
-                    <Icons.ArrowUpRight size={14} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
+                    <Icons.ArrowUpRight size={13} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
                   </button>
                 ))}
               </div>
             </div>
           )}
           {messages.length > 1 && (
-            <div className="space-y-5 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               {messages.slice(1).map((message) => (
                 <article key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[88%] sm:max-w-[78%] ${message.role === "assistant" ? "flex items-start gap-2.5" : ""}`}>
+                  <div className={`max-w-[85%] ${message.role === "assistant" ? "flex items-start gap-2" : ""}`}>
                     {message.role === "assistant" && (
-                      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                        <Icons.Sparkles size={14} />
+                      <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        <Icons.Sparkles size={13} />
                       </span>
                     )}
-                    <div className={`min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-gray-200"}`}>
+                    <div className={`min-w-0 rounded-2xl px-3 py-2 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-gray-200"}`}>
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       {message.role === "assistant" && !message.failed && (
-                        <button onClick={() => speak(message.content)} aria-label="Read response aloud" className="mt-2 inline-flex items-center gap-1.5 rounded-lg py-1 text-[10px] font-semibold text-slate-400 transition hover:text-emerald-700 dark:hover:text-emerald-400">
-                          <Icons.Volume2 size={13} /> Listen
+                        <button onClick={() => speak(message.content)} aria-label="Read response aloud" className="mt-1.5 inline-flex items-center gap-1 rounded-lg py-0.5 text-[9px] font-semibold text-slate-400 transition hover:text-emerald-700 dark:hover:text-emerald-400">
+                          <Icons.Volume2 size={12} /> Listen
                         </button>
                       )}
                     </div>
@@ -292,13 +301,13 @@ export const AssistantScreen = () => {
                 </article>
               ))}
               {sending && (
-                <div className="flex items-center gap-2.5 text-xs text-slate-400">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><Icons.Sparkles size={14} /></span>
-                  <span className="inline-flex items-center gap-1 rounded-2xl bg-slate-100 px-4 py-3 dark:bg-gray-800">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><Icons.Sparkles size={13} /></span>
+                  <span className="inline-flex items-center gap-0.5 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-gray-800">
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:120ms]" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:240ms]" />
-                    <span className="ml-1">Lucky is thinking</span>
+                    <span className="ml-0.5">Lucky is thinking</span>
                   </span>
                 </div>
               )}
@@ -307,73 +316,74 @@ export const AssistantScreen = () => {
           )}
         </section>
 
-        <div className="mt-3 shrink-0 rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-3">
-            {voiceError && (
-              <p role="status" className="mb-2 px-2 text-xs text-amber-700">
-                {voiceError}
-              </p>
-            )}
-            <form onSubmit={submit} className="flex items-end gap-2">
-              <button
-                type="button"
-                onClick={toggleVoiceInput}
-                disabled={transcribing}
-                aria-label={
-                  transcribing
-                    ? "Transcribing voice input"
-                    : listening
-                      ? "Stop voice input"
-                      : "Start voice input"
-                }
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-50 ${listening ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-800 dark:text-gray-300"}`}
-              >
-                {transcribing ? (
-                  <Icons.LoaderCircle size={17} className="animate-spin" />
-                ) : listening ? (
-                  <Icons.Square size={16} />
-                ) : (
-                  <Icons.Mic size={18} />
-                )}
-              </button>
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void sendMessage(draft);
-                  }
-                }}
-                maxLength={2000}
-                rows={1}
-                placeholder={
-                  transcribing
-                    ? "Transcribing voice note…"
-                    : listening
-                      ? "Listening…"
-                      : "Ask about services, bookings, or the app…"
-                }
-                aria-label="Message Lucky"
-                className="max-h-32 min-h-11 min-w-0 flex-1 resize-y rounded-xl border border-transparent bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
-              />
-              <button
-                type="submit"
-                disabled={!draft.trim() || sending}
-                aria-label="Send message"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {sending ? (
-                  <Icons.LoaderCircle size={17} className="animate-spin" />
-                ) : (
-                  <Icons.Send size={17} />
-                )}
-              </button>
-            </form>
-            <p className="mt-2 text-center text-[10px] text-slate-400 dark:text-gray-500">
-              Don’t share OTPs, passwords, or payment PINs.
+        {/* Input */}
+        <div className="shrink-0 rounded-none border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 p-2.5 sm:p-3">
+          {voiceError && (
+            <p role="status" className="mb-1.5 px-1 text-[9px] text-amber-700">
+              {voiceError}
             </p>
+          )}
+          <form onSubmit={submit} className="flex items-end gap-1.5">
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              disabled={transcribing}
+              aria-label={
+                transcribing
+                  ? "Transcribing voice input"
+                  : listening
+                    ? "Stop voice input"
+                    : "Start voice input"
+              }
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition disabled:opacity-50 ${listening ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-800 dark:text-gray-300"}`}
+            >
+              {transcribing ? (
+                <Icons.LoaderCircle size={16} className="animate-spin" />
+              ) : listening ? (
+                <Icons.Square size={15} />
+              ) : (
+                <Icons.Mic size={17} />
+              )}
+            </button>
+            <textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage(draft);
+                }
+              }}
+              maxLength={2000}
+              rows={1}
+              placeholder={
+                transcribing
+                  ? "Transcribing voice note…"
+                  : listening
+                    ? "Listening…"
+                    : "Ask about services, bookings, or the app…"
+              }
+              aria-label="Message Lucky"
+              className="max-h-32 min-h-10 min-w-0 flex-1 resize-y rounded-lg border border-transparent bg-slate-50 px-3.5 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
+            />
+            <button
+              type="submit"
+              disabled={!draft.trim() || sending}
+              aria-label="Send message"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-700 text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {sending ? (
+                <Icons.LoaderCircle size={16} className="animate-spin" />
+              ) : (
+                <Icons.Send size={16} />
+              )}
+            </button>
+          </form>
+          <p className="mt-1.5 text-center text-[9px] text-slate-400 dark:text-gray-500">
+            Don’t share OTPs, passwords, or payment PINs.
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
