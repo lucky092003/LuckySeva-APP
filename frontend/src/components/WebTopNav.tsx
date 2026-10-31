@@ -195,9 +195,6 @@ export const WebTopNav = ({ role }: { role: Role }) => {
               <span className="max-w-[150px] truncate text-left text-[11px] font-bold text-gray-800 dark:text-gray-100">
                 {accountName}
               </span>
-              <span className="mt-0.5 text-[9px] font-medium text-slate-400 dark:text-slate-500">
-                {role === "provider" ? "Partner" : "Account"}
-              </span>
             </div>
             <ChevronDown
               size={13}
