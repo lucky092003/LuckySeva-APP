@@ -19,6 +19,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
+- iOS CI dependency caching in the main CI workflow now uses `actions/cache@v6` instead of `v4`.
 - AI Assistant heading and welcome suggestions are more compact, without the “Ask Lucky” label.
 - Frontend JavaScript dependencies received minor/patch updates, including `lucide-react` 1.60.0 → 1.62.0 (lockfile refreshed).
 
