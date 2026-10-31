@@ -13,6 +13,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ## 2026-10-31
 
 ### Fixed
+- Notification bell badge now shows the real unread count (1, 2, … 10, 11…) instead of being capped at "9+", and the badge widens so two- and three-digit counts fit. The badge still hides when there are no unread notifications.
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
 - Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
 - Assistant back navigation now returns to the screen it was opened from.
