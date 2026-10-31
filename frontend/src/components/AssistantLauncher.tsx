@@ -5,7 +5,8 @@ import { isNative } from '@/utils/native';
 /** Mobile/native shortcut; desktop web exposes the same destination in WebTopNav. */
 export const AssistantLauncher = () => {
   const { role, screen, navigate } = useApp();
-  if (role === 'admin' || screen.name === 'splash' || screen.name === 'auth' || screen.name === 'provider-auth' || screen.name === 'assistant') {
+  const isHome = screen.name === 'home' || screen.name === 'provider-home';
+  if (role === 'admin' || !isHome) {
     return null;
   }
 
