@@ -66,11 +66,13 @@ export const Stars = ({ rating, size = 12 }: { rating: number; size?: number }) 
 
 export const CountBadge = ({ count, className = '' }: { count: number; className?: string }) => {
   if (count <= 0) return null;
+  const show = String(count);
+  const wide = count > 9;
   return (
     <span
-      className={`pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm shadow-emerald-500/40 ${className}`}
+      className={`pointer-events-none absolute -right-1 -top-1 flex h-[18px] items-center justify-center rounded-full bg-emerald-500 ${wide ? 'min-w-[24px] px-1.5' : 'min-w-[18px] px-1'} text-[10px] font-bold leading-none text-white shadow-sm shadow-emerald-500/40 ${className}`}
     >
-      {count > 9 ? '9+' : count}
+      {show}
     </span>
   );
 };

@@ -13,7 +13,6 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ## 2026-10-31
 
 ### Fixed
-- AI assistant removed from the web top navigation bar; it now appears only as a floating right-side bot bubble (AssistantLauncher) on both mobile and desktop web.
 - Notification bell badge now shows the real unread count (1, 2, … 10, 11…) instead of being capped at "9+", and the badge widens so two- and three-digit counts fit. The badge still hides when there are no unread notifications.
 - Customer professional list now filters by distance so a customer only sees professionals near their location (default 30 km), respecting each professional's own `service_radius_km`. Professionals from other cities (e.g. Ahmedabad shown to a Faridabad customer) are no longer returned, and customers without a saved address are prompted to add one instead of seeing an unfiltered list.
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
