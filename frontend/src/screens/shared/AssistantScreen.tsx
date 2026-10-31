@@ -253,8 +253,9 @@ export const AssistantScreen = () => {
           </div>
 
           <div className="min-w-0 flex-1">
-            <h1 className="text-[15px] font-bold leading-tight tracking-tight text-white">
-              LuckySeva <span className="text-emerald-200">AI</span>
+            <h1 className="text-[15px] font-bold leading-tight tracking-tight">
+              <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span>{' '}
+              <span className="text-emerald-200">AI</span>
             </h1>
             <div className="mt-0.5 flex items-center gap-1.5">
               <span
@@ -299,7 +300,9 @@ export const AssistantScreen = () => {
             >
               {messages[0].content}
             </div>
-            <p className="ml-1 mt-1 text-[10px] text-gray-400">LuckySeva · now</p>
+            <p className="ml-1 mt-1 text-[10px] text-gray-400">
+              <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span> · now
+            </p>
           </div>
         </div>
 
@@ -375,7 +378,11 @@ export const AssistantScreen = () => {
                     )}
                   </div>
                   <p className="px-1 text-[10px] text-gray-400 dark:text-gray-500">
-                    {message.role === "user" ? "You" : "LuckySeva"} · now
+                    {message.role === "user" ? "You" : (
+                      <>
+                        <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span>
+                      </>
+                    )} · now
                   </p>
                 </div>
               </article>
@@ -481,7 +488,8 @@ export const AssistantScreen = () => {
         </form>
 
         <p className="mt-2 text-center text-[10px] text-gray-400 dark:text-gray-500">
-          Never share OTPs or passwords · Powered by LuckySeva AI
+          Never share OTPs or passwords · Powered by{' '}
+          <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span> AI
         </p>
       </div>
     </div>
