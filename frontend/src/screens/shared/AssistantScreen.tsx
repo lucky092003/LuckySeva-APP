@@ -231,7 +231,7 @@ export const AssistantScreen = () => {
   };
 
   return (
-    <div className="flex h-full flex-col" style={{ background: "#f5f6fa" }}>
+    <div className="flex h-full flex-col bg-[#f5f6fa] dark:bg-gray-950">
 
       {/* ── Gradient Header ── */}
       <div
@@ -254,7 +254,7 @@ export const AssistantScreen = () => {
 
           <div className="min-w-0 flex-1">
             <h1 className="text-[15px] font-bold leading-tight tracking-tight">
-              <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span>{' '}
+              <span className="text-black dark:text-gray-100">Lucky</span><span className="text-orange-500">Seva</span>{' '}
               <span className="text-emerald-200">AI</span>
             </h1>
             <div className="mt-0.5 flex items-center gap-1.5">
@@ -276,7 +276,7 @@ export const AssistantScreen = () => {
           className="absolute bottom-0 left-0 right-0 w-full"
           style={{ height: 20, display: "block" }}
         >
-          <path d="M0,0 C100,20 300,20 400,0 L400,20 L0,20 Z" fill="#f5f6fa" />
+          <path className="fill-[#f5f6fa] dark:fill-gray-950" d="M0,0 C100,20 300,20 400,0 L400,20 L0,20 Z" />
         </svg>
 
         <style>{`@keyframes ls-pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
@@ -301,7 +301,7 @@ export const AssistantScreen = () => {
               {messages[0].content}
             </div>
             <p className="ml-1 mt-1 text-[10px] text-gray-400">
-              <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span> · now
+              <span className="text-black dark:text-gray-100">Lucky</span><span className="text-orange-500">Seva</span> · now
             </p>
           </div>
         </div>
@@ -380,7 +380,7 @@ export const AssistantScreen = () => {
                   <p className="px-1 text-[10px] text-gray-400 dark:text-gray-500">
                     {message.role === "user" ? "You" : (
                       <>
-                        <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span>
+                        <span className="text-black dark:text-gray-100">Lucky</span><span className="text-orange-500">Seva</span>
                       </>
                     )} · now
                   </p>
@@ -414,10 +414,7 @@ export const AssistantScreen = () => {
       </section>
 
       {/* ── Input Footer ── */}
-      <div
-        className="shrink-0 px-4 pb-5 pt-3"
-        style={{ background: "#ffffff", boxShadow: "0 -4px 24px rgba(0,0,0,.07)" }}
-      >
+      <div className="shrink-0 bg-white px-4 pb-5 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.07)] dark:bg-gray-900 dark:shadow-[0_-4px_24px_rgba(0,0,0,0.3)]">
         {voiceError && (
           <div className="mb-2.5 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-950/30">
             <Icons.AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-500" />
@@ -489,7 +486,7 @@ export const AssistantScreen = () => {
 
         <p className="mt-2 text-center text-[10px] text-gray-400 dark:text-gray-500">
           Never share OTPs or passwords · Powered by{' '}
-          <span className="text-black">Lucky</span><span className="text-orange-500">Seva</span> AI
+          <span className="text-black dark:text-gray-100">Lucky</span><span className="text-orange-500">Seva</span> AI
         </p>
       </div>
     </div>
