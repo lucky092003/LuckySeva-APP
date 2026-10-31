@@ -14,6 +14,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Fixed
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
+- Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.

@@ -7,7 +7,6 @@ from typing import Literal
 import httpx
 from fastapi import APIRouter, Depends, Request
 from google import genai
-from google.genai import types
 from pydantic import BaseModel, Field
 
 from .. import config
@@ -104,9 +103,16 @@ async def _create_interaction(**kwargs):
 
 
 def _upstream_error(exc: Exception, operation: str) -> ApiError:
-    logger.warning("Gemini %s request failed: %s", operation, type(exc).__name__)
+    upstream_status = getattr(exc, "status", None)
     upstream_code = getattr(exc, "code", None)
-    if upstream_code == 429 or upstream_code == "RESOURCE_EXHAUSTED":
+    logger.warning(
+        "Gemini %s request failed (type=%s, status=%s, code=%s)",
+        operation,
+        type(exc).__name__,
+        upstream_status,
+        upstream_code,
+    )
+    if upstream_status == 429 or upstream_code == 429 or upstream_code == "RESOURCE_EXHAUSTED":
         return ApiError(503, "Lucky is busy right now. Please try again shortly.", "ai_rate_limited")
     if isinstance(exc, (TimeoutError, httpx.TimeoutException)):
         return ApiError(504, "Lucky took too long to respond. Please try again.", "ai_timeout")
@@ -134,7 +140,7 @@ async def chat(body: ChatRequest, claims: dict = Depends(get_claims)):
             system_instruction=f"{COMMON_INSTRUCTIONS}\n\n{ROLE_INSTRUCTIONS[role]}",
             # Gemini 3.8 Flash rejects deprecated sampling controls such as
             # temperature; keep only the supported output limit.
-            generation_config=types.GenerationConfig(max_output_tokens=500),
+            generation_config={"max_output_tokens": 500},
         )
     except Exception as exc:
         raise _upstream_error(exc, "chat") from exc
