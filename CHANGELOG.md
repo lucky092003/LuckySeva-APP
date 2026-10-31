@@ -12,9 +12,16 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ## 2026-10-31
 
+### Fixed
+- Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
+- Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
+- Assistant back navigation now returns to the screen it was opened from.
+
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
 - iOS CI dependency caching in the main CI workflow now uses `actions/cache@v6` instead of `v4`.
+- AI Assistant heading and welcome suggestions are more compact, without the “Ask Lucky” label.
+- Frontend JavaScript dependencies received minor/patch updates, including `lucide-react` 1.60.0 → 1.62.0 (lockfile refreshed).
 
 ## 2026-10-30
 
@@ -30,9 +37,23 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 - **Customer All Services screen** now has a service search, clearer category filters, and roomier service cards with easier-to-scan duration and starting-price details.
 - **Customer My Bookings screen** now has cleaner tabs with icon labels, roomier booking cards, and clearer action buttons (Cancel / Reschedule / Track / Invoice) laid out horizontally.
 
+## 2026-10-25
+
+### Fixed
+- **Assistant voice transcription accepts browser audio MIME types** by removing
+  codec parameters and mapping MP4 recordings to Gemini's supported M4A type.
+  Unsupported audio types are rejected before calling Gemini.
+
 ## 2026-10-24
 
 ### Added
+- **Customer and provider AI assistant** (`frontend/src/screens/shared/AssistantScreen.tsx`,
+  `backend/app/routers/assistant.py`) adds authenticated, role-aware chat, voice
+  recording/transcription, and read-aloud responses via Google's Gemini
+  Interactions API. The Gemini API key stays on the backend (`AI_API_KEY`); without
+  it, the app shows a setup message. Chat cannot read or change live account
+  data, bookings, or payments. Missing chatbot backend routes show a deployment
+  hint instead of a generic API 404.
 - **Stronger pull request CI** now runs for documentation-only changes too, builds
   both customer and provider Android debug APKs plus the iOS Simulator app, and
   requires the frontend, backend, migrations, edge-functions, changelog, Android,
