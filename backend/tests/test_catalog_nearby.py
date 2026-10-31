@@ -130,3 +130,49 @@ def test_as_float_tolerates_junk() -> None:
     assert catalog._as_float("") is None
     assert catalog._as_float("n/a") is None
     assert catalog._as_float("4.5") == 4.5
+
+
+def test_professionals_excludes_far_outside_radius(fake_pros) -> None:
+    fake_pros(
+        [
+            pro("near", 12.9800, 77.6000, 4.0),      # ~1 km
+            pro("far", 14.0000, 78.0000, 5.0),        # ~160 km, outside 30 km
+        ]
+    )
+    result = catalog.professionals(
+        category_slug="electrician", latitude=HOME_LAT, longitude=HOME_LNG, radius_km=30.0, limit=5
+    )
+    assert [p["name"] for p in result] == ["near"]
+    assert all(p["distance_km"] <= 30.0 for p in result)
+
+
+def test_professionals_respects_provider_service_radius(fake_pros) -> None:
+    rows = [
+        pro("near-1km", 12.9800, 77.6000, 4.0),      # ~1 km, service_radius default 60
+        pro("mid-3km", 12.9900, 77.6100, 4.0),        # ~3 km, service_radius 5 (within)
+        pro("far-7km", 13.0350, 77.6200, 5.0),        # ~7 km, service_radius 5 (outside)
+    ]
+    rows[1]["service_radius_km"] = 5.0
+    rows[2]["service_radius_km"] = 5.0
+    fake_pros(rows)
+    result = catalog.professionals(
+        category_slug="electrician", latitude=HOME_LAT, longitude=HOME_LNG, radius_km=30.0, limit=5
+    )
+    names = [p["name"] for p in result]
+    assert "near-1km" in names
+    assert "mid-3km" in names
+    assert "far-7km" not in names
+
+
+def test_professionals_returns_empty_without_customer_coords(fake_pros) -> None:
+    fake_pros([pro("near", 12.9800, 77.6000, 4.0)])
+    result = catalog.professionals(category_slug="electrician", latitude=None, longitude=None, radius_km=30.0, limit=5)
+    assert result == []
+
+
+def test_professionals_ignores_professionals_without_coordinates(fake_pros) -> None:
+    fake_pros([pro("mystery", None, None, 5.0), pro("near", 12.9800, 77.6000, 4.0)])
+    result = catalog.professionals(
+        category_slug="electrician", latitude=HOME_LAT, longitude=HOME_LNG, radius_km=30.0, limit=5
+    )
+    assert [p["name"] for p in result] == ["near"]

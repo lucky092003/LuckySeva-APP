@@ -13,6 +13,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ## 2026-10-31
 
 ### Fixed
+- Customer professional list now filters by distance so a customer only sees professionals near their location (default 30 km), respecting each professional's own `service_radius_km`. Professionals from other cities (e.g. Ahmedabad shown to a Faridabad customer) are no longer returned, and customers without a saved address are prompted to add one instead of seeing an unfiltered list.
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
 - Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
 - Assistant back navigation now returns to the screen it was opened from.
