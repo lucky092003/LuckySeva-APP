@@ -18,6 +18,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
+- AI Assistant heading and welcome suggestions are more compact, without the “Ask Lucky” label.
 
 ## 2026-10-30
 

@@ -233,41 +233,35 @@ export const AssistantScreen = () => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f8f6] dark:bg-gray-950">
-      <TopBar title="Lucky Assistant" />
-      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-3 pb-3 sm:px-5 lg:px-6 lg:py-5">
-        <header className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:mb-4 sm:px-5 sm:py-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm shadow-emerald-900/15">
-            <Icons.Sparkles size={20} />
+      <TopBar title="AI Assistant" />
+      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-3 pb-3 sm:px-5 lg:px-6 lg:py-4">
+        <header className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:mb-3 sm:px-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
+            <Icons.Sparkles size={17} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100 sm:text-base">Ask Lucky</h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Here to help
-              </span>
-            </div>
+            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">AI Assistant</h1>
             <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-gray-400">
-              {isProvider ? "Partner help, whenever you need it" : "Help with services, bookings, and the app"}
+              {isProvider ? "Partner support" : "Help with services and bookings"}
             </p>
           </div>
-          <span className="hidden text-[10px] text-slate-400 sm:block">English / Hindi / Hinglish</span>
+          <span className="hidden text-[10px] text-slate-400 sm:block">English · Hindi · Hinglish</span>
         </header>
 
         <section className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6 sm:py-6">
           {messages.length === 1 && (
-            <div className="mx-auto mb-6 w-full max-w-xl py-3 text-center sm:mb-8 sm:py-8">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <Icons.MessageCircle size={26} />
+            <div className="mx-auto mb-4 w-full max-w-xl py-1 text-center sm:mb-6 sm:py-4">
+              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <Icons.MessageCircle size={21} />
               </span>
-              <h2 className="mt-4 text-lg font-bold tracking-tight text-slate-900 dark:text-gray-100 sm:text-xl">What can I help you with?</h2>
-              <p className="mx-auto mt-1.5 max-w-sm text-xs leading-5 text-slate-500 dark:text-gray-400">Ask a question or choose a suggestion to get started.</p>
-              <div className="mt-5 grid gap-2 text-left sm:grid-cols-2">
+              <h2 className="mt-3 text-base font-bold tracking-tight text-slate-900 dark:text-gray-100">How can I help?</h2>
+              <div className="mt-4 grid gap-2 text-left sm:grid-cols-2">
                 {prompts.map((prompt) => (
                   <button
                     key={prompt}
                     onClick={() => void sendMessage(prompt)}
                     disabled={sending}
-                    className="group flex min-h-12 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
+                    className="group flex min-h-10 items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
                   >
                     <span>{prompt}</span>
                     <Icons.ArrowUpRight size={14} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
