@@ -164,12 +164,12 @@ export const MyBookingsScreen = () => {
         key={t.key}
         onClick={() => setTab(t.key)}
         aria-pressed={active}
-        className={`relative flex h-9 items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all ${active ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/25' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-200 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500'}`}
+        className={`flex min-w-0 items-center justify-center gap-2 rounded-xl border px-2 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${active ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/20' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700'}`}
       >
         <t.icon size={12} className={`shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} />
-        <span className="shrink-0">{t.label}</span>
+        <span className="truncate">{t.label}</span>
         {active && count > 0 && (
-          <span className="ml-1 shrink-0 rounded-full bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white">
+          <span className="shrink-0 rounded-full bg-emerald-700 px-1.5 py-0.5 text-[9px] font-bold text-white">
             {count}
           </span>
         )}
@@ -188,9 +188,9 @@ export const MyBookingsScreen = () => {
           <Icons.Undo2 size={13} className="shrink-0" /> Refunds
         </button>
       } />
-      <div className="shrink-0 border-b border-slate-200/70 bg-white px-5 lg:px-[25px]">
+      <div className="shrink-0 border-b border-slate-200/70 bg-white px-5 py-3 lg:px-[25px]">
         <div className="mx-auto w-full">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 sm:pb-0 sm:flex-wrap sm:overflow-x-visible lg:px-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TABS.map((t) => (
               <TabButton key={t.key} t={t} count={tab === t.key ? bookings.length : 0} />
             ))}
