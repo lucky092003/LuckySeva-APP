@@ -249,17 +249,10 @@ export const AssistantScreen = () => {
             <Icons.Sparkles size={17} />
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">Build with AI</h1>
-            <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-700 text-white text-[9px] font-bold">1</span>
-              <span className="ml-0.5 font-medium text-slate-900 dark:text-gray-100">Chat</span>
-              <span className="mx-0.5 text-slate-300">/</span>
-              <span className="text-slate-400">2 Review</span>
-              <span className="mx-0.5 text-slate-300">/</span>
-              <span className="text-slate-400">3 Vendors</span>
-              <span className="mx-0.5 text-slate-300">/</span>
-              <span className="text-slate-400">4 Publish</span>
-            </div>
+            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">AI Assistant</h1>
+            <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-gray-400">
+              {isProvider ? "Partner support" : "Help with services and bookings"}
+            </p>
           </div>
         </div>
 
@@ -270,7 +263,7 @@ export const AssistantScreen = () => {
               <Icons.Sparkles size={14} />
             </span>
             <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed">
-              Hi! Describe what you’re looking for — e.g. “Senior Oracle Fusion consultant, remote, 8+ years, 6-month contract” — and I’ll draft it for you.
+              Hi! I’m Lucky, your home-services assistant. Ask me about choosing a service, booking a visit, tracking a job, or anything else about the app.
             </p>
           </div>
 
@@ -372,7 +365,7 @@ export const AssistantScreen = () => {
                   ? "Transcribing voice note…"
                   : listening
                     ? "Listening…"
-                    : "Describe the role… (Enter to send, Shift+Enter for a new line)"
+                    : "Ask about services, bookings, tracking, or the app…"
               }
               aria-label="Message Lucky"
               className="max-h-32 min-h-10 min-w-0 flex-1 resize-y rounded-lg border border-transparent bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
