@@ -1175,6 +1175,22 @@ def notifications(claims: dict = Depends(require_customer)):
     return res.data or []
 
 
+# Declared before /{notification_id}/read so the literal `read-all` segment is
+# never shadowed by the path parameter (route order is load-bearing, 3.5).
+@router.put("/notifications/read-all")
+def mark_all_notifications_read(claims: dict = Depends(require_customer)):
+    client = db()
+    res = (
+        client.table("notifications")
+        .update({"read": True})
+        .eq("customer_phone", customer_phone(claims))
+        .eq("read", False)
+        .select("id")
+        .execute()
+    )
+    return {"ok": True, "updated": len(res.data or [])}
+
+
 @router.put("/notifications/{notification_id}/read")
 def mark_notification_read(notification_id: str, claims: dict = Depends(require_customer)):
     client = db()
@@ -1189,20 +1205,6 @@ def mark_notification_read(notification_id: str, claims: dict = Depends(require_
     if not res.data:
         raise ApiError(404, "Notification not found")
     return res.data[0]
-
-
-@router.put("/notifications/read-all")
-def mark_all_notifications_read(claims: dict = Depends(require_customer)):
-    client = db()
-    res = (
-        client.table("notifications")
-        .update({"read": True})
-        .eq("customer_phone", customer_phone(claims))
-        .eq("read", False)
-        .select("id")
-        .execute()
-    )
-    return {"ok": True, "updated": len(res.data or [])}
 
 
 @router.get("/tickets")

@@ -15,6 +15,23 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ### Fixed
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
 
+### Changed
+- Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
+
+## 2026-10-30
+
+### Fixed
+- Admin notification read state is stored separately from customer/provider read state, preventing admin mark-read actions from changing another user's unread notifications.
+- Admin notification actions now report API failures and only update the UI after the backend confirms the change.
+
+## 2026-10-28
+
+### Fixed
+
+- Customer `/notifications/read-all` now declared before `/notifications/{notification_id}/read` so the literal `read-all` route is never shadowed by the path parameter (route order is load-bearing, invariant 3.5). Matches `provider.py`, which already had this correct.
+- **Customer All Services screen** now has a service search, clearer category filters, and roomier service cards with easier-to-scan duration and starting-price details.
+- **Customer My Bookings screen** now has cleaner tabs with icon labels, roomier booking cards, and clearer action buttons (Cancel / Reschedule / Track / Invoice) laid out horizontally.
+
 ## 2026-10-25
 
 ### Fixed
