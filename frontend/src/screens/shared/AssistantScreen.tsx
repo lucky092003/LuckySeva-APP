@@ -237,7 +237,7 @@ export const AssistantScreen = () => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2.5 rounded-none border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
+        <div className="flex shrink-0 items-center gap-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 py-3">
           <button
             onClick={() => navigate({ name: "home" })}
             aria-label="Close assistant"
@@ -249,50 +249,61 @@ export const AssistantScreen = () => {
             <Icons.Sparkles size={17} />
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">AI Assistant</h1>
-            <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-gray-400">
-              {isProvider ? "Partner support" : "Help with services and bookings"}
-            </p>
+            <h1 className="text-sm font-bold text-slate-900 dark:text-gray-100">Build with AI</h1>
+            <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-gray-400">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-700 text-white text-[9px] font-bold">1</span>
+              <span className="ml-0.5 font-medium text-slate-900 dark:text-gray-100">Chat</span>
+              <span className="mx-0.5 text-slate-300">/</span>
+              <span className="text-slate-400">2 Review</span>
+              <span className="mx-0.5 text-slate-300">/</span>
+              <span className="text-slate-400">3 Vendors</span>
+              <span className="mx-0.5 text-slate-300">/</span>
+              <span className="text-slate-400">4 Publish</span>
+            </div>
           </div>
         </div>
 
         {/* Messages */}
-        <section className="no-scrollbar flex min-h-[200px] flex-1 flex-col overflow-y-auto rounded-none bg-[#f5f8f6] dark:bg-gray-950 px-3 py-3 sm:px-4 sm:py-4">
+        <section className="no-scrollbar flex min-h-[200px] flex-1 flex-col overflow-y-auto bg-[#f8fafc] dark:bg-gray-950 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <Icons.Sparkles size={14} />
+            </span>
+            <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed">
+              Hi! Describe what you’re looking for — e.g. “Senior Oracle Fusion consultant, remote, 8+ years, 6-month contract” — and I’ll draft it for you.
+            </p>
+          </div>
+
           {messages.length === 1 && (
-            <div className="mx-auto mb-3 w-full py-1 text-center sm:mb-4 sm:py-2">
-              <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <Icons.MessageCircle size={20} />
-              </span>
-              <h2 className="mt-2.5 text-sm font-bold tracking-tight text-slate-900 dark:text-gray-100">How can I help?</h2>
-              <div className="mt-3 grid gap-1.5 text-left sm:grid-cols-2">
-                {prompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => void sendMessage(prompt)}
-                    disabled={sending}
-                    className="group flex min-h-9 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left text-[11px] font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
-                  >
-                    <span>{prompt}</span>
-                    <Icons.ArrowUpRight size={13} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
-                  </button>
-                ))}
-              </div>
+            <div className="mt-6 grid gap-2 text-left sm:grid-cols-2">
+              {prompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => void sendMessage(prompt)}
+                  disabled={sending}
+                  className="group flex min-h-10 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50/70 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/50"
+                >
+                  <span>{prompt}</span>
+                  <Icons.ArrowUpRight size={13} className="shrink-0 text-slate-400 transition group-hover:text-emerald-700" />
+                </button>
+              ))}
             </div>
           )}
+
           {messages.length > 1 && (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="mt-6 space-y-4 sm:space-y-5">
               {messages.slice(1).map((message) => (
                 <article key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] ${message.role === "assistant" ? "flex items-start gap-2" : ""}`}>
+                  <div className={`max-w-[88%] sm:max-w-[82%] ${message.role === "assistant" ? "flex items-start gap-2" : ""}`}>
                     {message.role === "assistant" && (
-                      <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                         <Icons.Sparkles size={13} />
                       </span>
                     )}
-                    <div className={`min-w-0 rounded-2xl px-3 py-2 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-gray-200"}`}>
+                    <div className={`min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "rounded-br-md bg-emerald-700 text-white" : message.failed ? "rounded-tl-md border border-amber-200 bg-amber-50 text-amber-900" : "rounded-tl-md bg-white border border-slate-200 text-slate-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"}`}>
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       {message.role === "assistant" && !message.failed && (
-                        <button onClick={() => speak(message.content)} aria-label="Read response aloud" className="mt-1.5 inline-flex items-center gap-1 rounded-lg py-0.5 text-[9px] font-semibold text-slate-400 transition hover:text-emerald-700 dark:hover:text-emerald-400">
+                        <button onClick={() => speak(message.content)} aria-label="Read response aloud" className="mt-2 inline-flex items-center gap-1 rounded-lg py-0.5 text-[10px] font-semibold text-slate-400 transition hover:text-emerald-700 dark:hover:text-emerald-400">
                           <Icons.Volume2 size={12} /> Listen
                         </button>
                       )}
@@ -303,7 +314,7 @@ export const AssistantScreen = () => {
               {sending && (
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"><Icons.Sparkles size={13} /></span>
-                  <span className="inline-flex items-center gap-0.5 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-gray-800">
+                  <span className="inline-flex items-center gap-0.5 rounded-lg bg-white px-3 py-1.5 dark:bg-gray-800 shadow-sm">
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:120ms]" />
                     <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:240ms]" />
@@ -317,9 +328,9 @@ export const AssistantScreen = () => {
         </section>
 
         {/* Input */}
-        <div className="shrink-0 rounded-none border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 p-2.5 sm:p-3">
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-3 sm:p-4">
           {voiceError && (
-            <p role="status" className="mb-1.5 px-1 text-[9px] text-amber-700">
+            <p role="status" className="mb-2 px-1 text-[10px] text-amber-700">
               {voiceError}
             </p>
           )}
@@ -361,10 +372,10 @@ export const AssistantScreen = () => {
                   ? "Transcribing voice note…"
                   : listening
                     ? "Listening…"
-                    : "Ask about services, bookings, or the app…"
+                    : "Describe the role… (Enter to send, Shift+Enter for a new line)"
               }
               aria-label="Message Lucky"
-              className="max-h-32 min-h-10 min-w-0 flex-1 resize-y rounded-lg border border-transparent bg-slate-50 px-3.5 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
+              className="max-h-32 min-h-10 min-w-0 flex-1 resize-y rounded-lg border border-transparent bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-2 focus:ring-emerald-50 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:bg-gray-800"
             />
             <button
               type="submit"
@@ -379,7 +390,7 @@ export const AssistantScreen = () => {
               )}
             </button>
           </form>
-          <p className="mt-1.5 text-center text-[9px] text-slate-400 dark:text-gray-500">
+          <p className="mt-2 text-center text-[10px] text-slate-500 dark:text-gray-400">
             Don’t share OTPs, passwords, or payment PINs.
           </p>
         </div>
