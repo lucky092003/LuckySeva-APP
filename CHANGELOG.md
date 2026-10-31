@@ -14,6 +14,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
+- iOS CI dependency caching in the main CI workflow now uses `actions/cache@v6` instead of `v4`.
 
 ## 2026-10-30
 
