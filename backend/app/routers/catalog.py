@@ -204,16 +204,46 @@ def service(
 def professionals(
     category_slug: str | None = None,
     query: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    radius_km: float = Query(default=DEFAULT_NEARBY_RADIUS_KM, gt=0, le=500),
     limit: int = Query(default=50, le=100),
 ):
+    """Professionals of a category, filtered by distance when customer coords are known.
+
+    A professional shows only when the great-circle distance from the customer is
+    within `radius_km` AND within the professional's own `service_radius_km`
+    (default 60 km). Without customer coordinates nothing is returned so a
+    customer never sees professionals hundreds of kilometres away.
+    """
     client = db()
     q = client.table("professionals").select("*")
     if category_slug and category_slug != "all":
         q = q.eq("category_slug", category_slug)
     if query:
         q = q.or_(f"name.ilike.%{query}%,bio.ilike.%{query}%,service_area.ilike.%{query}%")
-    res = q.order("rating", desc=True).limit(limit).execute()
-    return res.data or []
+    res = q.order("rating", desc=True).limit(NEARBY_SCAN_LIMIT).execute()
+    rows = res.data or []
+
+    if latitude is None or longitude is None:
+        return []
+
+    nearby: list[dict] = []
+    for row in rows:
+        pro_lat = _as_float(row.get("latitude"))
+        pro_lng = _as_float(row.get("longitude"))
+        if pro_lat is None or pro_lng is None:
+            continue
+        km = _haversine_km(latitude, longitude, pro_lat, pro_lng)
+        if km > radius_km:
+            continue
+        pro_radius = _as_float(row.get("service_radius_km")) or 60.0
+        if km > pro_radius:
+            continue
+        nearby.append({**row, "distance_km": round(km, 1)})
+
+    nearby.sort(key=lambda r: (r["distance_km"], -_rating_of(r)))
+    return nearby[:limit]
 
 
 @router.get("/professionals/{professional_id}")

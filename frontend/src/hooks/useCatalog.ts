@@ -48,7 +48,11 @@ export const useService = (id: string | null) => {
   return { service: data, loading };
 };
 
-export const useProfessionalsByCategory = (slug: string | null) => {
+export const useProfessionalsByCategory = (
+  slug: string | null,
+  coords: Coords | null,
+  radiusKm: number = NEARBY_RADIUS_KM,
+) => {
   const [data, setData] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -59,11 +63,16 @@ export const useProfessionalsByCategory = (slug: string | null) => {
     }
     setLoading(true);
     api.catalog
-      .professionals({ category_slug: slug })
+      .professionals({
+        category_slug: slug,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
+        radius_km: radiusKm,
+      })
       .then((d) => setData(d))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, coords, radiusKm]);
   return { professionals: data, loading };
 };
 
