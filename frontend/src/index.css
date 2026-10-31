@@ -102,6 +102,34 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Global dark mode overrides for screens without explicit dark: variants */
+html.dark body {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+html.dark .bg-white { background-color: #111827 !important; }
+html.dark .bg-gray-50 { background-color: #111827 !important; }
+html.dark .bg-gray-100 { background-color: #1f2937 !important; }
+html.dark .bg-gray-200 { background-color: #374151 !important; }
+html.dark .bg-slate-50 { background-color: #111827 !important; }
+html.dark .bg-slate-100 { background-color: #1f2937 !important; }
+
+html.dark .text-gray-900 { color: #f9fafb !important; }
+html.dark .text-gray-800 { color: #f3f4f6 !important; }
+html.dark .text-gray-700 { color: #e5e7eb !important; }
+html.dark .text-gray-600 { color: #d1d5db !important; }
+html.dark .text-slate-900 { color: #f9fafb !important; }
+html.dark .text-slate-800 { color: #f3f4f6 !important; }
+html.dark .text-slate-700 { color: #e5e7eb !important; }
+html.dark .text-slate-600 { color: #d1d5db !important; }
+html.dark .text-slate-500 { color: #9ca3af !important; }
+
+html.dark .border-gray-100 { border-color: #1f2937 !important; }
+html.dark .border-gray-200 { border-color: #374151 !important; }
+html.dark .border-gray-300 { border-color: #4b5563 !important; }
+html.dark .border-slate-200 { border-color: #374151 !important; }
+
 /* Admin dark mode CSS variables */
 :root {
   --admin-bg: #f9fafb;
