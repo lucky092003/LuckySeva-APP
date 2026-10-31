@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from . import config
 from .config import DOCS_ENABLED
 from .exceptions import ApiError
-from .routers import auth, catalog, customer, payments, provider, admin
+from .routers import assistant, auth, catalog, customer, payments, provider, admin
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ app.include_router(customer.router, prefix="/customer", tags=["customer"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(provider.router, prefix="/provider", tags=["provider"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(assistant.router, prefix="/assistant", tags=["assistant"])
 # Outside the customer guard on purpose: Razorpay authenticates with an HMAC of
 # the raw body, not a customer JWT.
 app.include_router(payments.webhook, prefix="/payments", tags=["payments"])
