@@ -20,6 +20,8 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 - Gemini assistant requests no longer send the unsupported temperature setting to Gemini 3.8 Flash.
 - Assistant chat now sends generation settings in the Interactions API format and logs upstream status/code for failures.
 - Assistant back navigation now returns to the screen it was opened from.
+- AI assistant no longer crashes on render: the close button reads `back` from app context instead of an undefined reference, and background-screen tracking uses state plus `useEffect` instead of reading/writing a ref during render (fixes the `react-hooks/refs` lint error).
+- AI assistant screen now has proper dark-mode support (backgrounds and text colors), plus global dark-mode overrides for screens without explicit `dark:` variants.
 
 ### Changed
 - Customer My Bookings status tabs now fit in a two-by-two grid on phones and a single row on wider screens, removing horizontal scrolling.
