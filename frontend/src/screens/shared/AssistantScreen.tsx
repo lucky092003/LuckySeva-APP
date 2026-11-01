@@ -43,8 +43,8 @@ export const AssistantScreen = () => {
     createMessage(
       "assistant",
       isProvider
-        ? "Hi! I’m Lucky, your Partner assistant. Ask me about requests, job steps, location sharing, or using the app."
-        : "Hi! I’m Lucky, your home-services assistant. Ask me about choosing a service, bookings, tracking, or using the app.",
+        ? "Hi! I'm LuckySeva, your Partner assistant. Ask me about requests, job steps, location sharing, or using the app."
+        : "Hi! I'm LuckySeva, your home-services assistant. Ask me about choosing a service, bookings, tracking, or using the app.",
     ),
   ]);
   const [draft, setDraft] = useState("");
@@ -105,7 +105,7 @@ export const AssistantScreen = () => {
           ? "The AI assistant is not deployed on this backend yet. Deploy the chatbot backend update, then try again."
           : error instanceof Error
             ? error.message
-            : "Lucky could not reply right now. Please try again.";
+            : "LuckySeva could not reply right now. Please try again.";
       setMessages((current) => [
         ...current,
         createMessage("assistant", message, true),
