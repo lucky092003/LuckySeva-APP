@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from '@/context/app-context';
+import type { Screen } from '@/context/app-context';
 import { CustomerThemeProvider } from '@/context/ThemeContext';
 import { AdminThemeProvider } from '@/context/AdminThemeContext';
 import { PhoneShell } from '@/components/PhoneShell';
@@ -54,8 +56,44 @@ import {
   AdminNotifications,
 } from '@/screens/admin/AdminScreens';
 
+function AssistantPanel() {
+  const { back } = useApp();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <div
+        className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={back}
+      />
+      <div
+        className={`absolute inset-y-0 right-0 flex w-full max-w-lg flex-col bg-white shadow-2xl dark:bg-gray-950 transition-transform duration-300 ease-out ${visible ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <AssistantScreen />
+      </div>
+    </div>
+  );
+}
+
 function Router() {
   const { screen, role, adminAuthed } = useApp();
+  const [bgScreen, setBgScreen] = useState<Screen | null>(null);
+
+  // Remember the last non-assistant screen so it shows behind the assistant
+  // panel while the assistant is open.
+  useEffect(() => {
+    if (screen.name !== 'assistant') {
+      setBgScreen(screen);
+    }
+  }, [screen]);
+
+  const assistantOpen = screen.name === 'assistant';
+  const displayScreen = assistantOpen ? (bgScreen ?? screen) : screen;
 
   if (role === 'admin') {
     if (!adminAuthed) {
@@ -82,15 +120,16 @@ function Router() {
     <PhoneShell>
       <WebTopNav role={role} />
       <div
-        key={screen.name + ('id' in screen ? (screen as { id?: string }).id || '' : '')}
+        key={displayScreen.name + ('id' in displayScreen ? (displayScreen as { id?: string }).id || '' : '')}
         className="screen-enter flex min-h-0 w-full flex-1 flex-col overflow-hidden"
       >
-        {role === 'customer' ? renderCustomer(screen) : renderProvider(screen)}
+        {role === 'customer' ? renderCustomer(displayScreen) : renderProvider(displayScreen)}
       </div>
       <BottomNav />
       <AssistantLauncher />
       {/* Silent GPS publisher so customers can track an in-progress job. */}
       {role === 'provider' && screen.name !== 'provider-auth' && <ProviderLocationPublisher />}
+      {assistantOpen && <AssistantPanel />}
     </PhoneShell>
   );
 }
