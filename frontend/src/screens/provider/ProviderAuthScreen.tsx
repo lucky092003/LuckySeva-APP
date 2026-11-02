@@ -18,9 +18,11 @@ import {
 import { Logo } from '@/components/Logo';
 import { DevOtpHint } from '@/components/DevOtpHint';
 import { useApp } from '@/context/app-context';
+import { CUSTOMER_SITE_URL } from '@/config/site-links';
 import { api, isSignupRequired, otpErrorMessage, setApiToken } from '@/services/api';
 import { registerPush } from '@/services/push';
 import { fetchCurrentLocation, areaFrom } from '@/services/location';
+import { isNative } from '@/utils/native';
 
 // Auth accent, kept on the same emerald ramp the rest of the app uses
 // (Tailwind emerald-500/600) so signing in does not read as a different product.
@@ -52,7 +54,7 @@ function categoryFor(profession: string): string {
   return 'other';
 }
 
-export const ProviderAuthScreen = () => {
+export const ProviderAuthScreen = ({ initialPhone }: { initialPhone?: string } = {}) => {
   const { setProviderId, navigate } = useApp();
   const [step, setStep] = useState<'phone' | 'signup' | 'otp' | 'signup-otp'>('phone');
   const [error, setError] = useState('');
@@ -66,7 +68,7 @@ export const ProviderAuthScreen = () => {
   const [timer, setTimer] = useState(30);
   const [form, setForm] = useState({
     name: '',
-    phone: '',
+    phone: initialPhone ?? '',
     email: '',
     profession: '',
     experience: '',
@@ -229,6 +231,15 @@ export const ProviderAuthScreen = () => {
 
   return (
     <div className="relative flex flex-1 flex-col overflow-y-auto no-scrollbar bg-[#0C0C0F] md:min-h-full md:flex-row">
+      {!isNative && (
+        <button
+          type="button"
+          onClick={() => navigate({ name: 'provider-landing' })}
+          className="absolute left-4 top-4 z-20 flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[11px] font-semibold text-white/80 backdrop-blur-md transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          <ArrowLeft size={13} /> Back to partner home
+        </button>
+      )}
       {/* Dark header (mobile) / Branding panel (desktop) */}
       <div className="relative flex flex-col items-center px-6 pb-14 pt-10 md:w-[44%] md:min-w-[420px] md:justify-center md:pb-0 md:pt-0">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -718,6 +729,18 @@ export const ProviderAuthScreen = () => {
         </div>
       )}
         </div>
+
+        {!isNative && (
+          <p className="relative mx-auto mt-5 w-full max-w-md px-6 text-center text-[11px] leading-5 text-gray-400 dark:text-gray-500">
+            Looking for home services instead?{' '}
+            <a
+              href={CUSTOMER_SITE_URL}
+              className="font-semibold text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+            >
+              Visit the customer site
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );

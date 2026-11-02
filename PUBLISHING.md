@@ -130,7 +130,7 @@ Repeat for the other role to publish the second app.
 
 | File | Purpose |
 |------|---------|
-| `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE`, `VITE_API_URL` |
+| `.env` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_APP_ROLE`, `VITE_API_URL`, `VITE_CUSTOMER_URL`, `VITE_PARTNER_URL` |
 | `backend/.env.example` | Backend env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` |
 | `render.yaml` | Render blueprint — one-click API deploy |
 | `frontend/vercel.json` | Vercel build settings for all three web projects |
@@ -144,5 +144,13 @@ Repeat for the other role to publish the second app.
 
 - The old **Customer / Provider / Admin role switcher** demo tool has been removed.
   Roles are fixed per build: `VITE_APP_ROLE=customer|provider|admin`.
+- Customer and partner are **separate sites with separate logins and separate
+  landing pages**. The customer site (`www.luckyseva.in`, `VITE_APP_ROLE=customer`)
+  opens the LuckySeva customer landing page and only shows customer sign-in; its
+  "Partner login" links point to the partner site
+  (`luckyseva-provider.vercel.app`, `VITE_APP_ROLE=provider`), which opens the
+  LuckySeva Partner landing page with the professional sign-in card on top. Both
+  links come from `VITE_CUSTOMER_URL` and `VITE_PARTNER_URL`
+  (`frontend/src/config/site-links.ts`).
 - Real push notifications, in-app payments, and file uploads would use Capacitor plugins:
   `@capacitor/push-notifications`, `@capacitor/pay`, `@capacitor/camera`, etc.
