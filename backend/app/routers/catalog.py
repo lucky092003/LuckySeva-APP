@@ -1,4 +1,5 @@
 import math
+import time
 
 from fastapi import APIRouter, Query
 
@@ -99,6 +100,125 @@ def home():
         "professionals": professionals.data or [],
         "popular": popular.data or [],
     }
+
+
+LANDING_TTL_SECONDS = 300
+_landing_cache: dict = {"at": 0.0, "data": None}
+
+
+def _count(client, table: str, **eq) -> int:
+    q = client.table(table).select("id", count="exact", head=True)
+    for column, value in eq.items():
+        q = q.eq(column, value)
+    return q.execute().count or 0
+
+
+def _public_name(full_name: str) -> str:
+    """'Priya Sharma' -> 'Priya S.' - a review is public, the surname is not."""
+    parts = (full_name or "").split()
+    if not parts:
+        return "Verified customer"
+    first = parts[0].capitalize()
+    return f"{first} {parts[1][0].upper()}." if len(parts) > 1 else first
+
+
+def _city_of(service_area: str) -> str | None:
+    """Best-effort city: the last comma-separated part of 'Koramangala, Bengaluru'."""
+    city = (service_area or "").split(",")[-1].strip()
+    return city.title() if len(city) > 2 else None
+
+
+def _build_landing() -> dict:
+    client = db()
+
+    categories = client.table("categories").select("*").order("sort_order").execute().data or []
+    services = (
+        client.table("services").select("category_id,starting_price,popular").limit(2000).execute().data or []
+    )
+    by_category: dict[str, dict] = {}
+    for svc in services:
+        entry = by_category.setdefault(svc["category_id"], {"min": None, "popular": False, "count": 0})
+        price = _as_float(svc.get("starting_price"))
+        if price and price > 0 and (entry["min"] is None or price < entry["min"]):
+            entry["min"] = price
+        entry["popular"] = entry["popular"] or bool(svc.get("popular"))
+        entry["count"] += 1
+
+    category_rows = [
+        {
+            "slug": c["slug"],
+            "name": c["name"],
+            "description": c.get("description") or "",
+            "starting_price": by_category.get(c["id"], {}).get("min"),
+            "popular": by_category.get(c["id"], {}).get("popular", False),
+            "services_count": by_category.get(c["id"], {}).get("count", 0),
+        }
+        for c in categories
+    ]
+
+    rating_rows = client.table("reviews").select("rating").limit(10000).execute().data or []
+    ratings = [r["rating"] for r in rating_rows if r.get("rating")]
+    rating_avg = round(sum(ratings) / len(ratings), 1) if ratings else None
+
+    review_rows = (
+        client.table("reviews")
+        .select("customer_name,rating,comment,created_at,professional_id")
+        .gte("rating", 4)
+        .order("created_at", desc=True)
+        .limit(60)
+        .execute()
+        .data
+        or []
+    )
+    category_by_pro: dict[str, str] = {}
+    pro_ids = list({r["professional_id"] for r in review_rows if r.get("professional_id")})
+    if pro_ids:
+        pros = client.table("professionals").select("id,category_slug").in_("id", pro_ids).execute().data or []
+        category_by_pro = {p["id"]: p["category_slug"] for p in pros}
+    category_name = {c["slug"]: c["name"] for c in categories}
+    testimonials = [
+        {
+            "name": _public_name(r.get("customer_name", "")),
+            "rating": r["rating"],
+            "comment": r["comment"].strip(),
+            "service": category_name.get(category_by_pro.get(r.get("professional_id", ""), "")),
+        }
+        for r in review_rows
+        if len((r.get("comment") or "").strip()) >= 40
+    ][:3]
+
+    areas = client.table("professionals").select("service_area").limit(1000).execute().data or []
+    cities: list[str] = []
+    for row in areas:
+        city = _city_of(row.get("service_area", ""))
+        if city and city not in cities:
+            cities.append(city)
+
+    return {
+        "stats": {
+            "categories": len([c for c in category_rows if c["services_count"] > 0]),
+            "services": len(services),
+            "professionals": _count(client, "professionals"),
+            "completed_bookings": _count(client, "bookings", status="completed"),
+            "reviews": len(ratings),
+            "rating_avg": rating_avg,
+            "cities": len(cities),
+        },
+        "categories": category_rows,
+        "testimonials": testimonials,
+        "cities": cities[:12],
+    }
+
+
+@router.get("/landing")
+def landing():
+    """Public, aggregate-only numbers for the marketing page. Cached for a few minutes."""
+    now = time.monotonic()
+    if _landing_cache["data"] is not None and now - _landing_cache["at"] < LANDING_TTL_SECONDS:
+        return _landing_cache["data"]
+    data = _build_landing()
+    _landing_cache.update(at=now, data=data)
+    return data
 
 
 @router.get("/categories")
