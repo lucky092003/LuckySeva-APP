@@ -189,7 +189,7 @@ const scrollToId = (id: string) => {
 /* ------------------------------------------------------------------ */
 const Micro = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <span
-    className={`font-mono text-[9.5px] font-semibold uppercase tracking-[0.2em] ${className}`}
+    className={`font-mono text-[11px] font-semibold uppercase tracking-[0.2em] ${className}`}
   >
     {children}
   </span>
@@ -238,11 +238,11 @@ const LoginCard = () => {
               <p className="text-[16px] font-extrabold leading-none tracking-tight text-[#F8FAFC]">
                 Lucky<span className="text-[#F97316]">Seva</span>
               </p>
-              <p className="mt-1 font-mono text-[8.5px] font-semibold uppercase tracking-[0.24em] text-[#64748B]">
+              <p className="mt-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.24em] text-[#64748B]">
                 Partner
               </p>
             </div>
-            <span className="rounded border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
+            <span className="rounded border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
               Login demo
             </span>
           </div>
@@ -254,14 +254,14 @@ const LoginCard = () => {
           <h2 className="mt-2 font-partner-display text-[26px] font-bold leading-[1.1] tracking-[-0.02em] text-[#F8FAFC]">
             Your jobs are waiting.
           </h2>
-          <p className="mt-1.5 text-[11.5px] leading-5 text-[#94A3B8]">
+          <p className="mt-1.5 text-[13.5px] leading-5 text-[#94A3B8]">
             Sign in with your registered mobile number to see requests and earnings.
           </p>
 
           <form onSubmit={submit} className="mt-5">
             <label
               htmlFor="partner-landing-phone"
-              className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-[#94A3B8]"
+              className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-[#94A3B8]"
             >
               Mobile number
             </label>
@@ -272,7 +272,7 @@ const LoginCard = () => {
                   : 'border-white/10 focus-within:border-[#34D399]/60'
               }`}
             >
-              <span className="flex shrink-0 items-center gap-1.5 font-mono text-[12px] font-semibold text-[#CBD5E1]">
+              <span className="flex shrink-0 items-center gap-1.5 font-mono text-[14px] font-semibold text-[#CBD5E1]">
                 +91
                 <span className="h-4 w-px bg-white/15" />
               </span>
@@ -286,11 +286,11 @@ const LoginCard = () => {
                 onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))}
                 onBlur={() => setTouched(true)}
                 aria-invalid={touched && !valid}
-                className="h-full min-w-0 flex-1 bg-transparent text-[14.5px] font-medium tracking-wide text-[#F8FAFC] outline-none placeholder:text-[12px] placeholder:font-normal placeholder:tracking-normal placeholder:text-[#64748B]"
+                className="h-full min-w-0 flex-1 bg-transparent text-[16.5px] font-medium tracking-wide text-[#F8FAFC] outline-none placeholder:text-[14px] placeholder:font-normal placeholder:tracking-normal placeholder:text-[#64748B]"
               />
             </div>
             {touched && !valid && (
-              <p className="mt-1.5 text-[10.5px] font-semibold text-[#F87171]">
+              <p className="mt-1.5 text-[12px] font-semibold text-[#F87171]">
                 Enter a valid 10-digit Indian mobile number.
               </p>
             )}
@@ -298,14 +298,14 @@ const LoginCard = () => {
             <button
               type="submit"
               disabled={!valid}
-              className="landing-sweep relative mt-4 flex h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-[#34D399] text-[13px] font-bold text-[#0F172A] shadow-[0_14px_30px_-14px_rgba(52,211,153,0.8)] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]/50 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none"
+              className="landing-sweep relative mt-4 flex h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-[#34D399] text-[15px] font-bold text-[#0F172A] shadow-[0_14px_30px_-14px_rgba(52,211,153,0.8)] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]/50 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none"
             >
               Continue with OTP
               <ArrowRight size={16} strokeWidth={2.6} />
             </button>
 
             <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="flex items-center gap-1.5 text-[9.5px] text-[#64748B]">
+              <span className="flex items-center gap-1.5 text-[11px] text-[#64748B]">
                 <LockKeyhole size={10} /> Secure OTP sign-in
               </span>
               <button
@@ -314,19 +314,19 @@ const LoginCard = () => {
                   setPhone(DEMO_PHONE);
                   setTouched(false);
                 }}
-                className="text-[9.5px] font-bold text-[#34D399] underline-offset-2 hover:underline"
+                className="text-[11px] font-bold text-[#34D399] underline-offset-2 hover:underline"
               >
                 Reset demo number
               </button>
             </div>
           </form>
 
-          <p className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 text-[9.5px] leading-4 text-[#64748B]">
+          <p className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 text-[11px] leading-4 text-[#64748B]">
             New professional? Continue with the same number — if it is not registered
             yet, we open the partner application.
           </p>
 
-          <p className="mt-4 border-t border-white/[0.06] pt-3.5 text-center text-[9px] leading-4 text-[#64748B]">
+          <p className="mt-4 border-t border-white/[0.06] pt-3.5 text-center text-[11px] leading-4 text-[#64748B]">
             By continuing you agree to the LuckySeva Partner Terms and Privacy Policy.
           </p>
         </div>
@@ -351,14 +351,14 @@ const LoginCard = () => {
                 <job.icon size={13} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[10px] font-semibold text-[#CBD5E1]">
+                <span className="block truncate text-[12px] font-semibold text-[#CBD5E1]">
                   {job.title}
                 </span>
-                <span className="mt-0.5 block truncate text-[8.5px] text-[#64748B]">
+                <span className="mt-0.5 block truncate text-[10.5px] text-[#64748B]">
                   {job.meta}
                 </span>
               </span>
-              <span className="shrink-0 font-mono text-[10px] font-bold text-[#34D399]">
+              <span className="shrink-0 font-mono text-[12px] font-bold text-[#34D399]">
                 {job.value}
               </span>
             </div>
@@ -397,10 +397,10 @@ const EarningsCalculator = () => {
             <Micro className="text-[#64748B]">Jobs per week</Micro>
             <p className="mt-1 font-partner-display text-[30px] font-bold leading-none text-[#F8FAFC]">
               {jobsPerWeek}
-              <span className="ml-1 text-[11px] font-medium text-[#64748B]">jobs</span>
+              <span className="ml-1 text-[13px] font-medium text-[#64748B]">jobs</span>
             </p>
           </div>
-          <span className="rounded-md border border-white/10 px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[#94A3B8]">
+          <span className="rounded-md border border-white/10 px-2 py-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-[#94A3B8]">
             Adjust
           </span>
         </div>
@@ -418,7 +418,7 @@ const EarningsCalculator = () => {
             background: `linear-gradient(to right, ${LIME} 0%, ${LIME} ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`,
           }}
         />
-        <div className="mt-1.5 flex justify-between font-mono text-[8px] uppercase tracking-[0.1em] text-[#475569]">
+        <div className="mt-1.5 flex justify-between font-mono text-[10px] uppercase tracking-[0.1em] text-[#475569]">
           <span>5</span>
           <span>35</span>
         </div>
@@ -438,7 +438,7 @@ const EarningsCalculator = () => {
                   type="button"
                   onClick={() => setAvgValue(option.value)}
                   aria-pressed={active}
-                  className={`h-10 rounded-lg border font-mono text-[11px] font-semibold transition ${
+                  className={`h-10 rounded-lg border font-mono text-[13px] font-semibold transition ${
                     active
                       ? 'border-[#34D399] bg-[#34D399]/10 text-[#34D399]'
                       : 'border-white/10 bg-white/[0.02] text-[#94A3B8] hover:border-white/20 hover:text-[#CBD5E1]'
@@ -457,17 +457,17 @@ const EarningsCalculator = () => {
             <p className="font-partner-display text-[38px] font-bold leading-none tracking-[-0.03em] text-[#34D399]">
               {inr(net)}
             </p>
-            <span className="pb-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[#64748B]">
+            <span className="pb-1 font-mono text-[11px] uppercase tracking-[0.12em] text-[#64748B]">
               per month
             </span>
           </div>
-          <p className="mt-2 flex items-center gap-1.5 text-[9.5px] text-[#64748B]">
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[#64748B]">
             <Wallet size={11} className="text-[#34D399]" />
             About {inr(weekly)} paid out every Monday
           </p>
         </div>
 
-        <p className="mt-auto pt-4 text-[9px] leading-4 text-[#64748B]">
+        <p className="mt-auto pt-4 text-[11px] leading-4 text-[#64748B]">
           Illustration only, using a 15% per-job platform fee. Actual earnings depend on
           your trade, city, availability and the jobs you accept.
         </p>
@@ -482,7 +482,7 @@ const EarningsCalculator = () => {
               What lands in your account
             </p>
           </div>
-          <span className="flex items-center gap-1 rounded-md border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[#34D399]">
+          <span className="flex items-center gap-1 rounded-md border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[#34D399]">
             <CalendarCheck size={10} /> Weekly
           </span>
         </div>
@@ -490,7 +490,7 @@ const EarningsCalculator = () => {
         <div className="mt-6 flex h-[128px] items-end gap-2.5">
           {weekBars.map((bar, index) => (
             <div key={index} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-              <span className="font-mono text-[8px] font-semibold tracking-[0.02em] text-[#94A3B8]">
+              <span className="font-mono text-[10px] font-semibold tracking-[0.02em] text-[#94A3B8]">
                 {inr(weekValues[index])}
               </span>
               <div
@@ -499,14 +499,14 @@ const EarningsCalculator = () => {
                 }`}
                 style={{ height: `${Math.max(10, (bar / maxBar) * 68)}px` }}
               />
-              <span className="font-mono text-[8px] uppercase tracking-[0.1em] text-[#475569]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#475569]">
                 W{index + 1}
               </span>
             </div>
           ))}
         </div>
 
-        <dl className="mt-5 space-y-0 border-t border-white/[0.07] text-[11.5px]">
+        <dl className="mt-5 space-y-0 border-t border-white/[0.07] text-[13.5px]">
           {[
             { label: 'Gross this month', value: inr(gross), muted: true },
             { label: 'Platform fee · 15%', value: `−${inr(fee)}`, muted: true },
@@ -533,7 +533,7 @@ const EarningsCalculator = () => {
                   row.strong
                     ? 'font-partner-display text-[17px] font-bold text-[#34D399]'
                     : row.payout
-                      ? 'font-mono text-[11.5px] font-bold text-[#CBD5E1]'
+                      ? 'font-mono text-[13.5px] font-bold text-[#CBD5E1]'
                       : 'font-semibold text-[#CBD5E1]'
                 }
               >
@@ -549,7 +549,7 @@ const EarningsCalculator = () => {
             { icon: Smartphone, label: 'UPI · same-day after settlement' },
             { icon: ShieldCheck, label: 'Statement for every payout' },
           ].map((item) => (
-            <p key={item.label} className="flex items-center gap-2 text-[9.5px] text-[#64748B]">
+            <p key={item.label} className="flex items-center gap-2 text-[11px] text-[#64748B]">
               <item.icon size={11} className="text-[#34D399]" />
               {item.label}
             </p>
@@ -599,7 +599,7 @@ export const ProviderLandingScreen = () => {
       {/* Header                                                           */}
       {/* ---------------------------------------------------------------- */}
       <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#0F172A]/88 backdrop-blur-xl">
-        <div className="mx-auto flex h-[74px] w-full max-w-[1240px] items-center gap-6 px-5 sm:px-8">
+        <div className="mx-auto flex h-[74px] w-full max-w-[1240px] 2xl:max-w-[1440px] items-center gap-6 px-5 sm:px-8">
           <button
             type="button"
             onClick={() => scrollToId('top')}
@@ -611,7 +611,7 @@ export const ProviderLandingScreen = () => {
               <span className="block text-[17px] font-extrabold leading-none tracking-tight text-[#F8FAFC]">
                 Lucky<span className="text-[#F97316]">Seva</span>
               </span>
-              <span className="mt-1 block font-mono text-[8px] font-bold uppercase tracking-[0.24em] text-[#34D399]/80">
+              <span className="mt-1 block font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-[#34D399]/80">
                 Partner
               </span>
             </span>
@@ -623,7 +623,7 @@ export const ProviderLandingScreen = () => {
                 key={item.id}
                 type="button"
                 onClick={() => scrollToId(item.id)}
-                className="rounded-md px-3 py-2 text-[12px] font-semibold text-[#94A3B8] transition hover:bg-white/[0.04] hover:text-[#F8FAFC]"
+                className="rounded-md px-3 py-2 text-[14px] font-semibold text-[#94A3B8] transition hover:bg-white/[0.04] hover:text-[#F8FAFC]"
               >
                 {item.label}
               </button>
@@ -634,14 +634,14 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="hidden h-10 items-center rounded-lg border border-white/15 px-4 text-[12px] font-bold text-[#CBD5E1] transition hover:border-white/30 hover:bg-white/[0.04] sm:flex"
+              className="hidden h-10 items-center rounded-lg border border-white/15 px-4 text-[14px] font-bold text-[#CBD5E1] transition hover:border-white/30 hover:bg-white/[0.04] sm:flex"
             >
               Partner login
             </button>
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-10 items-center gap-1.5 rounded-lg bg-[#34D399] px-4 text-[12px] font-bold text-[#0F172A] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E]"
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-[#34D399] px-4 text-[14px] font-bold text-[#0F172A] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E]"
             >
               Apply now
               <ArrowRight size={14} strokeWidth={2.6} />
@@ -676,7 +676,7 @@ export const ProviderLandingScreen = () => {
           }}
         />
 
-        <div className="relative mx-auto grid w-full max-w-[1240px] items-center gap-12 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(350px,392px)] lg:gap-16 lg:pb-20 lg:pt-16">
+        <div className="relative mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] items-center gap-12 px-4 pb-12 pt-10 sm:px-8 sm:pb-14 sm:pt-12 2xl:pb-28 2xl:pt-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(350px,392px)] 2xl:grid-cols-[minmax(0,1.1fr)_minmax(390px,430px)] lg:gap-16 lg:pb-20 lg:pt-16">
           <div className="landing-rise min-w-0">
             <div className="flex items-center gap-2.5">
               <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#34D399]/30 bg-[#34D399]/10">
@@ -685,7 +685,7 @@ export const ProviderLandingScreen = () => {
               <Micro className="text-[#34D399]">The LuckySeva partner programme</Micro>
             </div>
 
-            <h1 className="mt-6 font-partner-display text-[42px] font-bold leading-[0.98] tracking-[-0.04em] text-[#F8FAFC] sm:text-[58px] xl:text-[64px]">
+            <h1 className="mt-6 font-partner-display text-[42px] font-bold leading-[0.98] tracking-[-0.04em] text-[#F8FAFC] sm:text-[58px] xl:text-[64px] 2xl:text-[76px]">
               Your skill.
               <br />
               Your terms.
@@ -699,7 +699,7 @@ export const ProviderLandingScreen = () => {
               </span>
             </h1>
 
-            <p className="mt-6 max-w-[510px] text-[13.5px] leading-7 text-[#94A3B8]">
+            <p className="mt-6 max-w-[510px] text-[15px] leading-7 text-[#94A3B8]">
               Join the professionals behind LuckySeva. Get matched to jobs in your area,
               set your own hours and see every rupee before you accept — with weekly
               payouts and a team that backs you.
@@ -709,7 +709,7 @@ export const ProviderLandingScreen = () => {
               <button
                 type="button"
                 onClick={goToLogin}
-                className="group flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[#34D399] px-6 text-[13px] font-bold text-[#0F172A] shadow-[0_18px_40px_-18px_rgba(52,211,153,0.75)] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]/50"
+                className="group flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[#34D399] px-6 text-[15px] font-bold text-[#0F172A] shadow-[0_18px_40px_-18px_rgba(52,211,153,0.75)] transition hover:-translate-y-0.5 hover:bg-[#D4FA6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]/50"
               >
                 Start your application
                 <ArrowRight size={16} strokeWidth={2.6} className="transition group-hover:translate-x-0.5" />
@@ -717,7 +717,7 @@ export const ProviderLandingScreen = () => {
               <button
                 type="button"
                 onClick={() => scrollToId('earnings')}
-                className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-5 text-[13px] font-bold text-[#CBD5E1] transition hover:border-white/30 hover:bg-white/[0.06]"
+                className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-5 text-[15px] font-bold text-[#CBD5E1] transition hover:border-white/30 hover:bg-white/[0.06]"
               >
                 Estimate earnings
                 <ChevronRight size={15} />
@@ -726,7 +726,7 @@ export const ProviderLandingScreen = () => {
 
             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2">
               {['No joining fee', 'Weekly payouts', 'Fee shown before you accept'].map((item) => (
-                <span key={item} className="flex items-center gap-1.5 text-[10px] font-semibold text-[#94A3B8]">
+                <span key={item} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#94A3B8]">
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#34D399]/15 text-[#34D399]">
                     <Check size={9} strokeWidth={3.5} />
                   </span>
@@ -745,7 +745,7 @@ export const ProviderLandingScreen = () => {
                   <p className="font-partner-display text-[17px] font-bold leading-none tracking-tight text-[#F8FAFC]">
                     {stat.value}
                   </p>
-                  <p className="mt-1.5 font-mono text-[7.5px] uppercase tracking-[0.14em] text-[#64748B]">
+                  <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#64748B]">
                     {stat.label}
                   </p>
                 </div>
@@ -754,7 +754,7 @@ export const ProviderLandingScreen = () => {
           </div>
 
           <div
-            className="landing-rise relative w-full max-w-[392px] justify-self-center lg:justify-self-end"
+            className="landing-rise relative w-full max-w-[392px] 2xl:max-w-[430px] justify-self-center lg:justify-self-end"
             style={{ animationDelay: '120ms' }}
           >
             <LoginCard />
@@ -775,7 +775,7 @@ export const ProviderLandingScreen = () => {
       >
         <div className="landing-marquee flex w-max items-center gap-8 whitespace-nowrap">
           {[...marqueeItems, ...marqueeItems].map((item, index) => (
-            <span key={index} className="flex items-center gap-3 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[#94A3B8]">
+            <span key={index} className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.12em] text-[#94A3B8]">
               <span className="h-1 w-1 rounded-full bg-[#34D399]" />
               {item}
             </span>
@@ -787,7 +787,7 @@ export const ProviderLandingScreen = () => {
       {/* Earnings                                                         */}
       {/* ---------------------------------------------------------------- */}
       <section id="earnings" className="scroll-mt-[74px] py-20 sm:py-24">
-        <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+        <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-[620px]">
               <SectionLabel index="01">Earnings</SectionLabel>
@@ -795,7 +795,7 @@ export const ProviderLandingScreen = () => {
                 Know your number
                 <br className="hidden sm:block" /> before you sign up.
               </h2>
-              <p className="mt-4 max-w-[480px] text-[12.5px] leading-7 text-[#94A3B8]">
+              <p className="mt-4 max-w-[480px] text-[14px] leading-7 text-[#94A3B8]">
                 No hidden deductions and no haggling at the doorstep. Move the slider to
                 see what a week of work could settle at.
               </p>
@@ -816,14 +816,14 @@ export const ProviderLandingScreen = () => {
       {/* Benefits                                                         */}
       {/* ---------------------------------------------------------------- */}
       <section id="benefits" className="scroll-mt-[74px] border-y border-white/[0.07] bg-[#1E293B] py-20 sm:py-24">
-        <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+        <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="max-w-[680px]">
             <SectionLabel index="02">Why partner</SectionLabel>
             <h2 className="mt-5 font-partner-display text-[34px] font-bold leading-[1.04] tracking-[-0.035em] text-[#F8FAFC] sm:text-[44px]">
               Built for the way
               <br className="hidden sm:block" /> you actually work.
             </h2>
-            <p className="mt-4 max-w-[520px] text-[12.5px] leading-7 text-[#94A3B8]">
+            <p className="mt-4 max-w-[520px] text-[14px] leading-7 text-[#94A3B8]">
               You have spent years learning your craft. The platform should make it easier
               to earn from it — not harder.
             </p>
@@ -841,11 +841,11 @@ export const ProviderLandingScreen = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <Micro className="text-[#475569]">{String(index + 1).padStart(2, '0')}</Micro>
-                    <h3 className="font-partner-display text-[14px] font-semibold tracking-[-0.01em] text-[#F8FAFC]">
+                    <h3 className="font-partner-display text-[16px] font-semibold tracking-[-0.01em] text-[#F8FAFC]">
                       {benefit.title}
                     </h3>
                   </div>
-                  <p className="mt-2 text-[11px] leading-6 text-[#94A3B8]">{benefit.body}</p>
+                  <p className="mt-2 text-[13px] leading-6 text-[#94A3B8]">{benefit.body}</p>
                 </div>
               </div>
             ))}
@@ -857,7 +857,7 @@ export const ProviderLandingScreen = () => {
       {/* How it works — lime block                                        */}
       {/* ---------------------------------------------------------------- */}
       <section id="how-it-works" className="scroll-mt-[74px] bg-[#D1FAE5] py-20 text-[#064E3B] sm:py-24">
-        <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+        <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-[600px]">
               <div className="flex items-center gap-3">
@@ -870,7 +870,7 @@ export const ProviderLandingScreen = () => {
                 <br className="hidden sm:block" /> Usually under 48 hours.
               </h2>
             </div>
-            <p className="max-w-[330px] text-[12px] leading-7 text-[#047857]">
+            <p className="max-w-[330px] text-[14px] leading-7 text-[#047857]">
               Most professionals finish verification in a day. Our partner desk stays on
               call while you do.
             </p>
@@ -883,14 +883,14 @@ export const ProviderLandingScreen = () => {
                   <span className="font-partner-display text-[36px] font-bold leading-none tracking-[-0.04em] text-[#064E3B]/25">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <span className="rounded border border-[#064E3B]/20 px-2 py-1 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-[#047857]">
+                  <span className="rounded border border-[#064E3B]/20 px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#047857]">
                     {step.duration}
                   </span>
                 </div>
                 <h3 className="mt-6 font-partner-display text-[15px] font-semibold tracking-[-0.01em]">
                   {step.title}
                 </h3>
-                <p className="mt-2 text-[11px] leading-6 text-[#047857]">{step.body}</p>
+                <p className="mt-2 text-[13px] leading-6 text-[#047857]">{step.body}</p>
               </div>
             ))}
           </div>
@@ -899,12 +899,12 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-[50px] items-center gap-2 rounded-lg bg-[#064E3B] px-6 text-[12.5px] font-bold text-[#F8FAFC] transition hover:-translate-y-0.5 hover:bg-[#065F46]"
+              className="flex h-[50px] items-center gap-2 rounded-lg bg-[#064E3B] px-6 text-[14px] font-bold text-[#F8FAFC] transition hover:-translate-y-0.5 hover:bg-[#065F46]"
             >
               Start your application
               <ArrowRight size={15} strokeWidth={2.6} />
             </button>
-            <p className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[#047857]">
+            <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[#047857]">
               <Timer size={12} /> Average application time · 4 min
             </p>
           </div>
@@ -915,14 +915,14 @@ export const ProviderLandingScreen = () => {
       {/* Requirements                                                     */}
       {/* ---------------------------------------------------------------- */}
       <section id="requirements" className="scroll-mt-[74px] py-20 sm:py-24">
-        <div className="mx-auto grid w-full max-w-[1240px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+        <div className="mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
           <div>
             <SectionLabel index="04">Before you start</SectionLabel>
             <h2 className="mt-5 font-partner-display text-[34px] font-bold leading-[1.04] tracking-[-0.035em] text-[#F8FAFC] sm:text-[42px]">
               Bring your skill.
               <br className="hidden sm:block" /> We handle the rest.
             </h2>
-            <p className="mt-4 max-w-[420px] text-[12.5px] leading-7 text-[#94A3B8]">
+            <p className="mt-4 max-w-[420px] text-[14px] leading-7 text-[#94A3B8]">
               Verification protects you as much as the customer. It is a one-time check,
               and the partner team helps you through each document.
             </p>
@@ -936,8 +936,8 @@ export const ProviderLandingScreen = () => {
                   <PhoneCall size={15} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-extrabold text-[#CBD5E1]">Partner desk</span>
-                  <span className="mt-0.5 block font-mono text-[9px] tracking-[0.06em] text-[#64748B]">
+                  <span className="block text-[13px] font-extrabold text-[#CBD5E1]">Partner desk</span>
+                  <span className="mt-0.5 block font-mono text-[11px] tracking-[0.06em] text-[#64748B]">
                     {SUPPORT_PHONE} · Mon–Sat, 9am–8pm
                   </span>
                 </span>
@@ -951,8 +951,8 @@ export const ProviderLandingScreen = () => {
                   <Mail size={15} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-extrabold text-[#CBD5E1]">Email the partner team</span>
-                  <span className="mt-0.5 block font-mono text-[9px] tracking-[0.06em] text-[#64748B]">
+                  <span className="block text-[13px] font-extrabold text-[#CBD5E1]">Email the partner team</span>
+                  <span className="mt-0.5 block font-mono text-[11px] tracking-[0.06em] text-[#64748B]">
                     {SUPPORT_EMAIL}
                   </span>
                 </span>
@@ -960,7 +960,7 @@ export const ProviderLandingScreen = () => {
               </a>
             </div>
 
-            <p className="mt-6 flex items-start gap-2 text-[9.5px] leading-5 text-[#64748B]">
+            <p className="mt-6 flex items-start gap-2 text-[11px] leading-5 text-[#64748B]">
               <ShieldCheck size={12} className="mt-0.5 shrink-0 text-[#34D399]" />
               Police verification may be requested for on-site work in some cities. We
               tell you upfront — nothing is charged for it.
@@ -976,7 +976,7 @@ export const ProviderLandingScreen = () => {
                   Five things to keep ready
                 </p>
               </div>
-              <span className="rounded-md border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[#34D399]">
+              <span className="rounded-md border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[#34D399]">
                 4 min
               </span>
             </div>
@@ -990,7 +990,7 @@ export const ProviderLandingScreen = () => {
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#34D399]/30 bg-[#34D399]/10 text-[#34D399]">
                     <Check size={11} strokeWidth={3} />
                   </span>
-                  <span className="flex-1 text-[11px] leading-5 text-[#CBD5E1]">{item}</span>
+                  <span className="flex-1 text-[13px] leading-5 text-[#CBD5E1]">{item}</span>
                   <Micro className="mt-0.5 shrink-0 text-[#475569]">{String(index + 1).padStart(2, '0')}</Micro>
                 </li>
               ))}
@@ -1009,7 +1009,7 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#F8FAFC] text-[12px] font-bold text-[#0F172A] transition hover:bg-white"
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#F8FAFC] text-[14px] font-bold text-[#0F172A] transition hover:bg-white"
             >
               Start verification
               <ArrowRight size={14} strokeWidth={2.6} />
@@ -1022,7 +1022,7 @@ export const ProviderLandingScreen = () => {
       {/* Partner stories                                                  */}
       {/* ---------------------------------------------------------------- */}
       <section className="border-y border-white/[0.07] bg-[#1E293B] py-20 sm:py-24">
-        <div className="mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+        <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <SectionLabel index="05">Partner stories</SectionLabel>
@@ -1033,7 +1033,7 @@ export const ProviderLandingScreen = () => {
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2">
               <Star size={12} className="fill-[#34D399] text-[#34D399]" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#94A3B8]">
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#94A3B8]">
                 4.8 average partner rating
               </span>
             </div>
@@ -1053,26 +1053,26 @@ export const ProviderLandingScreen = () => {
                     ))}
                   </span>
                 </div>
-                <blockquote className="mt-4 flex-1 text-[11.5px] leading-6 text-[#CBD5E1]">
+                <blockquote className="mt-4 flex-1 text-[13.5px] leading-6 text-[#CBD5E1]">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-5 flex items-center gap-3 border-t border-white/[0.07] pt-4">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#34D399]/10 font-partner-display text-[11px] font-bold text-[#34D399]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#34D399]/10 font-partner-display text-[13px] font-bold text-[#34D399]">
                     {testimonial.name.charAt(0)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[11px] font-extrabold text-[#F8FAFC]">
+                    <span className="block truncate text-[13px] font-extrabold text-[#F8FAFC]">
                       {testimonial.name}
                     </span>
-                    <span className="mt-0.5 block truncate text-[9px] text-[#64748B]">
+                    <span className="mt-0.5 block truncate text-[11px] text-[#64748B]">
                       {testimonial.trade}
                     </span>
                   </span>
                   <span className="shrink-0 text-right">
-                    <span className="block font-mono text-[10.5px] font-bold text-[#34D399]">
+                    <span className="block font-mono text-[12px] font-bold text-[#34D399]">
                       {testimonial.earning}
                     </span>
-                    <span className="block font-mono text-[7.5px] uppercase tracking-[0.1em] text-[#475569]">
+                    <span className="block font-mono text-[10px] uppercase tracking-[0.1em] text-[#475569]">
                       {testimonial.note}
                     </span>
                   </span>
@@ -1087,14 +1087,14 @@ export const ProviderLandingScreen = () => {
       {/* FAQ                                                              */}
       {/* ---------------------------------------------------------------- */}
       <section className="py-20 sm:py-24">
-        <div className="mx-auto grid w-full max-w-[1240px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
+        <div className="mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
           <div>
             <SectionLabel index="06">Questions</SectionLabel>
             <h2 className="mt-5 font-partner-display text-[34px] font-bold leading-[1.04] tracking-[-0.035em] text-[#F8FAFC] sm:text-[40px]">
               Everything partners
               <br className="hidden sm:block" /> ask first.
             </h2>
-            <p className="mt-4 max-w-[330px] text-[12px] leading-7 text-[#94A3B8]">
+            <p className="mt-4 max-w-[330px] text-[14px] leading-7 text-[#94A3B8]">
               Still unsure? The partner desk answers on call or email, six days a week.
             </p>
 
@@ -1108,16 +1108,16 @@ export const ProviderLandingScreen = () => {
                   <PhoneCall size={14} />
                 </span>
                 <span className="flex-1">
-                  <span className="block font-mono text-[11px] font-semibold tracking-[0.04em] text-[#CBD5E1]">
+                  <span className="block font-mono text-[13px] font-semibold tracking-[0.04em] text-[#CBD5E1]">
                     {SUPPORT_PHONE}
                   </span>
-                  <span className="mt-0.5 block text-[8.5px] text-[#64748B]">Mon–Sat · 9am–8pm</span>
+                  <span className="mt-0.5 block text-[10.5px] text-[#64748B]">Mon–Sat · 9am–8pm</span>
                 </span>
                 <ArrowUpRight size={13} className="text-[#475569]" />
               </a>
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
-                className="mt-2 flex items-center gap-2 px-1 text-[9.5px] text-[#64748B] transition hover:text-[#34D399]"
+                className="mt-2 flex items-center gap-2 px-1 text-[11px] text-[#64748B] transition hover:text-[#34D399]"
               >
                 <Mail size={11} /> {SUPPORT_EMAIL}
               </a>
@@ -1133,7 +1133,7 @@ export const ProviderLandingScreen = () => {
               >
                 <summary className="flex cursor-pointer list-none items-center gap-4 [&::-webkit-details-marker]:hidden">
                   <Micro className="text-[#475569]">{String(index + 1).padStart(2, '0')}</Micro>
-                  <span className="flex-1 font-partner-display text-[13px] font-semibold tracking-[-0.01em] text-[#E4EAE0]">
+                  <span className="flex-1 font-partner-display text-[15px] font-semibold tracking-[-0.01em] text-[#E4EAE0]">
                     {faq.q}
                   </span>
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-white/15 text-[#94A3B8] transition group-open:rotate-45 group-open:border-[#34D399]/50 group-open:text-[#34D399]">
@@ -1143,7 +1143,7 @@ export const ProviderLandingScreen = () => {
                     </span>
                   </span>
                 </summary>
-                <p className="mt-3 max-w-[600px] pl-[30px] text-[11px] leading-6 text-[#94A3B8]">
+                <p className="mt-3 max-w-[600px] pl-[30px] text-[13px] leading-6 text-[#94A3B8]">
                   {faq.a}
                 </p>
               </details>
@@ -1162,13 +1162,13 @@ export const ProviderLandingScreen = () => {
         >
           PARTNER
         </span>
-        <div className="relative mx-auto w-full max-w-[1240px] px-5 sm:px-8">
+        <div className="relative mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <Micro className="text-[#047857]">Join the network</Micro>
           <h2 className="mt-4 max-w-[760px] font-partner-display text-[38px] font-bold leading-[0.98] tracking-[-0.04em] sm:text-[56px]">
             Your next job is
             <br className="hidden sm:block" /> already in your area.
           </h2>
-          <p className="mt-4 max-w-[460px] text-[12.5px] leading-7 text-[#047857]">
+          <p className="mt-4 max-w-[460px] text-[14px] leading-7 text-[#047857]">
             Create your partner account with OTP, finish verification and start receiving
             requests from the customers closest to you.
           </p>
@@ -1176,14 +1176,14 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[#064E3B] px-6 text-[12.5px] font-bold text-[#F8FAFC] transition hover:-translate-y-0.5 hover:bg-[#065F46]"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[#064E3B] px-6 text-[14px] font-bold text-[#F8FAFC] transition hover:-translate-y-0.5 hover:bg-[#065F46]"
             >
               Apply in 4 minutes
               <ArrowRight size={16} strokeWidth={2.6} />
             </button>
             <a
               href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-[#064E3B]/25 px-5 text-[12px] font-bold text-[#064E3B] transition hover:border-[#064E3B]/50 hover:bg-[#064E3B]/5"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-lg border border-[#064E3B]/25 px-5 text-[14px] font-bold text-[#064E3B] transition hover:border-[#064E3B]/50 hover:bg-[#064E3B]/5"
             >
               <PhoneCall size={14} />
               Talk to the partner team
@@ -1193,7 +1193,7 @@ export const ProviderLandingScreen = () => {
             {['No joining fee', 'No monthly subscription', 'Weekly payouts'].map((item) => (
               <span
                 key={item}
-                className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#047857]"
+                className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-[#047857]"
               >
                 <Check size={10} strokeWidth={3.5} />
                 {item}
@@ -1207,7 +1207,7 @@ export const ProviderLandingScreen = () => {
       {/* Footer                                                           */}
       {/* ---------------------------------------------------------------- */}
       <footer className="bg-[#020617] text-[#94A3B8]">
-        <div className="mx-auto w-full max-w-[1240px] px-5 py-14 sm:px-8">
+        <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 py-14 sm:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_0.85fr_0.85fr_1fr]">
             <div>
               <div className="flex items-center gap-3">
@@ -1215,11 +1215,11 @@ export const ProviderLandingScreen = () => {
                 <span className="text-[17px] font-extrabold tracking-tight text-[#F8FAFC]">
                   Lucky<span className="text-[#F97316]">Seva</span>
                 </span>
-                <span className="rounded border border-[#34D399]/25 bg-[#34D399]/10 px-1.5 py-0.5 font-mono text-[7.5px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
+                <span className="rounded border border-[#34D399]/25 bg-[#34D399]/10 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
                   Partner
                 </span>
               </div>
-              <p className="mt-4 max-w-[300px] text-[10.5px] leading-6 text-[#64748B]">
+              <p className="mt-4 max-w-[300px] text-[12px] leading-6 text-[#64748B]">
                 The professional side of LuckySeva — jobs matched to your trade, transparent
                 earnings and weekly payouts.
               </p>
@@ -1227,7 +1227,7 @@ export const ProviderLandingScreen = () => {
                 {['UPI', 'IMPS', 'Bank transfer', 'Weekly'].map((method) => (
                   <span
                     key={method}
-                    className="rounded border border-white/[0.08] bg-white/[0.02] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[#64748B]"
+                    className="rounded border border-white/[0.08] bg-white/[0.02] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#64748B]"
                   >
                     {method}
                   </span>
@@ -1237,7 +1237,7 @@ export const ProviderLandingScreen = () => {
 
             <div>
               <Micro className="text-[#475569]">Partner programme</Micro>
-              <ul className="mt-4 space-y-2.5 text-[10.5px]">
+              <ul className="mt-4 space-y-2.5 text-[12px]">
                 {navItems.slice(0, 3).map((item) => (
                   <li key={item.id}>
                     <button
@@ -1259,7 +1259,7 @@ export const ProviderLandingScreen = () => {
 
             <div>
               <Micro className="text-[#475569]">Account</Micro>
-              <ul className="mt-4 space-y-2.5 text-[10.5px]">
+              <ul className="mt-4 space-y-2.5 text-[12px]">
                 <li>
                   <button type="button" onClick={goToLogin} className="transition hover:text-[#34D399]">
                     Partner login
@@ -1295,7 +1295,7 @@ export const ProviderLandingScreen = () => {
 
             <div>
               <Micro className="text-[#475569]">LuckySeva for customers</Micro>
-              <ul className="mt-4 space-y-2.5 text-[10.5px]">
+              <ul className="mt-4 space-y-2.5 text-[12px]">
                 <li>
                   <a
                     href={CUSTOMER_SITE_URL}
@@ -1323,7 +1323,7 @@ export const ProviderLandingScreen = () => {
               </ul>
               <div className="mt-5 flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
                 <Briefcase size={13} className="text-[#34D399]" />
-                <span className="text-[8.5px] leading-4 text-[#64748B]">
+                <span className="text-[10.5px] leading-4 text-[#64748B]">
                   15 trades · 180+ service types
                 </span>
               </div>
@@ -1331,10 +1331,10 @@ export const ProviderLandingScreen = () => {
           </div>
 
           <div className="mt-12 flex flex-col gap-3 border-t border-white/[0.07] pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-mono text-[8.5px] uppercase tracking-[0.1em] text-[#475569]">
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-[#475569]">
               © 2026 LuckySeva · All rights reserved
             </p>
-            <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[8.5px] uppercase tracking-[0.1em] text-[#475569]">
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-[#475569]">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck size={10} /> Verified customers
               </span>
