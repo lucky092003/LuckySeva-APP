@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-10-31
+**Last updated:** 2026-11-02
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-11-02
+
+### Added
+- **Landing home page screens** (`frontend/src/screens/customer/LandingScreen.tsx`, `frontend/src/screens/provider/ProviderLandingScreen.tsx`, `frontend/src/config/site-links.ts`) — new landing/home page screens for both customer and provider roles with modern UI, service discovery, and navigation integration.
+
+### Changed
+- Updated `frontend/index.html`, `frontend/src/App.tsx`, `frontend/src/context/app-context.tsx`, `frontend/src/components/BottomNav.tsx`, `frontend/src/components/WebTopNav.tsx`, and `frontend/src/index.css` to support the new landing home page routing and theming.
 
 ## 2026-10-31
 

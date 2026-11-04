@@ -50,7 +50,7 @@ export const WebTopNav = ({ role }: { role: Role }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, [profileOpen]);
   if (isNative) return null;
-  if (screen.name === "auth" || screen.name === "provider-auth") return null;
+  if (screen.name === "landing" || screen.name === "provider-landing" || screen.name === "auth" || screen.name === "provider-auth") return null;
   const items =
     role === "provider" ? providerItems : role === "admin" ? [] : customerItems;
   if (!items.length) return null;

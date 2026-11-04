@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { ApiError, api, getApiToken, SESSION_EXPIRED_EVENT, setApiToken } from '@/services/api';
 import { registerPush } from '@/services/push';
+import { isNative } from '@/utils/native';
 
 export type Role = 'customer' | 'provider' | 'admin';
 
@@ -15,8 +16,9 @@ export const APP_ROLE: Role =
   : 'customer';
 
 export type Screen =
+  | { name: 'landing' }
   | { name: 'splash' }
-  | { name: 'auth' }
+  | { name: 'auth'; phone?: string }
   | { name: 'home' }
   | { name: 'services' }
   | { name: 'search'; q?: string }
@@ -38,7 +40,8 @@ export type Screen =
   | { name: 'refunds' }
   | { name: 'addresses'; detected?: string }
   | { name: 'favourites' }
-  | { name: 'provider-auth' }
+  | { name: 'provider-auth'; phone?: string }
+  | { name: 'provider-landing' }
   | { name: 'provider-home' }
   | { name: 'provider-bookings' }
   | { name: 'provider-earnings' }
@@ -105,15 +108,33 @@ const initialProviderId = load<string | null>(LS_PROVIDER, null);
 const initialAdminAuthed = load<boolean>(LS_ADMIN, false);
 const initialApiToken = getApiToken();
 
+// Where a signed-out visitor lands. On the web each role gets its own marketing
+// page (customer -> LuckySeva, provider -> LuckySeva Partner); the native apps
+// stay on their phone-first auth screens.
+const signedOutScreen = (): Screen =>
+  APP_ROLE === 'provider'
+    ? isNative
+      ? { name: 'provider-auth' }
+      : { name: 'provider-landing' }
+    : APP_ROLE === 'admin'
+      ? { name: 'admin-auth' }
+      : isNative
+        ? { name: 'auth' }
+        : { name: 'landing' };
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [stack, setStack] = useState<Screen[]>(() => {
     if (APP_ROLE === 'provider') {
-      return [{ name: initialProviderId && initialApiToken ? 'provider-home' : 'provider-auth' }];
+      return [
+        initialProviderId && initialApiToken
+          ? { name: 'provider-home' as const }
+          : signedOutScreen(),
+      ];
     }
     if (APP_ROLE === 'admin') {
       return [{ name: initialAdminAuthed && initialApiToken ? 'admin-dashboard' : 'admin-auth' }];
     }
-    return [{ name: initialCustomer && initialApiToken ? 'home' : 'auth' }];
+    return [initialCustomer && initialApiToken ? { name: 'home' } : signedOutScreen()];
   });
   const [customer, setCustomerState] = useState<Customer>(initialCustomer);
   const [providerId, setProviderIdState] = useState<string | null>(initialProviderId);
@@ -125,7 +146,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setCustomerState(null);
       setProviderIdState(null);
       setAdminAuthedState(false);
-      setStack(APP_ROLE === 'provider' ? [{ name: 'provider-auth' }] : APP_ROLE === 'admin' ? [{ name: 'admin-auth' }] : [{ name: 'auth' }]);
+      setStack([signedOutScreen()]);
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, resetToAuth);
     if (!token) {
@@ -193,7 +214,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useCallback((s: Screen) => {
     setStack((prev) => {
       // Bottom-tab roots reset the stack
-      const rootNames = ['home', 'services', 'bookings', 'profile', 'provider-home', 'provider-bookings', 'provider-earnings', 'provider-profile', 'admin-dashboard'];
+      const rootNames = ['landing', 'provider-landing', 'home', 'services', 'bookings', 'profile', 'provider-home', 'provider-bookings', 'provider-earnings', 'provider-profile', 'admin-dashboard'];
       if (rootNames.includes(s.name)) return [s];
       // Typing in the global nav search re-navigates on every keystroke; replace
       // instead of push so Back returns to the previous screen, not every letter.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppProvider, useApp } from '@/context/app-context';
+import { AppProvider, APP_ROLE, useApp } from '@/context/app-context';
 import type { Screen } from '@/context/app-context';
 import { CustomerThemeProvider } from '@/context/ThemeContext';
 import { AdminThemeProvider } from '@/context/AdminThemeContext';
@@ -12,6 +12,7 @@ import { AssistantScreen } from '@/screens/shared/AssistantScreen';
 import { AdminSidebar } from '@/screens/admin/AdminSidebar';
 
 import { SplashScreen } from '@/screens/customer/SplashScreen';
+import { LandingScreen } from '@/screens/customer/LandingScreen';
 import { AuthScreen } from '@/screens/customer/AuthScreen';
 import { HomeScreen } from '@/screens/customer/HomeScreen';
 import { ServicesScreen } from '@/screens/customer/ServicesScreen';
@@ -35,6 +36,7 @@ import { AddressesScreen } from '@/screens/customer/AddressesScreen';
 import { FavouritesScreen } from '@/screens/customer/FavouritesScreen';
 
 import { ProviderHomeScreen } from '@/screens/provider/ProviderHomeScreen';
+import { ProviderLandingScreen } from '@/screens/provider/ProviderLandingScreen';
 import { ProviderAuthScreen } from '@/screens/provider/ProviderAuthScreen';
 import { ProviderBookingsScreen } from '@/screens/provider/ProviderBookingsScreen';
 import { ProviderEarningsScreen } from '@/screens/provider/ProviderEarningsScreen';
@@ -136,8 +138,9 @@ function Router() {
 
 function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
   switch (screen.name) {
+    case 'landing': return <LandingScreen />;
     case 'splash': return <SplashScreen />;
-    case 'auth': return <AuthScreen />;
+    case 'auth': return <AuthScreen initialPhone={screen.phone} />;
     case 'home': return <HomeScreen />;
     case 'services': return <ServicesScreen />;
     case 'search': return <SearchScreen />;
@@ -165,7 +168,8 @@ function renderCustomer(screen: ReturnType<typeof useApp>['screen']) {
 
 function renderProvider(screen: ReturnType<typeof useApp>['screen']) {
   switch (screen.name) {
-    case 'provider-auth': return <ProviderAuthScreen />;
+    case 'provider-landing': return <ProviderLandingScreen />;
+    case 'provider-auth': return <ProviderAuthScreen initialPhone={screen.phone} />;
     case 'provider-home': return <ProviderHomeScreen />;
     case 'provider-bookings': return <ProviderBookingsScreen />;
     case 'provider-earnings': return <ProviderEarningsScreen />;
@@ -201,6 +205,17 @@ function renderAdmin(screen: ReturnType<typeof useApp>['screen']) {
 }
 
 export default function App() {
+  // One bundle serves one role (VITE_APP_ROLE), so the browser tab should name
+  // the site the visitor is actually on, not always the customer product.
+  useEffect(() => {
+    document.title =
+      APP_ROLE === 'provider'
+        ? 'LuckySeva Partner — For Professionals'
+        : APP_ROLE === 'admin'
+          ? 'LuckySeva Admin'
+          : 'LuckySeva — Verified Home Services, On Demand';
+  }, []);
+
   return (
     <CustomerThemeProvider>
       <AppProvider>

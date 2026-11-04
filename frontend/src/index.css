@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* Landing pages: an editorial serif for the customer site and a technical
+   grotesk for the partner site, so the two products never read as one page. */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /* Class-based dark mode (customer profile theme toggle) */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -71,6 +75,83 @@
 @keyframes screenIn {
   from { transform: translateX(20px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* Marketing landing page (pre-login) */
+@keyframes landingRise {
+  from { transform: translateY(18px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes landingFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes landingPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+@keyframes landingSweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(220%); }
+}
+@keyframes landingMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes landingDraw {
+  from { stroke-dashoffset: 240; }
+  to { stroke-dashoffset: 0; }
+}
+.landing-rise {
+  animation: landingRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.landing-marquee {
+  animation: landingMarquee 42s linear infinite;
+}
+.landing-marquee:hover {
+  animation-play-state: paused;
+}
+.landing-draw {
+  stroke-dasharray: 240;
+  animation: landingDraw 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+}
+/* Customer site: editorial serif display. Partner site: technical grotesk. */
+.font-customer-display {
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+}
+.font-partner-display {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+.landing-float {
+  animation: landingFloat 6s ease-in-out infinite;
+}
+.landing-float-slow {
+  animation: landingFloat 8.5s ease-in-out infinite;
+}
+.landing-pulse-dot {
+  animation: landingPulse 2.4s ease-in-out infinite;
+}
+.landing-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.landing-sweep:hover::after {
+  animation: landingSweep 0.9s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise,
+  .landing-float,
+  .landing-float-slow,
+  .landing-pulse-dot,
+  .landing-marquee,
+  .landing-draw,
+  .landing-sweep:hover::after {
+    animation: none;
+  }
 }
 
 /* Screen transition */

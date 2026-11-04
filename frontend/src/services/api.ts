@@ -149,6 +149,28 @@ export const otpErrorMessage = (e: unknown, fallback: string): string => {
 export const isSignupRequired = (e: unknown): boolean =>
   e instanceof ApiError && e.code === 'signup_required';
 
+export type LandingData = {
+  stats: {
+    categories: number;
+    services: number;
+    professionals: number;
+    completed_bookings: number;
+    reviews: number;
+    rating_avg: number | null;
+    cities: number;
+  };
+  categories: {
+    slug: string;
+    name: string;
+    description: string;
+    starting_price: number | null;
+    popular: boolean;
+    services_count: number;
+  }[];
+  testimonials: { name: string; rating: number; comment: string; service: string | null }[];
+  cities: string[];
+};
+
 export const api = {
   auth: {
     requestOtp: (input: { phone: string; role?: 'customer' | 'provider'; mode?: 'login' | 'signup' }) =>
@@ -171,6 +193,7 @@ export const api = {
 
   catalog: {
     home: () => request<{ categories: Category[]; professionals: Professional[]; popular: Service[] }>('catalog', ''),
+    landing: () => request<LandingData>('catalog', '/landing'),
     categories: () => request<Category[]>('catalog', '/categories'),
     category: (slug: string) => request<{ category: Category; services: Service[] }>(`catalog`, `/categories/${slug}`),
     services: (categorySlug?: string) =>
