@@ -18,6 +18,11 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ### Changed
 - Updated `frontend/index.html`, `frontend/src/App.tsx`, `frontend/src/context/app-context.tsx`, `frontend/src/components/BottomNav.tsx`, `frontend/src/components/WebTopNav.tsx`, and `frontend/src/index.css` to support the new landing home page routing and theming.
 
+## 2026-11-04
+
+### Added
+- **kr branch**: Landing screen, provider landing screen, API service updates, and 14 service category asset images (`frontend/src/assets/services/`).
+
 ## 2026-10-31
 
 ### Fixed
