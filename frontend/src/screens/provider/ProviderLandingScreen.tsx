@@ -626,6 +626,7 @@ export const ProviderLandingScreen = () => {
 
     loadJobFeed();
   }, []);
+    const navItems = [
     { label: 'Why partner', id: 'benefits' },
     { label: 'Earnings', id: 'earnings' },
     { label: 'How it works', id: 'how-it-works' },
