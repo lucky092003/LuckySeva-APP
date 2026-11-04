@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -29,6 +29,7 @@ import {
 import { Logo } from '@/components/Logo';
 import { useApp } from '@/context/app-context';
 import { CUSTOMER_SITE_URL } from '@/config/site-links';
+import { api } from '@/services/api';
 
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
@@ -180,8 +181,25 @@ const JOB_FEED = [
   },
 ];
 
-const scrollToId = (id: string) => {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+/* ------------------------------------------------------------------ */
+/* Service icon lookup                                                 */
+/* ------------------------------------------------------------------ */
+const getIconForService = (serviceName: string) => {
+  const lower = serviceName.toLowerCase();
+  if (lower.includes('ac') || lower.includes('cool') || lower.includes('air')) return Snowflake;
+  if (lower.includes('switchboard') || lower.includes('electric') || lower.includes('wiring') || lower.includes('zap')) return Zap;
+  if (lower.includes('kitchen') || lower.includes('clean') || lower.includes('deep')) return Sparkles;
+  if (lower.includes('plumb') || lower.includes('pipe') || lower.includes('leak')) return Droplets;
+  if (lower.includes('carpenter') || lower.includes('wood') || lower.includes('furniture')) return Hammer;
+  if (lower.includes('paint') || lower.includes('painting')) return PaintRoller;
+  if (lower.includes('beauty') || lower.includes('salon')) return Scissors;
+  if (lower.includes('pest')) return Bug;
+  if (lower.includes('physio') || lower.includes('physiother')) return Activity;
+  if (lower.includes('packer') || lower.includes('mover') || lower.includes('shifting')) return Truck;
+  if (lower.includes('cctv') || lower.includes('security')) return Cctv;
+  if (lower.includes('cleaning') || lower.includes('laundry')) return Shirt;
+  if (lower.includes('lawn') || lower.includes('garden')) return Trees;
+  return Sparkles;
 };
 
 /* ------------------------------------------------------------------ */
@@ -342,13 +360,17 @@ const LoginCard = () => {
           <Micro className="text-[#64748B]">Preview</Micro>
         </div>
         <div className="mt-2.5 space-y-1.5">
-          {JOB_FEED.slice(0, 2).map((job) => (
+          {loadingFeed ? (
+            <div className="h-10 w-24 rounded-bg animate-pulse" />
+          ) : jobFeed.length === 0 ? (
+            <p className="text-[#64748B] text-xs">No active requests</p>
+          ) : jobFeed.map((job) => (
             <div
               key={job.title}
               className="flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-2"
             >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#34D399]/10 text-[#34D399]">
-                <job.icon size={13} />
+                {job.icon && <job.icon size={13} />}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12px] font-semibold text-[#CBD5E1]">
@@ -568,7 +590,42 @@ export const ProviderLandingScreen = () => {
 
   const goToLogin = () => navigate({ name: 'provider-auth' });
 
-  const navItems = [
+  const [jobFeed, setJobFeed] = useState<
+    { icon: typeof Snowflake; title: string; meta: string; value: string }[]
+  >([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+
+  // Fetch real job feed from backend
+  useEffect(() => {
+    const loadJobFeed = async () => {
+      try {
+        // Fetch provider's active bookings
+        const bookings = await api.provider.myBookings();
+        const formatted = bookings
+          .slice(0, 6)
+          .map((b) => {
+            const svc = b.service_name || 'Service';
+            const date = b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString() : 'Soon';
+            const time = b.scheduled_time || '';
+            return {
+              icon: getIconForService(svc),
+              title: svc,
+              meta: `${b.distance_km || '~5'} km away · ${date}, ${time}`.trim(),
+              value: b.total_amount ? `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(b.total_amount)}` : 'Quote',
+            };
+          });
+        setJobFeed(formatted);
+      } catch (err) {
+        console.error('Failed to load job feed', err);
+        // Fall back to static data on error
+        setJobFeed(JOB_FEED);
+      } finally {
+        setLoadingFeed(false);
+      }
+    };
+
+    loadJobFeed();
+  }, []);
     { label: 'Why partner', id: 'benefits' },
     { label: 'Earnings', id: 'earnings' },
     { label: 'How it works', id: 'how-it-works' },
