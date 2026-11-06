@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-06
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-11-06
+
+### Changed
+- Provider landing page layout refined in `frontend/src/screens/provider/ProviderLandingScreen.tsx` — simplified the structure introduced by the redesign (28 additions, 117 removals).
+
+## 2026-11-05
+
+### Changed
+- **Partner landing page redesigned to a light theme matching the customer site** (`frontend/src/screens/provider/ProviderLandingScreen.tsx`): the dark graphite/lime theme is replaced with the customer site's light canvas — white background, emerald accents and slate borders.
+- Floating glass badges (weekly payout, partner rating) added around the login card, plus a smooth-scroll helper for section navigation.
+- Service icon set expanded and section labels updated to a monospace light-theme style.
+- Live job feed is now wired into the login card with a loading state.
 
 ## 2026-11-02
 
@@ -22,6 +35,12 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Added
 - **kr branch**: Landing screen, provider landing screen, API service updates, and 14 service category asset images (`frontend/src/assets/services/`).
+
+### Changed
+- Provider landing page now fetches real bookings from the backend with dynamic service icons and a loading state (`frontend/src/screens/provider/ProviderLandingScreen.tsx`).
+
+### Fixed
+- Corrected the provider landing page `navItems` array placement, resolving the `VITE:oxc` transform error.
 
 ## 2026-10-31
 
