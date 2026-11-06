@@ -1,37 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-  Activity,
   ArrowRight,
   ArrowUpRight,
   Banknote,
   Briefcase,
-  Bug,
   CalendarCheck,
-  Cctv,
   Check,
   ChevronRight,
   Clock,
-  Droplets,
-  Hammer,
   Headphones,
   IndianRupee,
   LockKeyhole,
   Mail,
   MapPin,
-  PaintRoller,
   PhoneCall,
   Quote,
-  Scissors,
   ShieldCheck,
-  Shirt,
   Smartphone,
   Snowflake,
   Sparkles,
   Star,
   Timer,
   TrendingUp,
-  Trees,
-  Truck,
   UserCheck,
   Wallet,
   Zap,
@@ -39,7 +29,6 @@ import {
 import { Logo } from '@/components/Logo';
 import { useApp } from '@/context/app-context';
 import { CUSTOMER_SITE_URL } from '@/config/site-links';
-import { api } from '@/services/api';
 
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
@@ -49,7 +38,6 @@ import { api } from '@/services/api';
 // labels and a grotesk display face for the operations feel.
 const SUPPORT_PHONE = '1800-200-9876';
 const SUPPORT_EMAIL = 'partners@luckyseva.com';
-const DEMO_PHONE = '9876543210';
 
 const inr = (value: number) =>
   `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(value))}`;
@@ -190,27 +178,6 @@ const JOB_FEED = [
 ];
 
 /* ------------------------------------------------------------------ */
-/* Service icon lookup                                                 */
-/* ------------------------------------------------------------------ */
-const getIconForService = (serviceName: string) => {
-  const lower = serviceName.toLowerCase();
-  if (lower.includes('ac') || lower.includes('cool') || lower.includes('air')) return Snowflake;
-  if (lower.includes('switchboard') || lower.includes('electric') || lower.includes('wiring') || lower.includes('zap')) return Zap;
-  if (lower.includes('kitchen') || lower.includes('clean') || lower.includes('deep')) return Sparkles;
-  if (lower.includes('plumb') || lower.includes('pipe') || lower.includes('leak')) return Droplets;
-  if (lower.includes('carpenter') || lower.includes('wood') || lower.includes('furniture')) return Hammer;
-  if (lower.includes('paint') || lower.includes('painting')) return PaintRoller;
-  if (lower.includes('beauty') || lower.includes('salon')) return Scissors;
-  if (lower.includes('pest')) return Bug;
-  if (lower.includes('physio') || lower.includes('physiother')) return Activity;
-  if (lower.includes('packer') || lower.includes('mover') || lower.includes('shifting')) return Truck;
-  if (lower.includes('cctv') || lower.includes('security')) return Cctv;
-  if (lower.includes('cleaning') || lower.includes('laundry')) return Shirt;
-  if (lower.includes('lawn') || lower.includes('garden')) return Trees;
-  return Sparkles;
-};
-
-/* ------------------------------------------------------------------ */
 /* Small shared pieces                                                 */
 /* ------------------------------------------------------------------ */
 const Micro = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -243,7 +210,7 @@ type FeedJob = { icon: typeof Snowflake; title: string; meta: string; value: str
 
 const LoginCard = ({ jobFeed, loadingFeed }: { jobFeed: FeedJob[]; loadingFeed: boolean }) => {
   const { navigate } = useApp();
-  const [phone, setPhone] = useState(DEMO_PHONE);
+  const [phone, setPhone] = useState('');
   const [touched, setTouched] = useState(false);
 
   const valid = /^[6-9]\d{9}$/.test(phone);
@@ -298,7 +265,7 @@ const LoginCard = ({ jobFeed, loadingFeed }: { jobFeed: FeedJob[]; loadingFeed: 
               </p>
             </div>
             <span className="rounded-full border border-[#059669]/25 bg-[#ECFDF5] px-2 py-1 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#059669]">
-              Login demo
+              Sign in
             </span>
           </div>
 
@@ -359,20 +326,10 @@ const LoginCard = ({ jobFeed, loadingFeed }: { jobFeed: FeedJob[]; loadingFeed: 
               <ArrowRight size={16} strokeWidth={2.6} />
             </button>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="mt-3 flex items-center justify-center gap-3">
               <span className="flex items-center gap-1.5 text-[11px] text-[#64748B]">
                 <LockKeyhole size={10} /> Secure OTP sign-in
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setPhone(DEMO_PHONE);
-                  setTouched(false);
-                }}
-                className="text-[11px] font-bold text-[#059669] underline-offset-2 hover:underline"
-              >
-                Reset demo number
-              </button>
             </div>
           </form>
 
@@ -487,7 +444,7 @@ const EarningsCalculator = () => {
           value={jobsPerWeek}
           onChange={(event) => setJobsPerWeek(Number(event.target.value))}
           aria-label="Jobs per week"
-          className="mt-4 h-1.5 w-full cursor-pointer appearance-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#059669]/40 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#FFFFFF] [&::-webkit-slider-thumb]:bg-[#059669] [&::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(5,150,105,0.18)]"
+          className="mt-4 h-1.5 w-full cursor-pointer appearance-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#059669]/40 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#FFFFFF] [&::-webkit-slider-thumb]:bg-[#059669] [&::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(5,150,105,0.18)] [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#FFFFFF] [&::-moz-range-thumb]:bg-[#059669] [&::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(5,150,105,0.18)] [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-transparent"
           style={{
             background: `linear-gradient(to right, #10B981 0%, #10B981 ${pct}%, rgba(15,23,42,0.08) ${pct}%, rgba(15,23,42,0.08) 100%)`,
           }}
@@ -642,41 +599,13 @@ export const ProviderLandingScreen = () => {
 
   const goToLogin = () => navigate({ name: 'provider-auth' });
 
-  const [jobFeed, setJobFeed] = useState<FeedJob[]>([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);
+  // This card is shown to signed-out visitors, so there is no "my bookings"
+  // to fetch yet — it is an illustrative preview of the kind of requests a
+  // partner sees, not a live feed for this browser.
+  const jobFeed = JOB_FEED;
+  const loadingFeed = false;
 
-  // Fetch real job feed from backend
-  useEffect(() => {
-    const loadJobFeed = async () => {
-      try {
-        // Fetch provider's active bookings
-        const bookings = await api.provider.myBookings();
-        const formatted = bookings
-          .slice(0, 6)
-          .map((b) => {
-            const svc = b.service_name || 'Service';
-            const date = b.scheduled_date ? new Date(b.scheduled_date).toLocaleDateString() : 'Soon';
-            const time = b.scheduled_time || '';
-            return {
-              icon: getIconForService(svc),
-              title: svc,
-              meta: `${b.distance_km || '~5'} km away · ${date}, ${time}`.trim(),
-              value: b.total_amount ? `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(b.total_amount)}` : 'Quote',
-            };
-          });
-        setJobFeed(formatted);
-      } catch (err) {
-        console.error('Failed to load job feed', err);
-        // Fall back to static data on error
-        setJobFeed(JOB_FEED);
-      } finally {
-        setLoadingFeed(false);
-      }
-    };
-
-    loadJobFeed();
-  }, []);
-    const navItems = [
+  const navItems = [
     { label: 'Why partner', id: 'benefits' },
     { label: 'Earnings', id: 'earnings' },
     { label: 'How it works', id: 'how-it-works' },
@@ -736,7 +665,7 @@ export const ProviderLandingScreen = () => {
                 key={item.id}
                 type="button"
                 onClick={() => scrollToId(item.id)}
-                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
               >
                 {item.label}
               </button>
@@ -747,14 +676,14 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="hidden h-10 items-center rounded-full border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-[14px] font-bold text-[#334155] transition hover:border-[#34D399] hover:text-[#0F172A] sm:flex"
+              className="hidden h-10 items-center rounded-full border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-[14px] font-bold text-[#334155] transition hover:border-[#34D399] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399] sm:flex"
             >
               Partner login
             </button>
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-10 items-center gap-1.5 rounded-full bg-[#0F172A] px-4 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F]"
+              className="flex h-10 items-center gap-1.5 rounded-full bg-[#0F172A] px-4 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399] focus-visible:ring-offset-2"
             >
               Apply now
               <ArrowRight size={14} strokeWidth={2.6} />
@@ -777,21 +706,10 @@ export const ProviderLandingScreen = () => {
               'radial-gradient(52% 58% at 78% 2%, rgba(52,211,153,0.20) 0%, transparent 66%), radial-gradient(42% 50% at 4% 28%, rgba(4,120,87,0.20) 0%, transparent 64%), radial-gradient(30% 30% at 50% 100%, rgba(52,211,153,0.08) 0%, transparent 70%)',
           }}
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.10]"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, rgba(255,255,255,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.22) 1px, transparent 1px)',
-            backgroundSize: '64px 64px',
-            maskImage: 'radial-gradient(72% 64% at 60% 18%, black 0%, transparent 78%)',
-            WebkitMaskImage: 'radial-gradient(72% 64% at 60% 18%, black 0%, transparent 78%)',
-          }}
-        />
         {/* Fine dot grain — gives the canvas texture instead of flatness */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          className="pointer-events-none absolute inset-0 opacity-[0.22]"
           style={{
             backgroundImage: 'radial-gradient(rgba(148,163,184,0.35) 0.5px, transparent 0.5px)',
             backgroundSize: '18px 18px',
@@ -799,14 +717,10 @@ export const ProviderLandingScreen = () => {
             WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 42%)',
           }}
         />
-        {/* Lime hairlines bleeding from the top edge */}
+        {/* Lime hairline bleeding from the top edge */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-1/4 top-0 h-24 w-px bg-[linear-gradient(to_bottom,rgba(52,211,153,0.5),transparent)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-1/3 top-0 h-16 w-px bg-[linear-gradient(to_bottom,rgba(52,211,153,0.35),transparent)]"
+          className="pointer-events-none absolute left-1/4 top-0 h-24 w-px bg-[linear-gradient(to_bottom,rgba(52,211,153,0.4),transparent)]"
         />
 
         <div className="relative mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] items-center gap-12 px-4 pb-12 pt-10 sm:px-8 sm:pb-14 sm:pt-12 2xl:pb-28 2xl:pt-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(350px,392px)] 2xl:grid-cols-[minmax(0,1.1fr)_minmax(390px,430px)] lg:gap-16 lg:pb-20 lg:pt-16">
@@ -850,7 +764,7 @@ export const ProviderLandingScreen = () => {
               <button
                 type="button"
                 onClick={() => scrollToId('earnings')}
-                className="group flex h-[52px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#1E293B]/70 px-6 text-[15px] font-bold text-[#F8FAFC] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#1E293B]"
+                className="group flex h-[52px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#1E293B]/70 px-6 text-[15px] font-bold text-[#F8FAFC] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
               >
                 Estimate earnings
                 <ChevronRight size={15} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#34D399]" />
@@ -1039,7 +953,7 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-[52px] items-center gap-2 rounded-full bg-[#0F172A] px-6 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F]"
+              className="flex h-[52px] items-center gap-2 rounded-full bg-[#0F172A] px-6 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] focus-visible:ring-offset-2"
             >
               Start your application
               <ArrowRight size={15} strokeWidth={2.6} />
@@ -1136,20 +1050,17 @@ export const ProviderLandingScreen = () => {
               ))}
             </ul>
 
-            <div className="mt-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-              <div className="flex items-center justify-between">
-                <Micro className="text-[#64748B]">Onboarding progress</Micro>
-                <Micro className="text-[#059669]">Step 3 of 5</Micro>
-              </div>
-              <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-[#E2E8F0]">
-                <div className="h-full w-3/5 rounded-full bg-[#059669]" />
-              </div>
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
+              <Clock size={13} className="shrink-0 text-[#059669]" />
+              <p className="text-[11.5px] leading-4 text-[#64748B]">
+                Most applicants have everything ready and verified within a day.
+              </p>
             </div>
 
             <button
               type="button"
               onClick={goToLogin}
-              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#0F172A] text-[14px] font-bold text-[#FFFFFF] transition hover:bg-[#12402F]"
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#0F172A] text-[14px] font-bold text-[#FFFFFF] transition hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] focus-visible:ring-offset-2"
             >
               Start verification
               <ArrowRight size={14} strokeWidth={2.6} />
@@ -1324,14 +1235,14 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#059669] px-7 text-[15px] font-bold text-white shadow-[0_20px_40px_-20px_rgba(5,150,105,0.9)] transition hover:-translate-y-0.5 hover:bg-[#047857]"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#059669] px-7 text-[15px] font-bold text-white shadow-[0_20px_40px_-20px_rgba(5,150,105,0.9)] transition hover:-translate-y-0.5 hover:bg-[#047857] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#059669]/30"
             >
               Apply in 4 minutes
               <ArrowRight size={16} strokeWidth={2.6} />
             </button>
             <a
               href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#1E293B]/70"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#1E293B]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
             >
               <PhoneCall size={14} />
               Talk to the partner team
