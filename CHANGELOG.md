@@ -21,6 +21,7 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 
 ### Fixed
 - **Admin Payouts screen buttons never gave feedback and looked dead** (`frontend/src/screens/admin/AdminScreens.tsx`): the Approve/Reject handlers swallowed every API error, Approve could be sent without the settlement reference the backend demands (always a silent 400), and buttons were rendered even on rows already settled by the instant-payout automation (a second silent 400). Terminal rows now show their reference/transfer info with no actions, open rows get a per-row error message and a busy state, the reference is enforced inline before the call, and provider name/phone/UPI are shown instead of the raw id.
+- Provider withdraw sheet showed `IFSC undefined` for bank accounts saved before the IFSC column existed (`frontend/src/screens/provider/ProviderEarningsScreen.tsx`) — now shows `IFSC pending` until the code is added on the profile.
 
 ## 2026-11-06
 
