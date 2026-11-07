@@ -20,8 +20,17 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 - `PUT /provider/payout-account` now persists the IFSC alongside the account number and validates its shape; ADR-014 in `docs/REFERENCE/DECISIONS.md` is updated from Manual Payouts to Instant Automated Payouts.
 
 ### Fixed
-- **Admin Payouts screen buttons never gave feedback and looked dead** (`frontend/src/screens/admin/AdminScreens.tsx`): the Approve/Reject handlers swallowed every API error, Approve could be sent without the settlement reference the backend demands (always a silent 400), and buttons were rendered even on rows already settled by the instant-payout automation (a second silent 400). Terminal rows now show their reference/transfer info with no actions, open rows get a per-row error message and a busy state, the reference is enforced inline before the call, and provider name/phone/UPI are shown instead of the raw id.
-- Provider withdraw sheet showed `IFSC undefined` for bank accounts saved before the IFSC column existed (`frontend/src/screens/provider/ProviderEarningsScreen.tsx`) — now shows `IFSC pending` until the code is added on the profile.
+- Real coupon backend wiring: `create_booking` now reads professional's offered price from `professional_services` join; `POST /quote` mirrors it; frontend fetches live coupons from `api.customer.coupons()` and sends `coupon_code` so unusable codes get 400 instead of quiet full price.
+- Admin Refunds: per-row Approve/Reject buttons with busy state, inline errors, joined `booking.service_name` display; `api.admin.settleRefund(id, action, note)` correct payload.
+- Admin Coupons/Services/Providers: Edit/Delete per row — backend routes were wired but UI had no buttons; added save/toggles/delete for all three.
+- Provider Profile: removed duplicate `localStorage`-only bank form (650–661); single real API form remains.
+- Provider earnings statement: `IFSC undefined` → `IFSC pending`; added Cancel button on `requested` payout rows → `api.provider.cancelPayout(id)`.
+- Customer PaymentScreen: initial state now reads `localStorage.getItem('luckyseva.paymentMethod') || 'upi'` so profile preference is honoured.
+- Backend price quoting: added `_base_for()` helper that checks `professional_services.starting_price` first; both `create_booking` and `quote` now use it — invoice total matches approved review.
+- Admin Payouts screen (PR #130): Approve/Reject errors surface, reference enforced, terminal rows hide actions + show transfer info, provider name/phone shown instead of UUID.
+- Admin Refunds (PR #132): replaced read-only table with actionable rows; enforce `action: 'approve'|'reject'` payload.
+- Admin Coupons (PR #132): Add Active/Disable toggle + Delete per row; Services/Providers get Edit/Delete modals.
+- Provider withdraw sheet `IFSC undefined` → `IFSC pending` (PR #131).
 
 ## 2026-11-06
 
