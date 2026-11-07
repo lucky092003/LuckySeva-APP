@@ -255,9 +255,27 @@ export const api = {
     markAllNotificationsRead: () => request<{ ok: boolean; updated: number }>('customer', '/notifications/read-all', 'PUT'),
     deviceToken: (token: string, platform = 'web') =>
       request<{ registered: boolean }>('customer', '/device-token', 'POST', { token, platform }),
-    coupons: () => request<{ code: string; discount_pct: number; min_amount: number; expires_at: string | null }[]>('customer', '/coupons'),
-    quote: (service_id: string, address_id?: string) =>
-      request<{ base_price: number; visit_fee: number; discount_amount: number; coupon_code: string | null; total: number }>('customer', '/quote', 'POST', { service_id, address_id }),
+    // Active coupons as the server sees them, including why one shows as
+    // usable-but-restricted (`note`). The apply step still gets a final say
+    // from `quote`, this list only powers the chips and instant feedback.
+    coupons: () =>
+      request<
+        { code: string; description: string; discount_type: 'percent' | 'flat'; discount_value: number; category_slug: string | null; min_amount: number | null; note: string | null }[]
+      >('customer', '/coupons'),
+    // Authoritative price preview. The response mirrors the backend exactly:
+    // `total` is the amount `create_booking` will store, and `error` is set
+    // when an attempted coupon cannot be used.
+    quote: (payload: { service_id: string; professional_id?: string | null; visit_fee?: number; priority_fee?: number; coupon_code?: string | null }) =>
+      request<{
+        base_price: number;
+        charges: number;
+        pre_discount: number;
+        discount: number;
+        total: number;
+        coupon_code: string | null;
+        coupon_description: string | null;
+        error: string | null;
+      }>('customer', '/quote', 'POST', payload),
     // The backend mounts these at /payments/order and /payments/verify with
     // booking_id as a query parameter. The old '/payments/customer/orders' path
     // matched no route at all, so every UPI/card/net-banking payment 404'd.
@@ -344,6 +362,9 @@ export const api = {
       ),
     dashboard: () => request<{ active: number; completed_jobs: number; today_earnings: number; total_earnings: number }>('provider', '/dashboard'),
     requestPayout: (amount: number) => request<Payout>('provider', '/payouts', 'POST', { amount }),
+    // Withdraw a payout that the automation has not settled yet. Only rows in
+    // `requested` can be cancelled - anything else is refused server-side.
+    cancelPayout: (id: string) => request<Payout>('provider', `/payouts/${id}/cancel`, 'POST'),
     submitKyc: (input: { doc_type: string; doc_number: string }) =>
       request<Professional>('provider', '/kyc', 'PUT', input),
   },
@@ -386,7 +407,10 @@ export const api = {
     settlePayout: (id: string, s: { status: string; note?: string; reference?: string }) =>
       request<Payout>('admin', `/payouts/${id}`, 'PUT', s),
     refunds: () => request<Refund[]>('admin', '/refunds'),
-    settleRefund: (id: string, s: { status: string; note?: string }) => request<Refund>('admin', `/refunds/${id}`, 'PUT', s),
+    // The backend wants an `action` ("approve" resolves via the gateway or the
+    // settle window, "reject" closes it) - the status was never read.
+    settleRefund: (id: string, action: 'approve' | 'reject', note?: string) =>
+      request<Refund>('admin', `/refunds/${id}`, 'PUT', { action, note: note || '' }),
     disputes: () => request<unknown[]>('admin', '/disputes'),
   },
 };

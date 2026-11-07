@@ -647,20 +647,6 @@ export const ProviderProfileScreen = () => {
               )) : <EmptyState icon={<Icons.Star size={26} />} title="No reviews yet" />)
             }
 
-            {sheet === 'bank' && (
-              <>
-                <Card className="p-4">
-                  <p className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">Account holder name</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.acName') || pro.name} onChange={(e) => localStorage.setItem('luckyseva.acName', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
-                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700 dark:text-gray-200">Account number</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.acNo') || ''} onChange={(e) => localStorage.setItem('luckyseva.acNo', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
-                  <p className="mb-1 mt-3 text-xs font-semibold text-gray-700 dark:text-gray-200">IFSC</p>
-                  <input defaultValue={localStorage.getItem('luckyseva.ifsc') || ''} onChange={(e) => localStorage.setItem('luckyseva.ifsc', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm uppercase focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
-                </Card>
-                <p className="text-center text-[11px] text-gray-400 dark:text-gray-500">Details are stored locally and used for withdrawals.</p>
-              </>
-            )}
-
             {sheet === 'settings' && (
               <SettingRow storageKey="luckyseva.provider.push" label="Push notifications" />
             )}

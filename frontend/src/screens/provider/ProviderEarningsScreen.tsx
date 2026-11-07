@@ -20,6 +20,7 @@ export const ProviderEarningsScreen = () => {
   const { bookings, loading } = useProviderBookings(professional?.id || null, 'completed');
   const { payouts, reload: reloadPayouts } = usePayouts(professional?.id || null);
   const [showStatement, setShowStatement] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('week');
 
   /* Withdraw sheet: details → amount → instant transfer → receipt. */
@@ -671,6 +672,29 @@ export const ProviderEarningsScreen = () => {
                     )}
                     {p.status === 'failed' && p.note && (
                       <p className="mt-2 text-[10px] text-red-400 dark:text-red-500/80">{p.note}</p>
+                    )}
+                    {p.status === 'requested' && (
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">Waiting to transfer — you can still cancel.</p>
+                        <button
+                          type="button"
+                          disabled={cancellingId === p.id}
+                          onClick={async () => {
+                            setCancellingId(p.id);
+                            try {
+                              await api.provider.cancelPayout(p.id);
+                              reloadPayouts();
+                            } catch {
+                              // Terminal rows are refused server-side; a silent
+                              // miss here just leaves the row as it is.
+                            }
+                            setCancellingId(null);
+                          }}
+                          className="shrink-0 rounded-full border border-red-200 dark:border-red-900/40 px-2.5 py-1 text-[10px] font-bold text-red-500 disabled:opacity-50"
+                        >
+                          {cancellingId === p.id ? 'Cancelling…' : 'Cancel'}
+                        </button>
+                      </div>
                     )}
                   </Card>
                 ))}
