@@ -125,6 +125,30 @@ def coupon_code_present(body: dict) -> bool:
     return isinstance(code, str) and bool(code.strip())
 
 
+def _base_for(client, service: dict | None, professional_id: str | None) -> float:
+    """The booking's base price: what this professional charges for the service.
+
+    The booking flow shows the professional's own price from the
+    `professional_services` join, so charging the service's floor price instead
+    made the invoice disagree with the number the customer approved. When the
+    pick has no price of its own (or none is picked), fall back to the service.
+    """
+    if not service:
+        return 0.0
+    if professional_id:
+        join = one(
+            client.table("professional_services")
+            .select("starting_price")
+            .eq("professional_id", professional_id)
+            .eq("service_id", service.get("id"))
+            .maybe_single()
+            .execute()
+        )
+        if join and join.get("starting_price") is not None:
+            return round2(max(0.0, float(join["starting_price"])))
+    return round2(max(0.0, float(service.get("starting_price") or 0)))
+
+
 def _booking_count(client, phone: str) -> int:
     """How many live bookings this customer already placed, for welcome offers.
 
@@ -409,15 +433,14 @@ def create_booking(body: dict, claims: dict = Depends(require_customer)):
     client = db()
     profile = one(client.table("profiles").select("*").eq("phone", customer_phone(claims)).maybe_single().execute())
     service_id = body.get("service_id") if isinstance(body.get("service_id"), str) else None
+    professional_id = body.get("professional_id") if isinstance(body.get("professional_id"), str) else None
     base = 0.0
     service_name = _as_str(body.get("service_name"))
     if service_id:
         svc = one(client.table("services").select("*").eq("id", service_id).maybe_single().execute())
         if svc:
-            base = float(svc.get("starting_price") or 0)
+            base = _base_for(client, svc, professional_id)
             service_name = svc.get("name", service_name)
-
-    professional_id = body.get("professional_id") if isinstance(body.get("professional_id"), str) else None
     professional_name = body.get("professional_name")
     if professional_id:
         pro = one(client.table("professionals").select("name").eq("id", professional_id).maybe_single().execute())
@@ -595,11 +618,14 @@ def quote(body: dict, claims: dict = Depends(require_customer)):
     """
     client = db()
     service_id = body.get("service_id") if isinstance(body.get("service_id"), str) else None
+    professional_id = body.get("professional_id") if isinstance(body.get("professional_id"), str) else None
     base = 0.0
+    # Mirror create_booking exactly: the professional's own offered price beats
+    # the service floor, so the quoted total is the amount that will be stored.
     if service_id:
-        svc = one(client.table("services").select("starting_price").eq("id", service_id).maybe_single().execute())
+        svc = one(client.table("services").select("*").eq("id", service_id).maybe_single().execute())
         if svc:
-            base = float(svc.get("starting_price") or 0)
+            base = _base_for(client, svc, professional_id)
     visit_fee = max(0.0, float(body.get("visit_fee") or 0))
     priority_fee = max(0.0, float(body.get("priority_fee") or 0))
     pre, discount, total, coupon, error = _price_quote(

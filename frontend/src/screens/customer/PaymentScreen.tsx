@@ -38,7 +38,9 @@ export const PaymentScreen = ({ bookingId }: { bookingId: string }) => {
   const { navigate } = useApp();
   const [booking, setBooking] = useS<Booking | null>(null);
   const [loading, setLoading] = useS(true);
-  const [method, setMethod] = useState<string>('upi');
+  // The Profile screen saves the customer's preferred method to storage; use
+  // it as the initial pick so the radio they chose there is honoured here.
+  const [method, setMethod] = useState<string>(() => localStorage.getItem('luckyseva.paymentMethod') || 'upi');
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
