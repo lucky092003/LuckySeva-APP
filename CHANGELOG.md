@@ -19,6 +19,9 @@ Sections are headed by the date they were written (`## YYYY-MM-DD`), newest firs
 ### Changed
 - `PUT /provider/payout-account` now persists the IFSC alongside the account number and validates its shape; ADR-014 in `docs/REFERENCE/DECISIONS.md` is updated from Manual Payouts to Instant Automated Payouts.
 
+### Fixed
+- **Admin Payouts screen buttons never gave feedback and looked dead** (`frontend/src/screens/admin/AdminScreens.tsx`): the Approve/Reject handlers swallowed every API error, Approve could be sent without the settlement reference the backend demands (always a silent 400), and buttons were rendered even on rows already settled by the instant-payout automation (a second silent 400). Terminal rows now show their reference/transfer info with no actions, open rows get a per-row error message and a busy state, the reference is enforced inline before the call, and provider name/phone/UPI are shown instead of the raw id.
+
 ## 2026-11-06
 
 ### Changed

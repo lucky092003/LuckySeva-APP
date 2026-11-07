@@ -199,5 +199,8 @@ export type Payout = {
   method?: string | null;
   transfer_mode?: string | null;
   via_gateway?: boolean | null;
+  /** Joined by the admin list endpoint: the provider this payout goes to. */
+  professional?: { name?: string; phone?: string; bank_upi_id?: string | null; bank_account?: string | null } | null;
+  balance?: { available?: number } | null;
   created_at: string;
 };
