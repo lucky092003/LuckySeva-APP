@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-11-06
+**Last updated:** 2026-11-07
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-11-07
+
+### Added
+- **Instant automated payouts — the admin approval step is gone** (`backend/app/ledger.py`, `backend/app/payouts.py`, `backend/app/routers/provider.py`, `backend/app/config.py`): confirming a withdrawal now transfers and settles in the same request. With RazorpayX credentials the money actually moves through the Payouts API (UPI for VPA destinations, IMPS for bank accounts) and the gateway id/UTR becomes the settlement reference; without credentials the payout settles instantly with an internal `INST-…` reference instead of waiting in a review queue. Failed transfers settle as `failed`, release the hold and notify the provider that the amount is back (`new migration 20261107000000_payout_instant_transfer.sql` adds `professionals.bank_ifsc` plus `payouts.transfer_mode` / `payouts.via_gateway`).
+- **Withdraw flow UI** (`frontend/src/screens/provider/ProviderEarningsScreen.tsx`, `frontend/src/screens/provider/ProviderProfileScreen.tsx`, `frontend/src/services/api.ts`): the one-tap silently-full withdraw is replaced by a withdraw sheet that shows the payout destination saved on the profile (UPI or bank account with IFSC, masked, with a Change link), an editable amount that defaults to the full balance, an instant-transfer explainer, an error recovery banner and a receipt screen with the transfer reference. The statement list now shows each payout's transfer mode and reference.
+
+### Changed
+- `PUT /provider/payout-account` now persists the IFSC alongside the account number and validates its shape; ADR-014 in `docs/REFERENCE/DECISIONS.md` is updated from Manual Payouts to Instant Automated Payouts.
 
 ## 2026-11-06
 

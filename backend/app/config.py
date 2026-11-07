@@ -54,6 +54,8 @@ RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 PAYMENTS_ENABLED = _flag("PAYMENTS_ENABLED")
+# RazorpayX money-out: the virtual account number withdrawals are sent from.
+RAZORPAYX_ACCOUNT_NUMBER = os.getenv("RAZORPAYX_ACCOUNT_NUMBER", "").strip()
 
 # --- Marketplace rules (all overridable from admin_settings) ----------------
 # Defaults only. `admin_settings` is the source of truth once a row exists; these

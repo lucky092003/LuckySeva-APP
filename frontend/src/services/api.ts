@@ -331,15 +331,16 @@ export const api = {
     updateLocation: (id: string, coords: { latitude: number; longitude: number; accuracy?: number }) =>
       request<{ ok: boolean; updated_at: string }>('provider', `/bookings/${id}/location`, 'POST', coords),
     earnings: () => request<{ total_earnings: number; by_date: Record<string, number>; payouts: Payout[]; available: number }>('provider', '/earnings'),
-    // The backend stores these on `professionals` as bank_account / bank_upi_id.
-    // There is no IFSC column, so it reads back null and is not persisted.
-    payoutAccount: () => request<{ bank_account: string | null; bank_upi_id: string | null }>('provider', '/payout-account'),
+    // Where settlements go: stored on `professionals` bank_account / bank_upi_id /
+    // bank_ifsc and read back so the edit sheet shows what is already on file.
+    payoutAccount: () =>
+      request<{ bank_account: string | null; bank_upi_id: string | null; bank_ifsc?: string | null }>('provider', '/payout-account'),
     savePayoutAccount: (a: { bank_account_number?: string; bank_ifsc?: string; upi_id?: string }) =>
-      request<{ id: string; bank_account: string | null; bank_upi_id: string | null }>(
+      request<{ id: string; bank_account: string | null; bank_upi_id: string | null; bank_ifsc?: string | null }>(
         'provider',
         '/payout-account',
         'PUT',
-        { bank_account: a.bank_account_number, upi_id: a.upi_id }
+        { bank_account: a.bank_account_number, bank_ifsc: a.bank_ifsc, upi_id: a.upi_id }
       ),
     dashboard: () => request<{ active: number; completed_jobs: number; today_earnings: number; total_earnings: number }>('provider', '/dashboard'),
     requestPayout: (amount: number) => request<Payout>('provider', '/payouts', 'POST', { amount }),

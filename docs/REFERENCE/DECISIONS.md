@@ -537,41 +537,58 @@ def professionals(limit: int = Query(default=50, le=100)):
 
 ---
 
-## ADR-014: Manual Payouts
+## ADR-014: Instant Automated Payouts (supersedes Manual Payouts)
 
 **Status:** Accepted
-**Date:** October 2026
+**Date:** November 2026 (originally October 2026 as "Manual Payouts")
 
 ### Context
 
-Providers earn money from completed jobs. We needed a payout system.
+Providers earn money from completed jobs and withdraw it from the earnings
+screen. The original design parked every withdrawal in a `requested` state for
+an admin to approve and "settle" by hand - and even then nothing was actually
+transferred, just a DB status update with a typed-in reference.
 
 ### Decision
 
-Provider requests payout → Admin approves → Manual settlement (no auto-transfer).
+Provider confirms withdrawal → payout is transferred and settled in the same
+request. There is no admin approval step.
 
 ```python
-# Provider requests
+# Provider withdraws (details pulled from the payout account on their profile)
 POST /provider/payouts { amount: 5000 }
 
-# Admin approves
-PUT /admin/payouts/{id} { status: "completed", reference: "UPI123" }
+# Response is the completed payout already carrying the transfer receipt
+{ "id": "...", "status": "completed", "method": "upi",
+  "settlement_ref": "pout_x123 / UTR 9876",
+  "transfer": { "mode": "UPI", "via_gateway": true, "instant": true } }
 ```
 
-No actual payment integration (yet). Manual UPI/bank transfer outside system.
+Two execution modes live in `backend/app/payouts.py`:
+
+- **Gateway mode** – RazorpayX credentials present: contact + fund account
+  (upi/bank_account) + payout (UPI or IMPS mode), gateway id/UTR as the
+  settlement reference.
+- **Instant mode** – no gateway configured: the payout settles immediately
+  with an internal `INST-…` reference instead of waiting in a queue nobody
+  processed. It is labelled `via_gateway: false` so ops can tell the modes
+  apart.
+
+A failed transfer settles as `failed` (a terminal state), releases the hold,
+and notifies the provider that the amount is back in their balance.
 
 ### Consequences
 
 **Positive:**
-- Simple to implement
-- Full control over payouts
-- No payment gateway complexity
+- Providers see money land in minutes, not after a pending review
+- No admin queue; the admin console remains only as a manual override
+- Every payout carries a machine-generated reference (gateway id/UTR)
 
 **Negative:**
-- Manual work for admin
-- No automatic settlement
-- Delay between request and payment
-- Error-prone manual process
+- Real transfers require an activated RazorpayX account and its deposit
+  number in `RAZORPAYX_ACCOUNT_NUMBER`
+- Bug-in-lens: a bad auto-transfer cannot be intercepted before it leaves,
+  so validation (destination on file, minimum, available balance) is stricter
 
 ---
 

@@ -416,7 +416,7 @@ def get_payout_account(claims: dict = Depends(require_provider)):
     """
     res = (
         db().table("professionals")
-        .select("id, bank_upi_id, bank_account")
+        .select("id, bank_upi_id, bank_account, bank_ifsc")
         .eq("id", provider_id(claims))
         .maybe_single()
         .execute()
@@ -429,23 +429,29 @@ def get_payout_account(claims: dict = Depends(require_provider)):
 
 @router.put("/payout-account")
 def set_payout_account(body: dict, claims: dict = Depends(require_provider)):
-    """Where settlements should be sent. Recorded for admin to verify."""
+    """Where settlements should go. Bank transfers need the account and IFSC."""
     patch = {}
     upi = body.get("upi_id")
     bank = body.get("bank_account")
+    ifsc = body.get("bank_ifsc")
     if isinstance(upi, str):
         if upi.strip() and "@" not in upi.strip():
             raise ApiError(400, "That does not look like a UPI ID (it needs an @)")
         patch["bank_upi_id"] = upi.strip() or None
     if isinstance(bank, str):
         patch["bank_account"] = bank.strip() or None
+    if isinstance(ifsc, str):
+        clean = ifsc.strip().upper()
+        if clean and len(clean) != 11:
+            raise ApiError(400, "IFSC codes are exactly 11 characters")
+        patch["bank_ifsc"] = clean or None
     if not patch:
         raise ApiError(400, "Nothing to update")
     res = (
         db().table("professionals")
         .update(patch)
         .eq("id", provider_id(claims))
-        .select("id, bank_upi_id, bank_account")
+        .select("id, bank_upi_id, bank_account, bank_ifsc")
         .execute()
     )
     if not res.data:
