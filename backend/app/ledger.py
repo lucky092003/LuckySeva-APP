@@ -14,17 +14,19 @@ Both are derived, never incremented in place, so a repeated call is idempotent.
 
 import logging
 
+from . import payouts as transfer
 from . import payments as gateway
 from .config import AUTO_REFUND_MINUTES, PAYOUT_MIN_AMOUNT
 from .db import db, one
-from .events import insert_notification, setting_float, setting_minutes
+from .events import insert_notification, insert_provider_notification, setting_float, setting_minutes
 from .exceptions import ApiError
 from .pricing import round2
 
 logger = logging.getLogger(__name__)
 
 OPEN_PAYOUT_STATES = {"requested", "approved"}
-TERMINAL_PAYOUT_STATES = {"completed", "rejected", "cancelled"}
+TERMINAL_PAYOUT_STATES = {"completed", "rejected", "cancelled", "failed"}
+SETTLE_PAYOUT_STATES = {"approved", "completed", "rejected", "cancelled", "failed"}
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +91,15 @@ def provider_balance(client, professional_id: str) -> dict:
 
 
 def create_payout(client, professional_id: str, amount: float) -> dict:
-    """Open a payout request, refusing anything the provider has not earned."""
+    """Withdraw-and-settle in one request - there is no approval queue any more.
+
+    Validates the amount against what the professional has earned, records the
+    payout row, transfers the money immediately (gateway mode when RazorpayX
+    credentials exist, instant internal settlement otherwise), and settles the
+    row to `completed` or `failed` before returning. The returned dict carries
+    the extra `transfer` block so the caller can tell the provider how and
+    where the money went.
+    """
     amount = round2(amount)
     if amount <= 0:
         raise ApiError(400, "Enter a valid amount")
@@ -98,6 +108,26 @@ def create_payout(client, professional_id: str, amount: float) -> dict:
         raise ApiError(400, f"Minimum payout is Rs {balance['payout_minimum']:g}")
     if amount > balance["available"]:
         raise ApiError(400, f"You can withdraw at most Rs {balance['available']:g} right now")
+
+    professional = one(
+        client.table("professionals")
+        .select("id, name, phone, bank_upi_id, bank_account, bank_ifsc")
+        .eq("id", professional_id)
+        .maybe_single()
+        .execute()
+    )
+    if not professional:
+        raise ApiError(404, "Professional not found")
+    has_destination = bool(
+        (professional.get("bank_upi_id") or "").strip()
+        or ((professional.get("bank_account") or "").strip() and (professional.get("bank_ifsc") or "").strip())
+    )
+    if not has_destination:
+        raise ApiError(
+            400,
+            "Add a UPI ID or a bank account with IFSC in your profile before withdrawing",
+            "no_payout_account",
+        )
 
     row = one(
         client.table("payouts")
@@ -111,17 +141,76 @@ def create_payout(client, professional_id: str, amount: float) -> dict:
     client.table("audit_logs").insert(
         {"action": "payout_request", "detail": f"Rs {amount:g} requested by {professional_id}"}
     ).execute()
-    return row
+
+    try:
+        result = transfer.execute_payout(professional, amount)
+    except ApiError as exc:
+        result = {
+            "status": "failed",
+            "reference": "",
+            "note": exc.message,
+            "method": "UPI" if professional.get("bank_upi_id") else "BANK",
+            "via_gateway": transfer.transfer_configured(),
+        }
+
+    settled = settle_payout(
+        row["id"],
+        status=result["status"],
+        reference=result.get("reference") or "",
+        note=result.get("note") or "",
+    )
+    # The mode columns let the history lists show how each payout went out:
+    # `method` stays the coarse UPI/bank split the old rows used, and
+    # `transfer_*` records the automated execution itself.
+    mode = result.get("method") or "BANK"
+    client.table("payouts").update(
+        {
+            "method": "upi" if mode.upper() == "UPI" else "bank",
+            "transfer_mode": mode.upper(),
+            "via_gateway": bool(result.get("via_gateway")),
+        }
+    ).eq("id", row["id"]).execute()
+    settled = dict(settled)
+    settled["method"] = mode
+    settled["transfer"] = {
+        "via_gateway": result.get("via_gateway", False),
+        "mode": mode,
+        "reference": result.get("reference") or "",
+        "instant": True,
+    }
+
+    if result["status"] == "completed":
+        client.table("audit_logs").insert(
+            {
+                "action": "payout_instant_transfer",
+                "detail": f"Payout {row['id']} Rs {amount:g} auto-transferred ({result.get('method')}) ref {result.get('reference')}",
+            }
+        ).execute()
+        insert_provider_notification(
+            professional_id,
+            "payment",
+            "Money sent to your account",
+            f"Rs {amount:g} has been transferred to {result.get('method')} · Ref {result.get('reference')}",
+        )
+    else:
+        insert_provider_notification(
+            professional_id,
+            "payment",
+            "Withdrawal failed",
+            f"The Rs {amount:g} withdrawal could not go out ({result.get('note')}). The amount is back in your balance - please try again.",
+        )
+    return settled
 
 
 def settle_payout(payout_id: str, *, status: str, reference: str = "", note: str = "") -> dict:
-    """Move a payout to `approved`, `completed`, `rejected` or `cancelled`.
+    """Move a payout to `approved`, `completed`, `rejected`, `cancelled` or `failed`.
 
-    A rejection releases the held amount back to the provider's balance, which is
-    why `settled_out` ignores the status and the balance recomputes from scratch.
+    A rejection or failure releases the held amount back to the provider's
+    balance, which is why `settled_out` ignores the status and the balance
+    recomputes from scratch.
     """
-    if status not in {"approved", "completed", "rejected", "cancelled"}:
-        raise ApiError(400, "status must be approved, completed, rejected or cancelled")
+    if status not in SETTLE_PAYOUT_STATES:
+        raise ApiError(400, "status must be approved, completed, rejected, cancelled or failed")
     client = db()
     existing = one(
         client.table("payouts").select("*").eq("id", payout_id).maybe_single().execute()
@@ -131,10 +220,12 @@ def settle_payout(payout_id: str, *, status: str, reference: str = "", note: str
     if existing["status"] in TERMINAL_PAYOUT_STATES and existing["status"] != status:
         raise ApiError(400, f"Payout is already {existing['status']}")
 
-    patch = {"status": status, "note": note or existing.get("note") or ""}
+    patch = {"status": status, "note": note[:500] or existing.get("note") or ""}
     if status == "completed":
-        patch["settled_at"] = existing.get("settled_at") or None
+        patch["settled_at"] = existing.get("settled_at") or client_time()
         patch["settlement_ref"] = reference or existing.get("settlement_ref") or ""
+    if status in {"completed", "rejected", "cancelled", "failed"}:
+        patch["reviewed_at"] = existing.get("reviewed_at") or client_time()
     row = one(
         client.table("payouts").update(patch).eq("id", payout_id).select("*").maybe_single().execute()
     )

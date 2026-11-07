@@ -6,21 +6,31 @@ import { api } from '@/services/api';
 import { TopBar } from '@/components/PhoneShell';
 import { Card, Spinner, Button, EmptyState } from '@/components/ui';
 import { inr, formatDate } from '@/utils/format';
-import type { Booking } from '@/types';
+import type { Booking, Payout } from '@/types';
 
 const DAY_KEYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_KEYS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 type Period = 'week' | 'month' | 'year';
+type PayoutAccount = { bank_account: string | null; bank_upi_id: string | null; bank_ifsc?: string | null };
 
 export const ProviderEarningsScreen = () => {
-  const { providerId } = useApp();
+  const { providerId, navigate } = useApp();
   const { professional } = useProfessionalWithFallback(providerId);
   const { bookings, loading } = useProviderBookings(professional?.id || null, 'completed');
   const { payouts, reload: reloadPayouts } = usePayouts(professional?.id || null);
   const [showStatement, setShowStatement] = useState(false);
-  const [withdrawing, setWithdrawing] = useState(false);
   const [period, setPeriod] = useState<Period>('week');
+
+  /* Withdraw sheet: details → amount → instant transfer → receipt. */
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [account, setAccount] = useState<PayoutAccount | null>(null);
+  const [amount, setAmount] = useState('');
+  const [phase, setPhase] = useState<'form' | 'sending' | 'done'>('form');
+  const [result, setResult] = useState<Payout | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const sending = phase === 'sending';
 
   const completed = bookings.filter((b) => b.status === 'completed');
   const totalEarnings = completed.reduce((s, b) => s + Number(b.total_amount), 0);
@@ -148,12 +158,41 @@ export const ProviderEarningsScreen = () => {
   const todayDate = now.getDate();
   const todayMonth = now.getMonth();
 
+  const openWithdraw = () => {
+    if (available <= 0 || hasPendingWithdraw || phase === 'sending') return;
+    setShowWithdraw(true);
+    setPhase('form');
+    setResult(null);
+    setErrorMessage('');
+    setAmount(String(Math.floor(available)));
+    setAccountLoading(true);
+    api.provider
+      .payoutAccount()
+      .then(setAccount)
+      .catch(() => setAccount(null))
+      .finally(() => setAccountLoading(false));
+  };
+
+  const hasUpi = Boolean(account?.bank_upi_id);
+  const hasBank = Boolean(account?.bank_account) && Boolean(account?.bank_ifsc);
+  const hasDestination = hasUpi || hasBank;
+
   const withdraw = async () => {
-    if (!professional || available <= 0 || hasPendingWithdraw) return;
-    setWithdrawing(true);
-    await api.provider.requestPayout(available).catch(() => {});
-    setWithdrawing(false);
-    reloadPayouts();
+    const value = Number(amount);
+    if (!value || value <= 0) return;
+    setPhase('sending');
+    setErrorMessage('');
+    try {
+      const payout = await api.provider.requestPayout(value);
+      setResult(payout);
+      setPhase('done');
+      reloadPayouts();
+    } catch (err) {
+      // A failed transfer releases the amount back to the balance - say so,
+      // keep the sheet open, and drop the provider back to the editable form.
+      setErrorMessage(err instanceof Error ? err.message : 'Transfer failed. Please try again.');
+      setPhase('form');
+    }
   };
 
   const today = new Date().toLocaleDateString('en-IN', {
@@ -181,8 +220,8 @@ export const ProviderEarningsScreen = () => {
             <Button variant="outline" onClick={() => setShowStatement(true)} ariaLabel="View earnings statement" className="gap-1.5 px-2.5 py-1.5 text-xs">
               <Icons.FileText size={13} />
             </Button>
-            <Button onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="gap-1.5 px-2.5 py-1.5 text-xs">
-              <Icons.ArrowDownToLine size={13} /> {withdrawing ? '...' : hasPendingWithdraw ? 'Pending' : 'Withdraw'}
+            <Button onClick={openWithdraw} disabled={sending || available <= 0 || hasPendingWithdraw} className="gap-1.5 px-2.5 py-1.5 text-xs">
+              <Icons.ArrowDownToLine size={13} /> {sending ? '...' : hasPendingWithdraw ? 'Pending' : 'Withdraw'}
             </Button>
           </div>
         }
@@ -199,8 +238,8 @@ export const ProviderEarningsScreen = () => {
               <p className="mt-1 text-3xl font-extrabold tracking-tight">{inr(available)}</p>
               {hasPendingWithdraw && <p className="mt-1 text-[11px] text-white/80">Withdrawal of {inr(withdrawn)} requested — processing</p>}
               <div className="mt-4 flex gap-2">
-                <Button variant="secondary" onClick={withdraw} disabled={withdrawing || available <= 0 || hasPendingWithdraw} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
-                  {withdrawing ? 'Requesting...' : <><Icons.ArrowDownToLine size={15} /> {hasPendingWithdraw ? 'Withdrawal Pending' : 'Withdraw'}</>}
+                <Button variant="secondary" onClick={openWithdraw} disabled={sending || available <= 0 || hasPendingWithdraw} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
+                  {sending ? 'Requesting...' : <><Icons.ArrowDownToLine size={15} /> {hasPendingWithdraw ? 'Withdrawal Pending' : 'Withdraw'}</>}
                 </Button>
                 <Button variant="secondary" onClick={() => setShowStatement(true)} className="flex-1 bg-white/20 py-2.5 text-xs hover:bg-white/30">
                   <Icons.FileText size={15} /> Statement
@@ -427,6 +466,177 @@ export const ProviderEarningsScreen = () => {
         </div>
       </div>
 
+      {showWithdraw && (
+        <div className="absolute inset-0 z-40 flex flex-col bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <button onClick={() => setShowWithdraw(false)} className="text-gray-400 dark:text-gray-500" aria-label="Close withdraw sheet">
+              <Icons.X size={22} />
+            </button>
+            <p className="flex-1 text-base font-bold text-gray-900 dark:text-gray-100">
+              {phase === 'done' ? 'Transfer complete' : 'Withdraw money'}
+            </p>
+            {phase === 'form' && (
+              <span className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
+                Instant · No approval
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar p-4">
+            {phase === 'done' && result ? (
+              /* ---------- Receipt ---------- */
+              <div className="flex flex-1 flex-col items-center justify-center py-6">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                  <Icons.Check size={32} className="text-emerald-600" strokeWidth={3} />
+                </div>
+                <p className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{inr(result.amount)}</p>
+                <p className="mt-1 text-sm font-semibold text-emerald-600">
+                  sent to {result.method === 'upi' ? 'your UPI' : 'your bank account'}
+                </p>
+                {result.settlement_ref && (
+                  <p className="mt-4 w-full max-w-xs break-all rounded-xl bg-white dark:bg-gray-900 px-4 py-3 text-center text-xs shadow-sm">
+                    <span className="text-gray-400 dark:text-gray-500">Reference · </span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{result.settlement_ref}</span>
+                  </p>
+                )}
+                {result.note && (
+                  <p className="mt-3 max-w-xs text-center text-[11px] leading-4 text-gray-400 dark:text-gray-500">{result.note}</p>
+                )}
+                <Button onClick={() => setShowWithdraw(false)} className="mt-8 w-full max-w-xs py-2.5 text-sm">
+                  Done
+                </Button>
+              </div>
+            ) : (
+              /* ---------- Form ---------- */
+              <>
+                {errorMessage && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 p-3.5">
+                    <Icons.AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-500" />
+                    <div>
+                      <p className="text-xs font-bold text-red-600 dark:text-red-400">Transfer did not go through</p>
+                      <p className="mt-0.5 text-[11px] leading-4 text-red-500/90 dark:text-red-400/80">
+                        {errorMessage} The amount is back in your balance — please try again.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Payout destination on record */}
+                <div className="relative overflow-hidden rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-white dark:bg-gray-900 p-4 shadow-sm">
+                  {accountLoading ? (
+                    <div className="flex items-center gap-3 py-1">
+                      <Spinner className="!py-0" />
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Loading payout details…</span>
+                    </div>
+                  ) : !account ? (
+                    <>
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Add where the money goes</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        A UPI ID or bank account is needed before a withdrawal can be created.
+                      </p>
+                      <Button onClick={() => navigate({ name: 'provider-profile' })} variant="outline" className="mt-3 gap-1.5 py-2 text-xs">
+                        <Icons.CreditCard size={13} /> Add payout details
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+                        {hasUpi ? <Icons.Smartphone size={18} /> : <Icons.Landmark size={18} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                            {hasUpi ? 'UPI transfer' : 'Bank transfer (IMPS)'}
+                          </p>
+                          <button
+                            onClick={() => navigate({ name: 'provider-profile' })}
+                            className="shrink-0 text-[11px] font-semibold text-emerald-600 underline-offset-2 hover:underline"
+                          >
+                            Change
+                          </button>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                          {account.bank_upi_id
+                            ? account.bank_upi_id
+                            : `••••${(account.bank_account || '').slice(-4)} · IFSC ${account.bank_ifsc}`}
+                        </p>
+                        {!hasDestination && (
+                          <p className="mt-1 text-[11px] font-semibold text-red-500">
+                            Save a UPI ID or a bank account with IFSC on your profile first.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div className="mt-4 rounded-2xl bg-white dark:bg-gray-900 p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="withdraw-amount" className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      Amount
+                    </label>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      Available <span className="font-bold text-gray-900 dark:text-gray-100">{inr(available)}</span>
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="text-2xl font-extrabold text-gray-400 dark:text-gray-500">₹</span>
+                    <input
+                      id="withdraw-amount"
+                      type="number"
+                      inputMode="decimal"
+                      min={1}
+                      step={1}
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+                      className="min-w-0 flex-1 bg-transparent text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAmount(String(Math.floor(available)))}
+                      className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-[11px] font-bold text-emerald-600"
+                    >
+                      Full
+                    </button>
+                  </div>
+                </div>
+
+                {/* How it works now */}
+                <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/20 p-3.5">
+                  <Icons.Zap size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p className="text-[11px] leading-4 text-emerald-700 dark:text-emerald-300">
+                    Transfers go out the moment you confirm — no admin approval to wait for.
+                    UPI usually lands in minutes; bank payouts settle over IMPS the same day.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {phase !== 'done' && account && (
+            <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+              <Button
+                onClick={withdraw}
+                disabled={!hasDestination || !Number(amount) || Number(amount) <= 0 || sending}
+                className="flex h-12 w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                {sending ? (
+                  <Spinner className="!py-0" />
+                ) : (
+                  <>
+                    <Icons.Zap size={15} /> Transfer {inr(Number(amount) || 0)} now
+                  </>
+                )}
+              </Button>
+              <p className="mt-2 text-center text-[10px] text-gray-400 dark:text-gray-500">
+                By continuing you confirm the destination on your profile is yours.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {showStatement && (
         <div className="absolute inset-0 z-40 flex flex-col bg-gray-50 dark:bg-gray-950">
           <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
@@ -438,15 +648,28 @@ export const ProviderEarningsScreen = () => {
               <>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Withdrawals</h3>
                 {payouts.map((p) => (
-                  <Card key={p.id} className="flex items-center gap-3 p-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${p.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : p.status === 'failed' ? 'bg-red-50 dark:bg-red-900/30 text-red-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600'}`}>
-                      <Icons.ArrowDownToLine size={16} />
+                  <Card key={p.id} className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${p.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' : p.status === 'failed' ? 'bg-red-50 dark:bg-red-900/30 text-red-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600'}`}>
+                        <Icons.ArrowDownToLine size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-semibold capitalize text-gray-900 dark:text-gray-100`}>
+                          {p.status}{p.transfer_mode ? ` · ${p.transfer_mode}` : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(p.created_at)}</p>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">-{inr(p.amount)}</span>
                     </div>
-                    <div className="flex-1">
-                      <p className={`text-sm font-semibold capitalize text-gray-900 dark:text-gray-100`}>{p.status}</p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500">{formatDate(p.created_at)}</p>
-                    </div>
-                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">-{inr(p.amount)}</span>
+                    {p.status === 'completed' && p.settlement_ref && (
+                      <p className="mt-2 min-w-0 break-all rounded-lg bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                     <span className="font-semibold text-gray-500 dark:text-gray-400">Ref · </span>
+                        {p.settlement_ref}
+                      </p>
+                    )}
+                    {p.status === 'failed' && p.note && (
+                      <p className="mt-2 text-[10px] text-red-400 dark:text-red-500/80">{p.note}</p>
+                    )}
                   </Card>
                 ))}
                 <div className="h-px bg-gray-200 dark:bg-gray-700" />

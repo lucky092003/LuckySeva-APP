@@ -196,5 +196,8 @@ export type Payout = {
   note?: string | null;
   settled_at?: string | null;
   settlement_ref?: string | null;
+  method?: string | null;
+  transfer_mode?: string | null;
+  via_gateway?: boolean | null;
   created_at: string;
 };
