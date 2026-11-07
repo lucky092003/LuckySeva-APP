@@ -10,6 +10,10 @@ jobs:
   changelog:
     name: Changelog
     runs-on: ubuntu-latest
+    # Dependabot PRs bump dependency manifests only. Expecting a CHANGELOG
+    # entry for every automated dependency bump is noise, and the check has
+    # failed on every dependabot PR so far - so bot-authored PRs are exempt.
+    if: github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v7
         with:
