@@ -98,6 +98,8 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [method, setMethod] = useState<string>('cash');
   /**
    * Coupons are read from the database (admin-managed), never guessed
    * client-side: the old hardcoded LUCKY20/SEVA50/CLEAN100 map let the review
