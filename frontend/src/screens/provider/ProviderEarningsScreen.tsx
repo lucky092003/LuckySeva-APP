@@ -558,7 +558,9 @@ export const ProviderEarningsScreen = () => {
                         <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                           {account.bank_upi_id
                             ? account.bank_upi_id
-                            : `••••${(account.bank_account || '').slice(-4)} · IFSC ${account.bank_ifsc}`}
+                            : account.bank_ifsc
+                            ? `••••${(account.bank_account || '').slice(-4)} · IFSC ${account.bank_ifsc}`
+                            : `••••${(account.bank_account || '').slice(-4)} · IFSC pending`}
                         </p>
                         {!hasDestination && (
                           <p className="mt-1 text-[11px] font-semibold text-red-500">
