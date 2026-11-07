@@ -1059,11 +1059,37 @@ export const AdminCoupons = () => {
 export const AdminPayouts = () => {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
   const [ref, setRef] = useState<Record<string, string>>({});
+  const [rowError, setRowError] = useState<Record<string, string>>({});
+
+  // Instant payouts settle withdrawals automatically, so most rows arrive
+  // terminal and the manual override below only applies to what is still open.
+  const TERMINAL = new Set(['completed', 'rejected', 'cancelled', 'failed']);
 
   const load = () => { setLoading(true); api.admin.payouts().then((p) => { setPayouts(p || []); setLoading(false); }).catch(() => setLoading(false)); };
   useEffect(load, []);
+
+  const settle = async (p: Payout, status: 'completed' | 'rejected') => {
+    setRowError((s) => ({ ...s, [p.id]: '' }));
+    if (status === 'completed' && !(ref[p.id] || '').trim()) {
+      setRowError((s) => ({ ...s, [p.id]: 'Enter the UPI or bank reference before marking paid' }));
+      return;
+    }
+    setBusyId(p.id);
+    try {
+      await api.admin.settlePayout(p.id, {
+        status,
+        note: note[p.id] || undefined,
+        ...(status === 'completed' ? { reference: (ref[p.id] || '').trim() } : {}),
+      });
+      load();
+    } catch (err) {
+      setBusyId(null);
+      setRowError((s) => ({ ...s, [p.id]: err instanceof Error ? err.message : 'Something went wrong' }));
+    }
+  };
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
 
@@ -1073,8 +1099,58 @@ export const AdminPayouts = () => {
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <Card className="overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Provider</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Note/Ref</th><th className="px-5 py-3">Actions</th></tr></thead>
-<tbody>{payouts.map((p) => (<tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3">{p.professional_id}</td><td className="px-5 py-3 font-semibold">{inr(p.amount)}</td><td className="px-5 py-3"><Badge tone={p.status === 'completed' ? 'success' : p.status === 'rejected' ? 'danger' : 'warning'}>{p.status}</Badge></td><td className="px-5 py-3 space-y-1"><Input placeholder="Note" value={note[p.id]||''} onChange={(e)=>setNote((s)=>({...s,[p.id]:e.target.value}))}/><Input placeholder="Settlement Ref" value={ref[p.id]||''} onChange={(e)=>setRef((s)=>({...s,[p.id]:e.target.value}))}/></td><td className="px-5 py-3 flex gap-2"><Button size="sm" onClick={async ()=>{await api.admin.settlePayout(p.id,{status:'completed',note:note[p.id]||undefined,reference:ref[p.id]||undefined}); load();}}>Approve</Button><Button size="sm" variant="danger" onClick={async ()=>{await api.admin.settlePayout(p.id,{status:'rejected',note:note[p.id]||undefined}); load();}}>Reject</Button></td></tr>))}</tbody>
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Provider</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Destination</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Note / Ref</th><th className="px-5 py-3">Actions</th></tr></thead>
+            <tbody>{payouts.map((p) => {
+              const terminal = TERMINAL.has(p.status);
+              const busy = busyId === p.id;
+              return (
+                <tr key={p.id} className="border-b border-gray-50 align-top hover:bg-gray-50/60">
+                  <td className="px-5 py-3">
+                    <p className="font-semibold text-gray-900">{p.professional?.name || p.professional_id.slice(0, 8)}</p>
+                    {p.professional?.phone && <p className="text-xs text-gray-400">{p.professional.phone}</p>}
+                  </td>
+                  <td className="px-5 py-3 font-semibold">{inr(p.amount)}</td>
+                  <td className="px-5 py-3 text-xs text-gray-500">
+                    {p.professional?.bank_upi_id || (p.professional?.bank_account ? `A/C ••${p.professional.bank_account.slice(-4)}` : '—')}
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge tone={p.status === 'completed' ? 'success' : p.status === 'rejected' || p.status === 'failed' ? 'danger' : 'warning'}>{p.status}</Badge>
+                    {p.transfer_mode ? (
+                      <p className="mt-1 text-[10px] text-gray-400">
+                        {p.transfer_mode} · {p.via_gateway ? 'gateway' : 'instant'}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="px-5 py-3 space-y-1">
+                    {terminal ? (
+                      <>
+                        {p.settlement_ref && <p className="text-xs font-medium text-gray-700">{p.settlement_ref}</p>}
+                        {p.note && <p className="text-xs text-gray-400">{p.note}</p>}
+                        {!p.settlement_ref && !p.note && <span className="text-xs text-gray-300">—</span>}
+                      </>
+                    ) : (
+                      <>
+                        <Input placeholder="Note" value={note[p.id] || ''} onChange={(e) => setNote((s) => ({ ...s, [p.id]: e.target.value }))} />
+                        <Input placeholder="Settlement Ref (required)" value={ref[p.id] || ''} onChange={(e) => setRef((s) => ({ ...s, [p.id]: e.target.value }))} />
+                      </>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    {terminal ? (
+                      <span className="text-[10px] uppercase tracking-wider text-gray-300">
+                        {p.status === 'completed' ? (p.via_gateway ? 'Auto-transferred' : 'Settled') : 'No action'}
+                      </span>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button size="sm" disabled={busy} onClick={() => settle(p, 'completed')}>{busy ? '…' : 'Approve'}</Button>
+                        <Button size="sm" variant="danger" disabled={busy} onClick={() => settle(p, 'rejected')}>Reject</Button>
+                      </div>
+                    )}
+                    {rowError[p.id] && <p className="mt-1 max-w-[180px] text-[10px] font-medium text-red-500">{rowError[p.id]}</p>}
+                  </td>
+                </tr>
+              );
+            })}</tbody>
           </table>
         </Card>
       </div>
