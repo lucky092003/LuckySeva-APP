@@ -1,6 +1,6 @@
 # Changelog
 
-**Last updated:** 2026-11-07
+**Last updated:** 2026-11-08
 
 All notable changes to **LuckySeva** are documented in this file.
 
@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Sections are headed by the date they were written (`## YYYY-MM-DD`), newest first. The
 `Last updated` line is bumped by hand when a new dated section is added.
+
+## 2026-11-08
+
+### Fixed
+- Restored the `couponError` and payment-method state declarations in `BookingFlowScreen`, fixing the missing state references introduced during the booking and coupon flow updates.
 
 ## 2026-11-07
 
