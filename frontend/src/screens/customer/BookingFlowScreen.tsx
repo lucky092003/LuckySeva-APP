@@ -42,12 +42,6 @@ const BOOKING_DAYS = 7;
 /** Notice a professional needs before a same-day visit, in minutes. */
 const MIN_LEAD_MINUTES = 120;
 
-const COUPONS: Record<string, { discount: number; label: string; desc: string }> = {
-  LUCKY20: { discount: 0.2, label: '20% OFF', desc: 'Flat 20% off (first booking)' },
-  SEVA50: { discount: 50, label: '₹50 OFF', desc: 'Flat ₹50 off on any service' },
-  CLEAN100: { discount: 100, label: '₹100 OFF', desc: '₹100 off on cleaning services' },
-};
-
 /** Flat fee added on top of whichever professional the customer picks. */
 const VISIT_FEE = 49;
 
@@ -72,6 +66,15 @@ const PAYMENT_METHODS = [
 const sortSavedAddresses = (list: AddressRow[]) =>
   [...list].sort((a, b) => Number(b.is_default) - Number(a.is_default));
 
+/** Human label for a coupon: percent codes may arrive as 0.2 or 20. */
+const couponLabel = (c: { discount_type: 'percent' | 'flat'; discount_value: number }) => {
+  if (c.discount_type === 'percent') {
+    const pct = Math.round(c.discount_value > 1 ? c.discount_value : c.discount_value * 100);
+    return `${pct}% OFF`;
+  }
+  return `₹${Math.round(c.discount_value)} OFF`;
+};
+
 export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: string; professionalId?: string }) => {
   const { navigate, customer } = useApp();
   const coords = useCustomerCoords();
@@ -95,9 +98,28 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [method, setMethod] = useState<string>('cash');
+  /**
+   * Coupons are read from the database (admin-managed), never guessed
+   * client-side: the old hardcoded LUCKY20/SEVA50/CLEAN100 map let the review
+   * step show a discount the server knew nothing about, so the invoice
+   * charged full price. The final yes/no still comes from the server quote.
+   */
+  type CouponRow = {
+    code: string;
+    description: string;
+    discount_type: 'percent' | 'flat';
+    discount_value: number;
+    category_slug: string | null;
+    min_amount: number | null;
+    note: string | null;
+  };
+  const [coupons, setCoupons] = useState<CouponRow[]>([]);
+  useEffect(() => {
+    api.customer.coupons().then((c) => setCoupons(c || [])).catch(() => setCoupons([]));
+  }, []);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponRow | null>(null);
 
   const address = composeAddress(addr);
   const addrErrors = validateAddress(addr);
@@ -249,6 +271,45 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
     };
   }, [candidates, proServices]);
 
+  /**
+   * The server owns the price. `/quote` runs the exact helper `create_booking`
+   * does (professional's offered price, fees, coupon rules, redemption caps),
+   * so the total shown here is the total that will be charged — including why
+   * an applied coupon does not work. A failed call just falls back to the
+   * local calculation below rather than blocking checkout.
+   */
+  const [serverQuote, setServerQuote] = useState<{ total: number; discount: number; error: string | null } | null>(null);
+  const [quoteFailed, setQuoteFailed] = useState(false);
+  useEffect(() => {
+    if (!service?.id) return;
+    let active = true;
+    api.customer
+      .quote({
+        service_id: service.id,
+        professional_id: picked?.id || null,
+        visit_fee: VISIT_FEE,
+        priority_fee: picked && candidates.some((p) => p.id === picked.id) ? PRIORITY_FEE : 0,
+        coupon_code: appliedCoupon?.code || null,
+      })
+      .then((q) => {
+        if (!active) return;
+        setQuoteFailed(false);
+        setServerQuote({ total: q.total, discount: q.discount, error: q.error });
+        // An unusable code must not sit applied: bounce it back to the input
+        // with the server's reason instead of paying full price silently.
+        if (q.error && appliedCoupon) {
+          setAppliedCoupon(null);
+          setCouponError(q.error);
+        }
+      })
+      .catch(() => {
+        if (active) setQuoteFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [service?.id, picked?.id, appliedCoupon, candidates]);
+
   /** What this professional actually charges for the selected service. */
   const priceFor = (proId: string, floor: number) => {
     const match = proServices[proId]?.find((s) => s.id === serviceId);
@@ -269,30 +330,48 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
   let discountAmount = 0;
   if (appliedCoupon) {
     const preDiscount = base + visitFee + priorityFee;
-    if (appliedCoupon.discount < 1) {
-      discountAmount = Math.round(preDiscount * appliedCoupon.discount);
+    if (appliedCoupon.discount_type === 'percent') {
+      const pct =
+        appliedCoupon.discount_value > 1
+          ? Math.min(appliedCoupon.discount_value / 100, 1)
+          : appliedCoupon.discount_value;
+      discountAmount = Math.min(Math.round(preDiscount * pct), preDiscount);
     } else {
-      discountAmount = Math.min(appliedCoupon.discount, preDiscount);
+      discountAmount = Math.min(appliedCoupon.discount_value, preDiscount);
     }
   }
-  const total = base + visitFee + priorityFee - discountAmount;
+  const localTotal = base + visitFee + priorityFee - discountAmount;
+  // The quote endpoint is the same helper `create_booking` uses, so its total
+  // is the invoice total. Only a failed quote leaves the local preview up.
+  const serverTotal = serverQuote && !quoteFailed ? serverQuote.total : null;
+  const total = serverTotal ?? localTotal;
+  const shownDiscount = serverQuote && !quoteFailed ? serverQuote.discount : discountAmount;
 
   const applyCoupon = () => {
     const code = couponCode.toUpperCase().trim();
     setCouponError('');
     if (!code) return;
-    const coupon = COUPONS[code];
-    if (!coupon) {
-      setCouponError('Invalid coupon code');
-      setAppliedCoupon(null);
+    const row = coupons.find((c) => c.code === code);
+    if (!row) {
+      // Not in the loaded list (maybe the list failed to load). Let the server
+      // quote judge it - it answers with the reason when a code is unusable.
+      setAppliedCoupon({
+        code,
+        description: '',
+        discount_type: 'flat',
+        discount_value: 0,
+        category_slug: null,
+        min_amount: null,
+        note: null,
+      });
       return;
     }
-    if (code === 'CLEAN100' && service.name.toLowerCase().indexOf('clean') === -1) {
-      setCouponError('This coupon is valid only on cleaning services');
-      setAppliedCoupon(null);
+    const pre = base + visitFee + priorityFee;
+    if (row.min_amount && pre < row.min_amount) {
+      setCouponError(`Minimum order of ₹${Math.round(row.min_amount)} for this coupon`);
       return;
     }
-    setAppliedCoupon({ code, discount: coupon.discount, label: coupon.label });
+    setAppliedCoupon(row);
   };
 
   const removeCoupon = () => {
@@ -353,6 +432,9 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
         // displayed total and the stored total agree before the response.
         priority_fee: priorityFee,
         total_amount: total,
+        // The server re-prices this anyway; sending it makes an unusable code
+        // a 400 ("coupon_invalid") instead of a quiet full-price booking.
+        coupon_code: appliedCoupon?.code || null,
         payment_method: method,
         payment_status: method === 'cash' ? 'cash' : 'pending',
         status: 'confirmed',
@@ -773,8 +855,8 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                     <Icons.TicketPercent size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-emerald-700">{appliedCoupon.code} · {appliedCoupon.label}</p>
-                    <p className="text-[11px] text-gray-500">You saved {inr(discountAmount)}</p>
+                    <p className="text-sm font-bold text-emerald-700">{appliedCoupon.code} · {couponLabel(appliedCoupon)}</p>
+                    <p className="text-[11px] text-gray-500">You saved {inr(shownDiscount)}</p>
                   </div>
                   <button onClick={removeCoupon} className="text-xs font-semibold text-red-400">Remove</button>
                 </Card>
@@ -793,15 +875,18 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                   </div>
                   {couponError && <p className="mt-1.5 text-xs text-red-500">{couponError}</p>}
                   <div className="mt-2 space-y-1.5">
-                    {Object.entries(COUPONS).map(([code, c]) => (
+                    {coupons.map((c) => (
                       <button
-                        key={code}
-                        onClick={() => { setCouponCode(code); setCouponError(''); }}
+                        key={c.code}
+                        onClick={() => { setCouponCode(c.code); setCouponError(''); }}
                         className="flex w-full items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2.5 text-left"
                       >
                         <Icons.TicketPercent size={15} className="text-emerald-500" />
-                        <span className="text-xs font-bold text-gray-900">{code}</span>
-                        <span className="text-[11px] text-gray-500">· {c.desc}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs font-bold text-gray-900">{c.code}</span>
+                          {c.note && <span className="ml-1.5 text-[10px] text-gray-400">· {c.note}</span>}
+                          <span className="ml-1.5 text-[11px] text-gray-500">· {c.description || couponLabel(c)}</span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -834,10 +919,10 @@ export const BookingFlowScreen = ({ serviceId, professionalId }: { serviceId: st
                     </span>
                   </div>
                 )}
-                {discountAmount > 0 && (
+                {shownDiscount > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-600">Discount ({appliedCoupon?.code})</span>
-                    <span className="text-xs font-bold text-emerald-600">- {inr(discountAmount)}</span>
+                    <span className="text-xs font-bold text-emerald-600">- {inr(shownDiscount)}</span>
                   </div>
                 )}
                 <div className="border-t border-gray-100 pt-2.5">

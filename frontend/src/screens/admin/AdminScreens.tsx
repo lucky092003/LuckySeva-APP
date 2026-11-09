@@ -255,6 +255,12 @@ export const AdminProviders = () => {
   const [reviewing, setReviewing] = useState<Professional | null>(null);
   const [reviewNote, setReviewNote] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
+  /** Set when the edit modal is open for this provider. */
+  const [editing, setEditing] = useState<Professional | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [busyPro, setBusyPro] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', price: '', experience: '', serviceArea: '', status: '' });
   const [kycFilter, setKycFilter] = useState<'all' | 'pending'>('all');
 
   const load = () => {
@@ -295,6 +301,44 @@ export const AdminProviders = () => {
   const available = pros.filter((p) => p.status === 'available').length;
   const pendingKyc = pros.filter((p) => kycStatus(p) === 'pending').length;
   const filteredPros = kycFilter === 'pending' ? pros.filter((p) => kycStatus(p) === 'pending') : pros;
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSavingEdit(true);
+    // Only send what changed shape-wise: the backend ignores non-string
+    // clears for strings and would otherwise zero numbers on empty inputs.
+    const patch: Record<string, unknown> = {
+      name: editForm.name.trim(),
+      status: editForm.status,
+      service_area: editForm.serviceArea.trim(),
+    };
+    if (editForm.phone.trim()) patch.phone = editForm.phone.trim();
+    if (editForm.email.trim()) patch.email = editForm.email.trim();
+    if (editForm.price) patch.starting_price = Number(editForm.price);
+    if (editForm.experience) patch.experience_years = Number(editForm.experience);
+    try {
+      await api.admin.updateProfessional(editing.id, patch);
+      setActionError('');
+      setEditing(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update the provider');
+    }
+    setSavingEdit(false);
+    load();
+  };
+
+  const removePro = async (p: Professional) => {
+    if (!window.confirm(`Delete provider ${p.name}? This cannot be undone.`)) return;
+    setBusyPro(p.id);
+    try {
+      await api.admin.deleteProfessional(p.id);
+      setActionError('');
+      load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete the provider');
+    }
+    setBusyPro(null);
+  };
 
   return (
     <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
@@ -403,6 +447,31 @@ export const AdminProviders = () => {
                   </button>
                 )}
               </div>
+              {/* Edit / delete the record itself, separate from the KYC flow. */}
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-[10px] text-gray-400">
+                  {p.phone || 'No phone on file'}
+                </p>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => {
+                      setEditing(p);
+                      setEditForm({ name: p.name, phone: p.phone || '', email: p.email || '', price: String(p.starting_price ?? ''), experience: String(p.experience_years ?? ''), serviceArea: p.service_area || '', status: p.status || 'available' });
+                      setActionError('');
+                    }}
+                    className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => removePro(p)}
+                    disabled={busyPro === p.id}
+                    className="rounded-lg border border-red-200 px-2.5 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </Card>
           ))}
         </div>
@@ -502,6 +571,52 @@ export const AdminProviders = () => {
           </div>
         </Modal>
       )}
+
+      {editing && (
+        <Modal title={`Edit Provider · ${editing.name}`} onClose={() => setEditing(null)}>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Full name</span>
+              <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Phone</span>
+                <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="10-digit mobile" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Email</span>
+                <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} type="email" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Starting price (₹)</span>
+                <input value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value.replace(/[^\d]/g, '') })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-gray-700">Experience (yrs)</span>
+                <input value={editForm.experience} onChange={(e) => setEditForm({ ...editForm, experience: e.target.value.replace(/[^\d]/g, '') })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Service area</span>
+              <input value={editForm.serviceArea} onChange={(e) => setEditForm({ ...editForm, serviceArea: e.target.value })} placeholder="e.g. Indiranagar, Bangalore" className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-gray-700">Availability status</span>
+              <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100">
+                <option value="available">available</option>
+                <option value="busy">busy</option>
+              </select>
+            </label>
+            {actionError && <p className="text-xs font-semibold text-red-500">{actionError}</p>}
+            <Button onClick={saveEdit} disabled={savingEdit || !editForm.name.trim()} className="w-full">
+              {savingEdit ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -513,6 +628,10 @@ export const AdminServices = () => {
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
+  /** Set when the modal edits an existing service instead of creating one. */
+  const [editing, setEditing] = useState<Service | null>(null);
+  const [busyService, setBusyService] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
   const [form, setForm] = useState({ name: '', category: '', price: '0', duration: '1 hr', popular: 'true' });
 
   const load = () => {
@@ -539,19 +658,46 @@ export const AdminServices = () => {
     if (!form.name.trim() || !form.category) return;
     setAdding(true);
     const cat = cats.find((c) => c.id === form.category);
-    await api.admin
-      .createService({
-        name: form.name.trim(),
-        category_slug: cat?.slug || '',
-        description: `${form.name.trim()} service provided by verified professionals.`,
-        starting_price: Number(form.price) || 0,
-        estimated_duration: form.duration,
-        popular: form.popular === 'true',
-      })
-      .catch(() => {});
+    try {
+      if (editing) {
+        await api.admin.updateService(editing.id, {
+          name: form.name.trim(),
+          starting_price: Number(form.price) || 0,
+          estimated_duration: form.duration,
+          popular: form.popular === 'true',
+        });
+        setActionError('');
+      } else {
+        await api.admin.createService({
+          name: form.name.trim(),
+          category_slug: cat?.slug || '',
+          description: `${form.name.trim()} service provided by verified professionals.`,
+          starting_price: Number(form.price) || 0,
+          estimated_duration: form.duration,
+          popular: form.popular === 'true',
+        });
+        setActionError('');
+      }
+      setShowAdd(false);
+      setEditing(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not save the service');
+    }
     setAdding(false);
-    setShowAdd(false);
     load();
+  };
+
+  const removeService = async (s: Service) => {
+    if (!window.confirm(`Delete service ${s.name}? Future bookings will not be able to pick it.`)) return;
+    setBusyService(s.id);
+    try {
+      await api.admin.deleteService(s.id);
+      setActionError('');
+      load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete the service');
+    }
+    setBusyService(null);
   };
 
   const filtered = activeCat ? services.filter((s) => s.category_id === activeCat) : services;
@@ -595,6 +741,7 @@ export const AdminServices = () => {
                 <th className="px-5 py-3 font-semibold">Duration</th>
                 <th className="px-5 py-3 font-semibold">Starting Price</th>
                 <th className="px-5 py-3 font-semibold">Popular</th>
+                <th className="px-5 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -614,6 +761,27 @@ export const AdminServices = () => {
                     <td className="px-5 py-3 text-gray-500">{s.estimated_duration}</td>
                     <td className="px-5 py-3 font-semibold text-emerald-600">{inr(s.starting_price)}</td>
                     <td className="px-5 py-3">{s.popular ? <Badge tone="success">Popular</Badge> : <span className="text-gray-300">—</span>}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditing(s);
+                            setForm({ name: s.name, category: s.category_id || '', price: String(s.starting_price), duration: s.estimated_duration || '1 hr', popular: String(s.popular) });
+                            setShowAdd(true);
+                          }}
+                          className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeService(s)}
+                          disabled={busyService === s.id}
+                          className="rounded-lg border border-red-200 px-2.5 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -622,8 +790,10 @@ export const AdminServices = () => {
         </Card>
       </div>
 
+      {actionError && <p className="mb-3 text-xs font-semibold text-red-500">{actionError}</p>}
+
       {showAdd && (
-        <Modal title="Add Service" onClose={() => setShowAdd(false)}>
+        <Modal title={editing ? `Edit Service · ${editing.name}` : 'Add Service'} onClose={() => { setShowAdd(false); setEditing(null); }}>
           <div className="space-y-3">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold text-gray-700">Service name</span>
@@ -652,7 +822,7 @@ export const AdminServices = () => {
               <span className="text-sm text-gray-700">Mark as popular</span>
             </label>
             <Button onClick={addService} disabled={adding || !form.name.trim()} className="w-full">
-              {adding ? 'Adding...' : 'Add Service'}
+              {adding ? 'Saving...' : editing ? 'Save Changes' : 'Add Service'}
             </Button>
           </div>
         </Modal>
@@ -1025,6 +1195,8 @@ export const AdminCoupons = () => {
   const [coupons, setCoupons] = useState<{ id: string; code: string; discount_pct: number; min_amount: number; expires_at: string | null; active: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ code: '', discount_pct: '10', min_amount: '0', expires_at: '', active: true });
+  const [busyCoupon, setBusyCoupon] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -1043,12 +1215,60 @@ export const AdminCoupons = () => {
           <Input type="number" value={form.discount_pct} onChange={(e) => setForm((s) => ({ ...s, discount_pct: e.target.value }))} placeholder="% Discount" />
           <Input type="number" value={form.min_amount} onChange={(e) => setForm((s) => ({ ...s, min_amount: e.target.value }))} placeholder="Min Amount" />
           <Input type="date" value={form.expires_at} onChange={(e) => setForm((s) => ({ ...s, expires_at: e.target.value }))} />
-          <Button onClick={async () => { await api.admin.createCoupon({ code: form.code, discount_pct: Number(form.discount_pct), min_amount: Number(form.min_amount), expires_at: form.expires_at || null }); load(); setForm({ code: '', discount_pct: '10', min_amount: '0', expires_at: '', active: true }); }} disabled={!form.code}>Add</Button>
+          <Button onClick={async () => { await api.admin.createCoupon({ code: form.code, discount_pct: Number(form.discount_pct), min_amount: Number(form.min_amount), expires_at: form.expires_at || null }); setActionError(''); load(); setForm({ code: '', discount_pct: '10', min_amount: '0', expires_at: '', active: true }); }} disabled={!form.code}>Add</Button>
         </Card>
+        {actionError && <p className="text-xs font-semibold text-red-500">{actionError}</p>}
         <Card className="overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Code</th><th className="px-5 py-3">Discount</th><th className="px-5 py-3">Min</th><th className="px-5 py-3">Expires</th><th className="px-5 py-3">Active</th></tr></thead>
-            <tbody>{coupons.map((c) => (<tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono">{c.code}</td><td className="px-5 py-3">{c.discount_pct}%</td><td className="px-5 py-3">{inr(c.min_amount)}</td><td className="px-5 py-3">{c.expires_at ? formatDate(c.expires_at) : '—'}</td><td className="px-5 py-3">{c.active ? 'Yes' : 'No'}</td></tr>))}</tbody>
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Code</th><th className="px-5 py-3">Discount</th><th className="px-5 py-3">Min</th><th className="px-5 py-3">Expires</th><th className="px-5 py-3">Active</th><th className="px-5 py-3">Actions</th></tr></thead>
+            <tbody>{coupons.map((c) => (
+              <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50/60">
+                <td className="px-5 py-3 font-mono">{c.code}</td>
+                <td className="px-5 py-3">{c.discount_pct}%</td>
+                <td className="px-5 py-3">{inr(c.min_amount)}</td>
+                <td className="px-5 py-3">{c.expires_at ? formatDate(c.expires_at) : '—'}</td>
+                <td className="px-5 py-3">{c.active ? <Badge tone="success">Yes</Badge> : <Badge tone="neutral">No</Badge>}</td>
+                <td className="px-5 py-3">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        setBusyCoupon(c.id);
+                        try {
+                          await api.admin.updateCoupon(c.id, { active: !c.active });
+                          setActionError('');
+                          load();
+                        } catch (err) {
+                          setActionError(err instanceof Error ? err.message : 'Could not update the coupon');
+                        }
+                        setBusyCoupon(null);
+                      }}
+                      disabled={busyCoupon === c.id}
+                      className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {c.active ? 'Disable' : 'Enable'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm(`Delete coupon ${c.code}? Bookings already placed keep their totals.`)) return;
+                        setBusyCoupon(c.id);
+                        try {
+                          await api.admin.deleteCoupon(c.id);
+                          setActionError('');
+                          load();
+                        } catch (err) {
+                          setActionError(err instanceof Error ? err.message : 'Could not delete the coupon');
+                        }
+                        setBusyCoupon(null);
+                      }}
+                      disabled={busyCoupon === c.id}
+                      className="rounded-lg border border-red-200 px-2.5 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}</tbody>
           </table>
         </Card>
       </div>
@@ -1161,11 +1381,28 @@ export const AdminPayouts = () => {
 export const AdminRefunds = () => {
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [note, setNote] = useState<Record<string, string>>({});
+  const [rowError, setRowError] = useState<Record<string, string>>({});
 
   const load = () => { setLoading(true); api.admin.refunds().then((r) => { setRefunds(r || []); setLoading(false); }).catch(() => setLoading(false)); };
   useEffect(load, []);
 
+  const resolve = async (r: Refund, action: 'approve' | 'reject') => {
+    setRowError((s) => ({ ...s, [r.id]: '' }));
+    setBusyId(r.id);
+    try {
+      await api.admin.settleRefund(r.id, action, note[r.id] || '');
+      load();
+    } catch (err) {
+      setBusyId(null);
+      setRowError((s) => ({ ...s, [r.id]: err instanceof Error ? err.message : 'Something went wrong' }));
+    }
+  };
+
   if (loading) return <div className="flex flex-1 items-center justify-center"><Spinner /></div>;
+
+  const openStates = new Set(['pending', 'failed']);
 
   return (
     <div style={{ backgroundColor: 'var(--admin-bg)' }} className="flex flex-1 flex-col overflow-hidden">
@@ -1173,8 +1410,40 @@ export const AdminRefunds = () => {
       <div className="flex-1 overflow-y-auto no-scrollbar p-6">
         <Card className="overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">ID</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Reason</th></tr></thead>
-            <tbody>{refunds.map((r) => (<tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60"><td className="px-5 py-3 font-mono text-xs">{r.id.slice(0,8)}</td><td className="px-5 py-3">{inr(r.amount)}</td><td className="px-5 py-3"><Badge tone={r.status==='completed'?'success':r.status==='failed'?'danger':'warning'}>{r.status}</Badge></td><td className="px-5 py-3 text-xs">{r.reason||'—'}</td></tr>))}</tbody>
+            <thead><tr className="border-b border-gray-100 bg-gray-50/60 text-[10px] uppercase tracking-wider text-gray-400"><th className="px-5 py-3">Booking</th><th className="px-5 py-3">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Reason</th><th className="px-5 py-3">Note</th><th className="px-5 py-3">Actions</th></tr></thead>
+            <tbody>{refunds.map((r) => {
+              const open = openStates.has(r.status);
+              const busy = busyId === r.id;
+              return (
+                <tr key={r.id} className="border-b border-gray-50 align-top hover:bg-gray-50/60">
+                  <td className="px-5 py-3">
+                    <p className="font-mono text-xs text-gray-900">{r.booking_id?.slice(0, 8) || '—'}</p>
+                    {r.booking?.service_name && <p className="text-[11px] text-gray-400">{r.booking.service_name}</p>}
+                  </td>
+                  <td className="px-5 py-3 font-semibold">{inr(r.amount)}</td>
+                  <td className="px-5 py-3"><Badge tone={r.status === 'completed' ? 'success' : r.status === 'rejected' || r.status === 'failed' ? 'danger' : 'warning'}>{r.status}</Badge></td>
+                  <td className="max-w-[200px] px-5 py-3 text-xs text-gray-500">{r.reason || '—'}</td>
+                  <td className="px-5 py-3">
+                    {open ? (
+                      <Input placeholder="Note (optional)" value={note[r.id] || ''} onChange={(e) => setNote((s) => ({ ...s, [r.id]: e.target.value }))} />
+                    ) : (
+                      <span className="text-xs text-gray-500">{r.note || '—'}</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    {open ? (
+                      <div className="flex gap-2">
+                        <Button size="sm" disabled={busy} onClick={() => resolve(r, 'approve')}>{busy ? '…' : 'Approve'}</Button>
+                        <Button size="sm" variant="danger" disabled={busy} onClick={() => resolve(r, 'reject')}>Reject</Button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] uppercase tracking-wider text-gray-300">No action</span>
+                    )}
+                    {rowError[r.id] && <p className="mt-1 max-w-[200px] text-[10px] font-medium text-red-500">{rowError[r.id]}</p>}
+                  </td>
+                </tr>
+              );
+            })}</tbody>
           </table>
         </Card>
       </div>

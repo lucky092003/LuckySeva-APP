@@ -185,6 +185,8 @@ export type Refund = {
   status: string;
   reason: string;
   note: string;
+  /** Joined by the admin list endpoint for display. */
+  booking?: { service_name?: string; scheduled_date?: string } | null;
   created_at: string;
 };
 
