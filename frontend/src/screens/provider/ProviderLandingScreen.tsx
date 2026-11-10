@@ -33,10 +33,9 @@ import { CUSTOMER_SITE_URL } from '@/config/site-links';
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
 /* ------------------------------------------------------------------ */
-// The partner site shares the customer site's editorial system: ivory paper,
-// slate ink, forest green for actions and the brand orange as the single
-// accent. The Instrument Serif display face carries the headlines, and the
-// sections are numbered like a corporate brochure.
+// The partner site shares the customer site's light canvas: ivory paper,
+// slate ink, emerald for actions. The sections are numbered like a corporate
+// brochure with smooth hierarchy and generous spacing.
 
 const SUPPORT_PHONE = '1800-200-9876';
 const SUPPORT_EMAIL = 'partners@luckyseva.com';
@@ -528,7 +527,7 @@ const EarningsCalculator = () => {
       </div>
 
       {/* Payout preview */}
-      <div className="flex flex-col overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-[#0F172A] p-5 text-[#F1F5F9] shadow-[0_36px_80px_-48px_rgba(15,23,42,0.55)] sm:p-7">
+      <div className="flex flex-col overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-[#FFFFFF] p-5 shadow-[0_36px_80px_-48px_rgba(15,23,42,0.35)] sm:p-7">
         <div
           aria-hidden
           className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#059669]/20 blur-3xl"
@@ -701,7 +700,7 @@ export const ProviderLandingScreen = () => {
                 key={item.id}
                 type="button"
                 onClick={() => scrollToId(item.id)}
-                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F8FAFC] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
               >
                 {item.label}
               </button>
@@ -719,10 +718,10 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-10 items-center gap-2 rounded-full bg-[#0F172A] px-4 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+              className="flex h-10 items-center gap-2 rounded-full bg-[#FFFFFF] px-4 text-[14px] font-bold text-[#0F172A] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             >
               Become a partner
-              <ArrowUpRight size={14} strokeWidth={2.5} className="text-[#F59E0B]" />
+              <ArrowUpRight size={14} strokeWidth={2.5} className="text-[#059669]" />
             </button>
           </div>
         </div>
@@ -733,13 +732,13 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                             */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative isolate overflow-hidden bg-[#0F172A]">
+      <section className="relative isolate overflow-hidden bg-[#FFFFFF]">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             backgroundImage:
-              'radial-gradient(52% 46% at 82% 8%, rgba(5,150,105,0.22) 0%, transparent 65%), radial-gradient(46% 50% at 4% 22%, rgba(249,115,22,0.12) 0%, transparent 62%)',
+              'radial-gradient(52% 46% at 82% 8%, rgba(5,150,105,0.15) 0%, transparent 65%), radial-gradient(46% 50% at 4% 22%, rgba(249,115,22,0.10) 0%, transparent 62%)',
           }}
         />
         <div className="relative mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] items-center gap-12 px-4 pb-12 pt-10 sm:px-8 sm:pb-14 sm:pt-12 2xl:pb-28 2xl:pt-24 lg:grid-cols-[minmax(0,1.06fr)_minmax(360px,404px)] 2xl:grid-cols-[minmax(0,1.1fr)_minmax(400px,440px)] lg:gap-14 lg:pb-20 lg:pt-16">
@@ -751,7 +750,7 @@ export const ProviderLandingScreen = () => {
               </span>
             </div>
 
-            <h1 className="mt-6 font-customer-display text-[54px] leading-[0.94] tracking-[-0.025em] text-[#F8FAFC] sm:text-[72px] xl:text-[80px] 2xl:text-[96px]">
+            <h1 className="mt-6 font-customer-display text-[54px] leading-[0.94] tracking-[-0.025em] text-[#0F172A] sm:text-[72px] xl:text-[80px] 2xl:text-[96px]">
               Your skill.
               <br />
               Your hours.
@@ -775,7 +774,7 @@ export const ProviderLandingScreen = () => {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-[520px] text-[17px] leading-8 text-[#CBD5E1]">
+            <p className="mt-7 max-w-[520px] text-[17px] leading-8 text-[#334155]">
               Join the professionals behind LuckySeva. Get matched to jobs in your area, set
               your own hours and see every rupee before you accept — with weekly payouts and a
               team that backs you.
@@ -793,7 +792,7 @@ export const ProviderLandingScreen = () => {
               <button
                 type="button"
                 onClick={() => scrollToId('earnings')}
-                className="group flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#1E293B]/70 px-6 text-[15px] font-bold text-[#F8FAFC] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
+                className="group flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#F8FAFC]/70 px-6 text-[15px] font-bold text-[#0F172A] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#E2E8F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
               >
                 Estimate earnings
                 <ChevronRight size={16} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#34D399]" />
@@ -899,7 +898,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Trades                                                           */}
       {/* ---------------------------------------------------------------- */}
-      <section id="trades" className="scroll-mt-[74px] relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="trades" className="scroll-mt-[74px] relative overflow-hidden bg-[#FFFFFF] py-20 sm:py-24">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.4]"
@@ -930,7 +929,7 @@ export const ProviderLandingScreen = () => {
                 key={trade.slug}
                 type="button"
                 onClick={goToLogin}
-                className={`group relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-[#0F172A] p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_32px_-18px_rgba(15,23,42,0.35)] ring-1 ring-[#0F172A]/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(15,23,42,0.45)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] sm:min-h-[240px] 2xl:min-h-[280px] sm:p-6 ${
+                className={`group relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-[#FFFFFF] p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_32px_-18px_rgba(15,23,42,0.35)] ring-1 ring-[#0F172A]/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(15,23,42,0.45)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] sm:min-h-[240px] 2xl:min-h-[280px] sm:p-6 ${
                   trade.slug === 'other' ? 'sm:col-span-2 lg:col-span-1 xl:col-span-2' : ''
                 }`}
               >
@@ -945,7 +944,7 @@ export const ProviderLandingScreen = () => {
                     }}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#FFFFFF]/90 via-[#FFFFFF]/15 to-transparent" />
                   <div
                     className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
                     style={{ backgroundColor: '#34D399' }}
@@ -964,7 +963,7 @@ export const ProviderLandingScreen = () => {
           </div>
 
           {/* Support-desk banner */}
-          <div className="relative mt-8 overflow-hidden rounded-3xl bg-[#0F172A] px-6 py-7 text-[#F1F5F9] sm:px-9">
+          <div className="relative mt-8 overflow-hidden rounded-3xl bg-[#FFFFFF] px-6 py-7 text-[#0F172A] sm:px-9">
             <div
               aria-hidden
               className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#EA580C]/20 blur-3xl"
@@ -1005,7 +1004,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       <section
         id="earnings"
-        className="scroll-mt-[74px] border-y border-[#E2E8F0] bg-[#FFFFFF] py-20 sm:py-24"
+        className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1035,7 +1034,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Benefits                                                         */}
       {/* ---------------------------------------------------------------- */}
-      <section id="benefits" className="scroll-mt-[74px] bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="benefits" className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24">
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="max-w-[680px]">
             <SectionLabel index="03">Why partner</SectionLabel>
@@ -1077,7 +1076,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       <section
         id="how-it-works"
-        className="scroll-mt-[74px] border-y border-[#E2E8F0] bg-[#F1F5F9] py-20 sm:py-24"
+        className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1117,7 +1116,7 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="landing-sweep relative flex h-[52px] items-center gap-2 overflow-hidden rounded-full bg-[#0F172A] px-6 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+              className="landing-sweep relative flex h-[52px] items-center gap-2 overflow-hidden rounded-full bg-[#FFFFFF] px-6 text-[14px] font-bold text-[#0F172A] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             >
               Start your application
               <ArrowRight size={15} strokeWidth={2.6} />
@@ -1132,7 +1131,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Requirements                                                     */}
       {/* ---------------------------------------------------------------- */}
-      <section id="requirements" className="scroll-mt-[74px] bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="requirements" className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24">
         <div className="mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
           <div>
             <SectionLabel index="05">Before you start</SectionLabel>
@@ -1278,7 +1277,7 @@ export const ProviderLandingScreen = () => {
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-5 flex items-center gap-3 border-t border-[#E2E8F0] pt-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F172A] font-customer-display text-[16px] italic text-[#6EE7B7]">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] font-customer-display text-[16px] italic text-[#6EE7B7]">
                     {testimonial.name.charAt(0)}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -1380,7 +1379,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Final CTA                                                        */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-[#0F172A] py-16 text-[#F1F5F9] sm:py-20">
+      <section className="relative overflow-hidden bg-[#FFFFFF] py-16 text-[#0F172A] sm:py-20">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -1402,7 +1401,7 @@ export const ProviderLandingScreen = () => {
               Join the network
             </span>
           </div>
-          <h2 className="mt-5 max-w-[820px] font-customer-display text-[46px] leading-[0.96] tracking-[-0.025em] text-[#F8FAFC] sm:text-[64px] 2xl:text-[76px]">
+          <h2 className="mt-5 max-w-[820px] font-customer-display text-[46px] leading-[0.96] tracking-[-0.025em] text-[#0F172A] sm:text-[64px] 2xl:text-[76px]">
             Your next job is
             <br className="hidden sm:block" />{' '}
             <span className="relative inline-block italic text-[#34D399]">
@@ -1423,7 +1422,7 @@ export const ProviderLandingScreen = () => {
               </svg>
             </span>
           </h2>
-          <p className="mt-5 max-w-[500px] text-[16px] leading-7 text-[#CBD5E1]">
+          <p className="mt-5 max-w-[500px] text-[16px] leading-7 text-[#334155]">
             Create your partner account with OTP, finish verification and start receiving
             requests from the customers closest to you.
           </p>
@@ -1438,7 +1437,7 @@ export const ProviderLandingScreen = () => {
             </button>
             <a
               href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#1E293B]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#F8FAFC]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
             >
               <PhoneCall size={14} />
               Talk to the partner team
@@ -1463,7 +1462,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Footer                                                           */}
       {/* ---------------------------------------------------------------- */}
-      <footer className="border-t border-[#F1F5F9]/10 bg-[#0F172A] text-[#94A3B8]">
+      <footer className="border-t border-[#F1F5F9]/10 bg-[#FFFFFF] text-[#475569]">
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 py-14 sm:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_0.85fr_0.85fr_1fr]">
             <div>
