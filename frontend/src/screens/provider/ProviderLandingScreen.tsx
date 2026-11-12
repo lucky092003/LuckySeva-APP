@@ -539,7 +539,7 @@ const EarningsCalculator = () => {
               What lands in your account
             </p>
           </div>
-          <span className="flex items-center gap-1 rounded-full border border-[#059669]/40 bg-[#059669]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#34D399]">
+          <span className="flex items-center gap-1 rounded-full border border-[#059669]/40 bg-[#059669]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#059669]">
             <CalendarCheck size={10} /> Weekly
           </span>
         </div>
@@ -576,7 +576,7 @@ const EarningsCalculator = () => {
             >
               <dt
                 className={
-                  row.strong ? 'font-bold text-[#34D399]' : 'text-[#94A3B8]'
+                  row.strong ? 'font-bold text-[#059669]' : 'text-[#94A3B8]'
                 }
               >
                 {row.label}
@@ -603,7 +603,7 @@ const EarningsCalculator = () => {
             { icon: ShieldCheck, label: 'Statement for every payout' },
           ].map((item) => (
             <p key={item.label} className="flex items-center gap-2 text-[12px] text-[#94A3B8]">
-              <item.icon size={12} className="text-[#34D399]" />
+              <item.icon size={12} className="text-[#059669]" />
               {item.label}
             </p>
           ))}
@@ -755,7 +755,7 @@ export const ProviderLandingScreen = () => {
               <br />
               Your hours.
               <br />
-              <span className="relative inline-block italic text-[#34D399]">
+              <span className="relative inline-block italic text-[#059669]">
                 Your earnings.
                 <svg
                   aria-hidden
@@ -795,7 +795,7 @@ export const ProviderLandingScreen = () => {
                 className="group flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#F8FAFC]/70 px-6 text-[15px] font-bold text-[#0F172A] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#E2E8F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
               >
                 Estimate earnings
-                <ChevronRight size={16} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#34D399]" />
+                <ChevronRight size={16} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#059669]" />
               </button>
             </div>
 
@@ -805,7 +805,7 @@ export const ProviderLandingScreen = () => {
                   key={item}
                   className="flex items-center gap-1.5 text-[13px] font-semibold text-[#CBD5E1]"
                 >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#34D399]/15 text-[#34D399]">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
                     <Check size={9} strokeWidth={3.5} />
                   </span>
                   {item}
@@ -944,7 +944,7 @@ export const ProviderLandingScreen = () => {
                     }}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#FFFFFF]/90 via-[#FFFFFF]/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-[#0F172A]/15 to-transparent" />
                   <div
                     className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
                     style={{ backgroundColor: '#34D399' }}
@@ -974,7 +974,7 @@ export const ProviderLandingScreen = () => {
             />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#F1F5F9]/15 bg-[#F1F5F9]/10 text-[#34D399]">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#F1F5F9]/15 bg-[#F1F5F9]/10 text-[#059669]">
                   <UserCheck size={19} />
                 </span>
                 <div>
@@ -992,7 +992,7 @@ export const ProviderLandingScreen = () => {
                 className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#F1F5F9]/15 bg-[#F1F5F9]/5 p-3.5 transition hover:border-[#34D399] lg:w-[300px]"
               >
                 <span className="text-[14px] font-bold text-[#F8FAFC]">{SUPPORT_PHONE}</span>
-                <PhoneCall size={15} className="text-[#34D399]" />
+                <PhoneCall size={15} className="text-[#059669]" />
               </a>
             </div>
           </div>
@@ -1404,7 +1404,7 @@ export const ProviderLandingScreen = () => {
           <h2 className="mt-5 max-w-[820px] font-customer-display text-[46px] leading-[0.96] tracking-[-0.025em] text-[#0F172A] sm:text-[64px] 2xl:text-[76px]">
             Your next job is
             <br className="hidden sm:block" />{' '}
-            <span className="relative inline-block italic text-[#34D399]">
+            <span className="relative inline-block italic text-[#059669]">
               already in your area.
               <svg
                 aria-hidden
@@ -1437,7 +1437,7 @@ export const ProviderLandingScreen = () => {
             </button>
             <a
               href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#F8FAFC]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#334155] transition hover:border-[#059669] hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
             >
               <PhoneCall size={14} />
               Talk to the partner team
@@ -1447,9 +1447,9 @@ export const ProviderLandingScreen = () => {
             {['No joining fee', 'No monthly subscription', 'Weekly payouts'].map((item) => (
               <span
                 key={item}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#CBD5E1]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#475569]"
               >
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#34D399]/15 text-[#34D399]">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
                   <Check size={9} strokeWidth={3.5} />
                 </span>
                 {item}
@@ -1462,16 +1462,16 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Footer                                                           */}
       {/* ---------------------------------------------------------------- */}
-      <footer className="border-t border-[#F1F5F9]/10 bg-[#FFFFFF] text-[#475569]">
+      <footer className="border-t border-[#E2E8F0] bg-[#FFFFFF] text-[#475569]">
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 py-14 sm:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_0.85fr_0.85fr_1fr]">
             <div>
               <div className="flex items-center gap-3">
-                <Logo size={38} className="rounded-xl ring-1 ring-white/10" />
-                <span className="text-[18px] font-extrabold tracking-tight text-[#F8FAFC]">
+                <Logo size={38} className="rounded-xl ring-1 ring-[#E2E8F0]" />
+                <span className="text-[18px] font-extrabold tracking-tight text-[#0F172A]">
                   Lucky<span className="text-[#F97316]">Seva</span>
                 </span>
-                <span className="rounded-full border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
+                <span className="rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#059669]">
                   Partner
                 </span>
               </div>
@@ -1483,7 +1483,7 @@ export const ProviderLandingScreen = () => {
                 {['UPI', 'IMPS', 'Bank transfer', 'Weekly'].map((method) => (
                   <span
                     key={method}
-                    className="rounded border border-white/[0.08] bg-white/[0.02] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#64748B]"
+                    className="rounded border border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#64748B]"
                   >
                     {method}
                   </span>
@@ -1501,14 +1501,14 @@ export const ProviderLandingScreen = () => {
                     <button
                       type="button"
                       onClick={() => scrollToId(item.id)}
-                      className="transition hover:text-[#34D399]"
+                      className="transition hover:text-[#059669]"
                     >
                       {item.label}
                     </button>
                   </li>
                 ))}
                 <li>
-                  <button type="button" onClick={goToLogin} className="transition hover:text-[#34D399]">
+                  <button type="button" onClick={goToLogin} className="transition hover:text-[#059669]">
                     Create account
                   </button>
                 </li>
@@ -1521,7 +1521,7 @@ export const ProviderLandingScreen = () => {
               </p>
               <ul className="mt-4 space-y-2.5 text-[12.5px]">
                 <li>
-                  <button type="button" onClick={goToLogin} className="transition hover:text-[#34D399]">
+                  <button type="button" onClick={goToLogin} className="transition hover:text-[#059669]">
                     Partner login
                   </button>
                 </li>
@@ -1529,7 +1529,7 @@ export const ProviderLandingScreen = () => {
                   <button
                     type="button"
                     onClick={() => scrollToId('requirements')}
-                    className="transition hover:text-[#34D399]"
+                    className="transition hover:text-[#059669]"
                   >
                     Verification checklist
                   </button>
@@ -1537,7 +1537,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <PhoneCall size={10} /> Partner desk
                   </a>
@@ -1545,7 +1545,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`mailto:${SUPPORT_EMAIL}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <Mail size={10} /> Email support
                   </a>
@@ -1561,7 +1561,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={CUSTOMER_SITE_URL}
-                    className="inline-flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="inline-flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     Book a home service <ArrowUpRight size={11} />
                   </a>
@@ -1569,7 +1569,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={CUSTOMER_SITE_URL}
-                    className="inline-flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="inline-flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     Visit luckyseva.in <ArrowUpRight size={11} />
                   </a>
@@ -1577,14 +1577,14 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <PhoneCall size={10} /> {SUPPORT_PHONE}
                   </a>
                 </li>
               </ul>
-              <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                <Briefcase size={13} className="text-[#34D399]" />
+              <div className="mt-5 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5">
+                <Briefcase size={13} className="text-[#059669]" />
                 <span className="text-[11px] leading-4 text-[#64748B]">
                   15 trades · 180+ service types
                 </span>
@@ -1592,19 +1592,19 @@ export const ProviderLandingScreen = () => {
             </div>
           </div>
 
-          <div className="mt-12 flex flex-col gap-3 border-t border-white/[0.07] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-12 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#475569]">
               © 2026 LuckySeva · All rights reserved
             </p>
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#475569]">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck size={10} className="text-[#34D399]/70" /> Verified customers
+                <ShieldCheck size={10} className="text-[#059669]" /> Verified customers
               </span>
               <span className="flex items-center gap-1.5">
-                <Wallet size={10} className="text-[#34D399]/70" /> Transparent payouts
+                <Wallet size={10} className="text-[#059669]" /> Transparent payouts
               </span>
               <span className="flex items-center gap-1.5">
-                <UserCheck size={10} className="text-[#34D399]/70" /> Real support
+                <UserCheck size={10} className="text-[#059669]" /> Real support
               </span>
             </p>
           </div>
