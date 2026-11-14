@@ -33,10 +33,9 @@ import { CUSTOMER_SITE_URL } from '@/config/site-links';
 /* ------------------------------------------------------------------ */
 /* Design tokens                                                       */
 /* ------------------------------------------------------------------ */
-// The partner site shares the customer site's editorial system: ivory paper,
-// slate ink, forest green for actions and the brand orange as the single
-// accent. The Instrument Serif display face carries the headlines, and the
-// sections are numbered like a corporate brochure.
+// The partner site shares the customer site's light canvas: ivory paper,
+// slate ink, emerald for actions. The sections are numbered like a corporate
+// brochure with smooth hierarchy and generous spacing.
 
 const SUPPORT_PHONE = '1800-200-9876';
 const SUPPORT_EMAIL = 'partners@luckyseva.com';
@@ -472,7 +471,7 @@ const EarningsCalculator = () => {
             background: `linear-gradient(to right, #059669 0%, #059669 ${pct}%, rgba(15,23,42,0.08) ${pct}%, rgba(15,23,42,0.08) 100%)`,
           }}
         />
-        <div className="mt-1.5 flex justify-between text-[10px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">
+        <div className="mt-1.5 flex justify-between text-[10px] font-bold uppercase tracking-[0.1em] text-[#64748B]">
           <span>5</span>
           <span>35</span>
         </div>
@@ -528,7 +527,7 @@ const EarningsCalculator = () => {
       </div>
 
       {/* Payout preview */}
-      <div className="flex flex-col overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-[#0F172A] p-5 text-[#F1F5F9] shadow-[0_36px_80px_-48px_rgba(15,23,42,0.55)] sm:p-7">
+      <div className="relative flex flex-col overflow-hidden rounded-[26px] border border-[#A7F3D0] bg-[linear-gradient(145deg,#F0FDF4_0%,#FFFFFF_72%)] p-5 shadow-[0_24px_60px_-42px_rgba(5,150,105,0.35)] sm:p-7">
         <div
           aria-hidden
           className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-[#059669]/20 blur-3xl"
@@ -536,11 +535,11 @@ const EarningsCalculator = () => {
         <div className="relative flex items-start justify-between gap-4">
           <div>
             <Micro className="text-[#64748B]">Payout preview</Micro>
-            <p className="mt-2 font-customer-display text-[22px] leading-tight tracking-[-0.01em] text-[#F8FAFC]">
+            <p className="mt-2 font-customer-display text-[22px] leading-tight tracking-[-0.01em] text-[#0F172A]">
               What lands in your account
             </p>
           </div>
-          <span className="flex items-center gap-1 rounded-full border border-[#059669]/40 bg-[#059669]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#34D399]">
+          <span className="flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#047857]">
             <CalendarCheck size={10} /> Weekly
           </span>
         </div>
@@ -548,12 +547,12 @@ const EarningsCalculator = () => {
         <div className="relative mt-7 flex h-[132px] items-end gap-2.5">
           {weekBars.map((bar, index) => (
             <div key={index} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-              <span className="font-mono text-[10px] font-semibold tracking-[0.02em] text-[#94A3B8]">
+              <span className="font-mono text-[10px] font-semibold tracking-[0.02em] text-[#64748B]">
                 {inr(weekValues[index])}
               </span>
               <div
                 className={`w-full rounded-t-[4px] transition-all duration-300 ${
-                  index === 3 ? 'bg-[#34D399]' : 'bg-[#34D399]/25'
+                  index === 3 ? 'bg-[#059669]' : 'bg-[#059669]/20'
                 }`}
                 style={{ height: `${Math.max(10, (bar / maxBar) * 72)}px` }}
               />
@@ -564,7 +563,7 @@ const EarningsCalculator = () => {
           ))}
         </div>
 
-        <dl className="relative mt-6 space-y-0 border-t border-white/10 text-[13.5px]">
+        <dl className="relative mt-6 space-y-0 border-t border-[#D1FAE5] text-[13.5px]">
           {[
             { label: 'Gross this month', value: inr(gross) },
             { label: 'Platform fee · 15%', value: `−${inr(fee)}` },
@@ -573,11 +572,11 @@ const EarningsCalculator = () => {
           ].map((row) => (
             <div
               key={row.label}
-              className="flex items-center justify-between border-b border-white/[0.07] py-3 last:border-b-0"
+              className="flex items-center justify-between border-b border-[#D1FAE5] py-3 last:border-b-0"
             >
               <dt
                 className={
-                  row.strong ? 'font-bold text-[#34D399]' : 'text-[#94A3B8]'
+                  row.strong ? 'font-bold text-[#047857]' : 'text-[#475569]'
                 }
               >
                 {row.label}
@@ -585,10 +584,10 @@ const EarningsCalculator = () => {
               <dd
                 className={
                   row.strong
-                    ? 'font-customer-display text-[24px] font-normal italic text-[#6EE7B7]'
+                    ? 'font-customer-display text-[24px] font-normal italic text-[#047857]'
                     : row.payout
-                      ? 'font-mono text-[13px] font-bold text-[#F8FAFC]'
-                      : 'font-mono text-[13px] font-semibold text-[#CBD5E1]'
+                      ? 'font-mono text-[13px] font-bold text-[#0F172A]'
+                      : 'font-mono text-[13px] font-semibold text-[#475569]'
                 }
               >
                 {row.value}
@@ -603,8 +602,8 @@ const EarningsCalculator = () => {
             { icon: Smartphone, label: 'UPI · same-day after settlement' },
             { icon: ShieldCheck, label: 'Statement for every payout' },
           ].map((item) => (
-            <p key={item.label} className="flex items-center gap-2 text-[12px] text-[#94A3B8]">
-              <item.icon size={12} className="text-[#34D399]" />
+            <p key={item.label} className="flex items-center gap-2 text-[12px] text-[#475569]">
+              <item.icon size={12} className="text-[#059669]" />
               {item.label}
             </p>
           ))}
@@ -701,7 +700,7 @@ export const ProviderLandingScreen = () => {
                 key={item.id}
                 type="button"
                 onClick={() => scrollToId(item.id)}
-                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+                className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-[#475569] transition hover:bg-[#F8FAFC] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
               >
                 {item.label}
               </button>
@@ -719,10 +718,10 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="flex h-10 items-center gap-2 rounded-full bg-[#0F172A] px-4 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+              className="flex h-10 items-center gap-2 rounded-full bg-[#059669] px-4 text-[14px] font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#047857] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             >
               Become a partner
-              <ArrowUpRight size={14} strokeWidth={2.5} className="text-[#F59E0B]" />
+              <ArrowUpRight size={14} strokeWidth={2.5} className="text-[#059669]" />
             </button>
           </div>
         </div>
@@ -733,30 +732,30 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Hero                                                             */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative isolate overflow-hidden bg-[#0F172A]">
+      <section className="relative isolate overflow-hidden bg-[#FFFFFF]">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             backgroundImage:
-              'radial-gradient(52% 46% at 82% 8%, rgba(5,150,105,0.22) 0%, transparent 65%), radial-gradient(46% 50% at 4% 22%, rgba(249,115,22,0.12) 0%, transparent 62%)',
+              'radial-gradient(52% 46% at 82% 8%, rgba(5,150,105,0.15) 0%, transparent 65%), radial-gradient(46% 50% at 4% 22%, rgba(249,115,22,0.10) 0%, transparent 62%)',
           }}
         />
         <div className="relative mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] items-center gap-12 px-4 pb-12 pt-10 sm:px-8 sm:pb-14 sm:pt-12 2xl:pb-28 2xl:pt-24 lg:grid-cols-[minmax(0,1.06fr)_minmax(360px,404px)] 2xl:grid-cols-[minmax(0,1.1fr)_minmax(400px,440px)] lg:gap-14 lg:pb-20 lg:pt-16">
           <div className="landing-rise min-w-0">
             <div className="flex items-center gap-3">
-              <span className="h-px w-9 bg-[#34D399]" />
-              <span className="text-[12px] font-bold uppercase tracking-[0.24em] text-[#94A3B8]">
+              <span className="h-px w-9 bg-[#059669]" />
+              <span className="text-[12px] font-bold uppercase tracking-[0.24em] text-[#64748B]">
                 The LuckySeva partner programme
               </span>
             </div>
 
-            <h1 className="mt-6 font-customer-display text-[54px] leading-[0.94] tracking-[-0.025em] text-[#F8FAFC] sm:text-[72px] xl:text-[80px] 2xl:text-[96px]">
+            <h1 className="mt-6 font-customer-display text-[54px] leading-[0.94] tracking-[-0.025em] text-[#0F172A] sm:text-[72px] xl:text-[80px] 2xl:text-[96px]">
               Your skill.
               <br />
               Your hours.
               <br />
-              <span className="relative inline-block italic text-[#34D399]">
+              <span className="relative inline-block italic text-[#059669]">
                 Your earnings.
                 <svg
                   aria-hidden
@@ -775,7 +774,7 @@ export const ProviderLandingScreen = () => {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-[520px] text-[17px] leading-8 text-[#CBD5E1]">
+            <p className="mt-7 max-w-[520px] text-[17px] leading-8 text-[#334155]">
               Join the professionals behind LuckySeva. Get matched to jobs in your area, set
               your own hours and see every rupee before you accept — with weekly payouts and a
               team that backs you.
@@ -793,10 +792,10 @@ export const ProviderLandingScreen = () => {
               <button
                 type="button"
                 onClick={() => scrollToId('earnings')}
-                className="group flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#1E293B]/70 px-6 text-[15px] font-bold text-[#F8FAFC] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
+                className="group flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] bg-[#F8FAFC]/70 px-6 text-[15px] font-bold text-[#0F172A] backdrop-blur-sm transition hover:border-[#34D399] hover:bg-[#E2E8F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
               >
                 Estimate earnings
-                <ChevronRight size={16} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#34D399]" />
+                <ChevronRight size={16} className="text-[#94A3B8] transition group-hover:translate-x-0.5 group-hover:text-[#059669]" />
               </button>
             </div>
 
@@ -804,9 +803,9 @@ export const ProviderLandingScreen = () => {
               {['No joining fee', 'Weekly payouts', 'Fee shown before you accept'].map((item) => (
                 <span
                   key={item}
-                  className="flex items-center gap-1.5 text-[13px] font-semibold text-[#CBD5E1]"
+                  className="flex items-center gap-1.5 text-[13px] font-semibold text-[#475569]"
                 >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#34D399]/15 text-[#34D399]">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
                     <Check size={9} strokeWidth={3.5} />
                   </span>
                   {item}
@@ -899,7 +898,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Trades                                                           */}
       {/* ---------------------------------------------------------------- */}
-      <section id="trades" className="scroll-mt-[74px] relative overflow-hidden bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="trades" className="scroll-mt-[74px] relative overflow-hidden bg-[#FFFFFF] py-20 sm:py-24">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.4]"
@@ -930,7 +929,7 @@ export const ProviderLandingScreen = () => {
                 key={trade.slug}
                 type="button"
                 onClick={goToLogin}
-                className={`group relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-[#0F172A] p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_32px_-18px_rgba(15,23,42,0.35)] ring-1 ring-[#0F172A]/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(15,23,42,0.45)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] sm:min-h-[240px] 2xl:min-h-[280px] sm:p-6 ${
+                className={`group relative flex min-h-[220px] flex-col overflow-hidden rounded-3xl bg-[#FFFFFF] p-5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_32px_-18px_rgba(15,23,42,0.35)] ring-1 ring-[#0F172A]/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_56px_-24px_rgba(15,23,42,0.45)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669] sm:min-h-[240px] 2xl:min-h-[280px] sm:p-6 ${
                   trade.slug === 'other' ? 'sm:col-span-2 lg:col-span-1 xl:col-span-2' : ''
                 }`}
               >
@@ -964,7 +963,7 @@ export const ProviderLandingScreen = () => {
           </div>
 
           {/* Support-desk banner */}
-          <div className="relative mt-8 overflow-hidden rounded-3xl bg-[#0F172A] px-6 py-7 text-[#F1F5F9] sm:px-9">
+          <div className="relative mt-8 overflow-hidden rounded-3xl border border-[#E2E8F0] bg-[#F8FAFC] px-6 py-7 text-[#0F172A] shadow-sm sm:px-9">
             <div
               aria-hidden
               className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#EA580C]/20 blur-3xl"
@@ -975,14 +974,14 @@ export const ProviderLandingScreen = () => {
             />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#F1F5F9]/15 bg-[#F1F5F9]/10 text-[#34D399]">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#A7F3D0] bg-[#ECFDF5] text-[#059669]">
                   <UserCheck size={19} />
                 </span>
                 <div>
                   <p className="font-customer-display text-[24px] leading-tight tracking-tight sm:text-[26px]">
                     A trade we have not listed? We still want to hear it.
                   </p>
-                  <p className="mt-1.5 max-w-[560px] text-[13.5px] leading-6 text-[#94A3B8]">
+                  <p className="mt-1.5 max-w-[560px] text-[13.5px] leading-6 text-[#475569]">
                     The network grows with the skills of its partners. Talk to the partner desk
                     and we will route your expertise to the right customers.
                   </p>
@@ -990,10 +989,10 @@ export const ProviderLandingScreen = () => {
               </div>
               <a
                 href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-                className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#F1F5F9]/15 bg-[#F1F5F9]/5 p-3.5 transition hover:border-[#34D399] lg:w-[300px]"
+                className="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#CBD5E1] bg-white p-3.5 transition hover:border-[#059669] hover:bg-[#ECFDF5] lg:w-[300px]"
               >
-                <span className="text-[14px] font-bold text-[#F8FAFC]">{SUPPORT_PHONE}</span>
-                <PhoneCall size={15} className="text-[#34D399]" />
+                <span className="text-[14px] font-bold text-[#0F172A]">{SUPPORT_PHONE}</span>
+                <PhoneCall size={15} className="text-[#059669]" />
               </a>
             </div>
           </div>
@@ -1005,7 +1004,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       <section
         id="earnings"
-        className="scroll-mt-[74px] border-y border-[#E2E8F0] bg-[#FFFFFF] py-20 sm:py-24"
+        className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1035,7 +1034,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Benefits                                                         */}
       {/* ---------------------------------------------------------------- */}
-      <section id="benefits" className="scroll-mt-[74px] bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="benefits" className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24">
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="max-w-[680px]">
             <SectionLabel index="03">Why partner</SectionLabel>
@@ -1077,7 +1076,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       <section
         id="how-it-works"
-        className="scroll-mt-[74px] border-y border-[#E2E8F0] bg-[#F1F5F9] py-20 sm:py-24"
+        className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24"
       >
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -1117,7 +1116,7 @@ export const ProviderLandingScreen = () => {
             <button
               type="button"
               onClick={goToLogin}
-              className="landing-sweep relative flex h-[52px] items-center gap-2 overflow-hidden rounded-full bg-[#0F172A] px-6 text-[14px] font-bold text-[#FFFFFF] transition hover:-translate-y-0.5 hover:bg-[#12402F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
+              className="landing-sweep relative flex h-[52px] items-center gap-2 overflow-hidden rounded-full bg-[#059669] px-6 text-[14px] font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#047857] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             >
               Start your application
               <ArrowRight size={15} strokeWidth={2.6} />
@@ -1132,7 +1131,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Requirements                                                     */}
       {/* ---------------------------------------------------------------- */}
-      <section id="requirements" className="scroll-mt-[74px] bg-[#F8FAFC] py-20 sm:py-24">
+      <section id="requirements" className="scroll-mt-[74px] bg-[#FFFFFF] py-20 sm:py-24">
         <div className="mx-auto grid w-full max-w-[1240px] 2xl:max-w-[1440px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
           <div>
             <SectionLabel index="05">Before you start</SectionLabel>
@@ -1213,7 +1212,7 @@ export const ProviderLandingScreen = () => {
                     <Check size={11} strokeWidth={3} />
                   </span>
                   <span className="flex-1 text-[13.5px] leading-5 text-[#334155]">{item}</span>
-                  <span className="mt-0.5 shrink-0 text-[11px] font-bold tracking-[0.12em] text-[#CBD5E1]">
+                  <span className="mt-0.5 shrink-0 text-[11px] font-bold tracking-[0.12em] text-[#94A3B8]">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                 </li>
@@ -1278,7 +1277,7 @@ export const ProviderLandingScreen = () => {
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-5 flex items-center gap-3 border-t border-[#E2E8F0] pt-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F172A] font-customer-display text-[16px] italic text-[#6EE7B7]">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] font-customer-display text-[16px] italic text-[#047857]">
                     {testimonial.name.charAt(0)}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -1293,7 +1292,7 @@ export const ProviderLandingScreen = () => {
                     <span className="block font-customer-display text-[19px] leading-none text-[#047857]">
                       {testimonial.earning}
                     </span>
-                    <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">
+                    <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.1em] text-[#64748B]">
                       {testimonial.note}
                     </span>
                   </span>
@@ -1380,7 +1379,7 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Final CTA                                                        */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-[#0F172A] py-16 text-[#F1F5F9] sm:py-20">
+      <section className="relative overflow-hidden bg-[#FFFFFF] py-16 text-[#0F172A] sm:py-20">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -1397,15 +1396,15 @@ export const ProviderLandingScreen = () => {
         </span>
         <div className="relative mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 sm:px-8">
           <div className="flex items-center gap-3">
-            <span className="h-px w-9 bg-[#34D399]" />
-            <span className="text-[12px] font-bold uppercase tracking-[0.24em] text-[#94A3B8]">
+            <span className="h-px w-9 bg-[#059669]" />
+            <span className="text-[12px] font-bold uppercase tracking-[0.24em] text-[#64748B]">
               Join the network
             </span>
           </div>
-          <h2 className="mt-5 max-w-[820px] font-customer-display text-[46px] leading-[0.96] tracking-[-0.025em] text-[#F8FAFC] sm:text-[64px] 2xl:text-[76px]">
+          <h2 className="mt-5 max-w-[820px] font-customer-display text-[46px] leading-[0.96] tracking-[-0.025em] text-[#0F172A] sm:text-[64px] 2xl:text-[76px]">
             Your next job is
             <br className="hidden sm:block" />{' '}
-            <span className="relative inline-block italic text-[#34D399]">
+            <span className="relative inline-block italic text-[#059669]">
               already in your area.
               <svg
                 aria-hidden
@@ -1423,7 +1422,7 @@ export const ProviderLandingScreen = () => {
               </svg>
             </span>
           </h2>
-          <p className="mt-5 max-w-[500px] text-[16px] leading-7 text-[#CBD5E1]">
+          <p className="mt-5 max-w-[500px] text-[16px] leading-7 text-[#334155]">
             Create your partner account with OTP, finish verification and start receiving
             requests from the customers closest to you.
           </p>
@@ -1438,7 +1437,7 @@ export const ProviderLandingScreen = () => {
             </button>
             <a
               href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#F1F5F9] transition hover:border-[#34D399] hover:bg-[#1E293B]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-[#334155] px-6 text-[14px] font-bold text-[#334155] transition hover:border-[#059669] hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34D399]"
             >
               <PhoneCall size={14} />
               Talk to the partner team
@@ -1448,9 +1447,9 @@ export const ProviderLandingScreen = () => {
             {['No joining fee', 'No monthly subscription', 'Weekly payouts'].map((item) => (
               <span
                 key={item}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#CBD5E1]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[#475569]"
               >
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#34D399]/15 text-[#34D399]">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
                   <Check size={9} strokeWidth={3.5} />
                 </span>
                 {item}
@@ -1463,16 +1462,16 @@ export const ProviderLandingScreen = () => {
       {/* ---------------------------------------------------------------- */}
       {/* Footer                                                           */}
       {/* ---------------------------------------------------------------- */}
-      <footer className="border-t border-[#F1F5F9]/10 bg-[#0F172A] text-[#94A3B8]">
+      <footer className="border-t border-[#E2E8F0] bg-[#FFFFFF] text-[#475569]">
         <div className="mx-auto w-full max-w-[1240px] 2xl:max-w-[1440px] px-5 py-14 sm:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_0.85fr_0.85fr_1fr]">
             <div>
               <div className="flex items-center gap-3">
-                <Logo size={38} className="rounded-xl ring-1 ring-white/10" />
-                <span className="text-[18px] font-extrabold tracking-tight text-[#F8FAFC]">
+                <Logo size={38} className="rounded-xl ring-1 ring-[#E2E8F0]" />
+                <span className="text-[18px] font-extrabold tracking-tight text-[#0F172A]">
                   Lucky<span className="text-[#F97316]">Seva</span>
                 </span>
-                <span className="rounded-full border border-[#34D399]/25 bg-[#34D399]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#34D399]">
+                <span className="rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#059669]">
                   Partner
                 </span>
               </div>
@@ -1484,7 +1483,7 @@ export const ProviderLandingScreen = () => {
                 {['UPI', 'IMPS', 'Bank transfer', 'Weekly'].map((method) => (
                   <span
                     key={method}
-                    className="rounded border border-white/[0.08] bg-white/[0.02] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#64748B]"
+                    className="rounded border border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#64748B]"
                   >
                     {method}
                   </span>
@@ -1502,14 +1501,14 @@ export const ProviderLandingScreen = () => {
                     <button
                       type="button"
                       onClick={() => scrollToId(item.id)}
-                      className="transition hover:text-[#34D399]"
+                      className="transition hover:text-[#059669]"
                     >
                       {item.label}
                     </button>
                   </li>
                 ))}
                 <li>
-                  <button type="button" onClick={goToLogin} className="transition hover:text-[#34D399]">
+                  <button type="button" onClick={goToLogin} className="transition hover:text-[#059669]">
                     Create account
                   </button>
                 </li>
@@ -1522,7 +1521,7 @@ export const ProviderLandingScreen = () => {
               </p>
               <ul className="mt-4 space-y-2.5 text-[12.5px]">
                 <li>
-                  <button type="button" onClick={goToLogin} className="transition hover:text-[#34D399]">
+                  <button type="button" onClick={goToLogin} className="transition hover:text-[#059669]">
                     Partner login
                   </button>
                 </li>
@@ -1530,7 +1529,7 @@ export const ProviderLandingScreen = () => {
                   <button
                     type="button"
                     onClick={() => scrollToId('requirements')}
-                    className="transition hover:text-[#34D399]"
+                    className="transition hover:text-[#059669]"
                   >
                     Verification checklist
                   </button>
@@ -1538,7 +1537,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <PhoneCall size={10} /> Partner desk
                   </a>
@@ -1546,7 +1545,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`mailto:${SUPPORT_EMAIL}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <Mail size={10} /> Email support
                   </a>
@@ -1562,7 +1561,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={CUSTOMER_SITE_URL}
-                    className="inline-flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="inline-flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     Book a home service <ArrowUpRight size={11} />
                   </a>
@@ -1570,7 +1569,7 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={CUSTOMER_SITE_URL}
-                    className="inline-flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="inline-flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     Visit luckyseva.in <ArrowUpRight size={11} />
                   </a>
@@ -1578,14 +1577,14 @@ export const ProviderLandingScreen = () => {
                 <li>
                   <a
                     href={`tel:${SUPPORT_PHONE.replace(/-/g, '')}`}
-                    className="flex items-center gap-1.5 transition hover:text-[#34D399]"
+                    className="flex items-center gap-1.5 transition hover:text-[#059669]"
                   >
                     <PhoneCall size={10} /> {SUPPORT_PHONE}
                   </a>
                 </li>
               </ul>
-              <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                <Briefcase size={13} className="text-[#34D399]" />
+              <div className="mt-5 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2.5">
+                <Briefcase size={13} className="text-[#059669]" />
                 <span className="text-[11px] leading-4 text-[#64748B]">
                   15 trades · 180+ service types
                 </span>
@@ -1593,19 +1592,19 @@ export const ProviderLandingScreen = () => {
             </div>
           </div>
 
-          <div className="mt-12 flex flex-col gap-3 border-t border-white/[0.07] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-12 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#475569]">
               © 2026 LuckySeva · All rights reserved
             </p>
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#475569]">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck size={10} className="text-[#34D399]/70" /> Verified customers
+                <ShieldCheck size={10} className="text-[#059669]" /> Verified customers
               </span>
               <span className="flex items-center gap-1.5">
-                <Wallet size={10} className="text-[#34D399]/70" /> Transparent payouts
+                <Wallet size={10} className="text-[#059669]" /> Transparent payouts
               </span>
               <span className="flex items-center gap-1.5">
-                <UserCheck size={10} className="text-[#34D399]/70" /> Real support
+                <UserCheck size={10} className="text-[#059669]" /> Real support
               </span>
             </p>
           </div>
